@@ -118,7 +118,7 @@ function MainApp() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Synchronize authenticated user profile & restore genuine metrics from Firebase
+  // Synchronize authenticated user profile & restore genuine metrics from Supabase
   useEffect(() => {
     if (!currentUser) return;
 
@@ -213,7 +213,7 @@ function MainApp() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  // Loading State while Firebase resolves
+  // Loading State while Supabase resolves
   if (loading) {
     return <BootTerminal />;
   }
@@ -564,7 +564,7 @@ function MainApp() {
         onClose={() => setActivePracticeCategory(null)}
       />
 
-      {/* Firebase Auth Modal */}
+      {/* Supabase Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}

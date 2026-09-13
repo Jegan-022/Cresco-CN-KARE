@@ -67,7 +67,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [questionIndex, setQuestionIndex] = useState<number>(0);
   const [explanation, setExplanation] = useState<string>(SAMPLE_QUESTIONS[0].explanation);
-  const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
+  const [isSupabaseSynced, setIsSupabaseSynced] = useState<boolean>(false);
   const [connectedStudentsCount, setConnectedStudentsCount] = useState<number>(1);
 
   // 1. Listen to real-time student presence / count
@@ -108,7 +108,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
   // 2. Connect to live Supabase poll table
   useEffect(() => {
     if (!isSupabaseConfigured()) {
-      setIsFirebaseSynced(false);
+      setIsSupabaseSynced(false);
       return;
     }
 
@@ -136,7 +136,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           if (data.explanation) {
             setExplanation(data.explanation);
           }
-          setIsFirebaseSynced(true);
+          setIsSupabaseSynced(true);
         } else {
           // Initialize poll in Supabase if not seeded
           await supabase.from('live_polls').upsert({
@@ -322,11 +322,11 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           </p>
         </div>
 
-        {/* Real-Time Firebase Connected Badges */}
+        {/* Real-Time Supabase Connected Badges */}
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
           <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-bold text-emerald-700 dark:text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-mono text-[11px]">{isFirebaseSynced ? 'REAL-TIME FIREBASE DB' : 'CONNECTING...'}</span>
+            <span className="font-mono text-[11px]">{isSupabaseSynced ? 'REAL-TIME SUPABASE DB' : 'CONNECTING...'}</span>
           </div>
           <div className="flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-700 dark:text-slate-300 text-xs font-semibold">
             <Users className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
@@ -427,7 +427,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           <div className="mt-5 p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-900 dark:text-blue-200 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Your response was synced to Firebase. Waiting for instructor explanation...</span>
+              <span>Your response was synced to Supabase. Waiting for instructor explanation...</span>
             </div>
             <span className="font-semibold text-blue-700 dark:text-blue-400 font-mono">{displayName}: Active</span>
           </div>

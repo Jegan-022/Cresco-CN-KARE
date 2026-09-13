@@ -429,7 +429,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
               </span>
               <span className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>REAL-TIME FIREBASE DB</span>
+                <span>REAL-TIME SUPABASE DB</span>
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
@@ -538,10 +538,10 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
               </div>
               <div>
                 <h3 className="font-bold text-base text-white">
-                  Cloud Firestore Database Is Not Activated
+                  Supabase Database Is Not Connected
                 </h3>
                 <p className="text-xs text-red-300">
-                  Firebase Project: <span className="font-mono font-bold">computernetworks-af026</span>
+                  Supabase Project: <span className="font-mono font-bold">VITE_SUPABASE_URL</span>
                 </p>
               </div>
             </div>
@@ -594,7 +594,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
             {loading ? <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" /> : students.filter(s => s.isOnline).length}
           </div>
           <div className="text-xs text-emerald-500/80 font-medium mt-1">
-            Active sessions in Firebase
+            Active sessions in Supabase
           </div>
         </div>
 
