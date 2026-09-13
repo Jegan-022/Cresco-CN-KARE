@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "Cresco CN - Computer Networks Learning Platform",
+  "short_name": "Cresco CN",
+  "description": "A clean, modern educational platform for college students mastering Computer Networks with offline progress persistence.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#2563eb",
+  "background_color": "#faf8ff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,261 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "Authenticated student or instructor profile data",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 120
+        },
+        "studentId": {
+          "type": "string",
+          "description": "KLU Student ID e.g. 99240040285",
+          "maxLength": 64
+        },
+        "college": {
+          "type": "string",
+          "description": "KL University",
+          "maxLength": 128
+        },
+        "course": {
+          "type": "string",
+          "description": "Enrolled course title",
+          "maxLength": 128
+        },
+        "year": {
+          "type": "string",
+          "description": "Academic year",
+          "maxLength": 32
+        },
+        "section": {
+          "type": "string",
+          "description": "Class section",
+          "maxLength": 32
+        },
+        "role": {
+          "type": "string",
+          "description": "User role (student or teacher)",
+          "enum": ["student", "teacher"]
+        },
+        "xp": {
+          "type": "number",
+          "description": "Total gamified XP earned by student"
+        },
+        "streak": {
+          "type": "number",
+          "description": "Learning streak days count"
+        },
+        "lessonsCompletedCount": {
+          "type": "number",
+          "description": "Number of completed lessons"
+        },
+        "courseProgressPercent": {
+          "type": "number",
+          "description": "Percentage course completion"
+        },
+        "quizAverage": {
+          "type": "number",
+          "description": "Average quiz score percentage"
+        },
+        "lastCompletedLessonId": {
+          "type": "string",
+          "description": "Last completed lesson identifier"
+        },
+        "lastLesson": {
+          "type": "string",
+          "description": "Last visited lesson title"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp string"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "lessonCompletions": {
+      "title": "Lesson Completion",
+      "description": "Record of a completed networking lecture or lab drill",
+      "type": "object",
+      "properties": {
+        "lessonId": {
+          "type": "string",
+          "description": "Unique lesson identifier",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the student",
+          "maxLength": 128
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Course identifier (e.g. cs455-comp-networks)",
+          "maxLength": 128
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Completion state"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO timestamp when lesson was finished"
+        },
+        "xpEarned": {
+          "type": "number",
+          "description": "XP awarded for completing this lesson"
+        }
+      },
+      "required": ["lessonId", "userId", "completed"]
+    },
+    "students": {
+      "title": "Student Progress Record",
+      "description": "Authenticated student academic progress, XP, streak, and curriculum completion metrics",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "KLU student email address",
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "description": "Student full name",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Student display name",
+          "maxLength": 128
+        },
+        "studentId": {
+          "type": "string",
+          "description": "KLU Student ID e.g. 99240040285",
+          "maxLength": 64
+        },
+        "college": {
+          "type": "string",
+          "description": "Academic Institution",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "description": "User role",
+          "enum": ["student", "teacher"]
+        },
+        "totalXP": {
+          "type": "number",
+          "description": "Total XP earned by the student"
+        },
+        "xp": {
+          "type": "number",
+          "description": "Gamified score"
+        },
+        "streak": {
+          "type": "number",
+          "description": "Current active daily learning streak"
+        },
+        "overallProgress": {
+          "type": "number",
+          "description": "Overall curriculum progress percentage (0-100)"
+        },
+        "unit3Progress": {
+          "type": "number",
+          "description": "Unit 3 progress percentage"
+        },
+        "unit4Progress": {
+          "type": "number",
+          "description": "Unit 4 progress percentage"
+        },
+        "unit5Progress": {
+          "type": "number",
+          "description": "Unit 5 progress percentage"
+        },
+        "lessonsCompleted": {
+          "type": "number",
+          "description": "Total count of lessons finished"
+        },
+        "modulesCompleted": {
+          "type": "number",
+          "description": "Total count of modules finished"
+        },
+        "completedUnits": {
+          "type": "number",
+          "description": "Count of units completed"
+        },
+        "quizAttempts": {
+          "type": "number",
+          "description": "Total quiz attempts"
+        },
+        "quizAverage": {
+          "type": "number",
+          "description": "Average quiz score percentage"
+        },
+        "currentUnit": {
+          "type": "number",
+          "description": "Current active unit number (3, 4, or 5)"
+        },
+        "currentModule": {
+          "type": "string",
+          "description": "ID of current module"
+        },
+        "lastLesson": {
+          "type": "string",
+          "description": "Last accessed lesson identifier"
+        },
+        "completedModules": {
+          "type": "array",
+          "description": "Array of completed curriculum module identifiers"
+        },
+        "unlockedUnits": {
+          "type": "array",
+          "description": "Array of unlocked unit IDs (e.g. unit-3, unit-4, unit-5)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO last update timestamp"
+        }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "entity": "users",
+      "description": "Isolated user profile collection locked to account owner"
+    },
+    "/users/{userId}/lessonCompletions/{lessonId}": {
+      "entity": "lessonCompletions",
+      "description": "Per-lesson completion status records synced immediately"
+    },
+    "/students/{userId}": {
+      "entity": "students",
+      "description": "Student academic progress and leaderboard tracking record"
+    }
+  }
+}

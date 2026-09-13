@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Real-time student leaderboard collection
+    match /students/{studentId} {
+      // Allow public read so all enrolled cohort members and friends see live standings
+      allow read: if true;
+      // Allow students to save and update their progress & XP
+      allow write: if request.auth != null || (studentId is string && studentId.size() > 0);
+    }
+
+    // Default authenticated access for user documents and quiz records
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
