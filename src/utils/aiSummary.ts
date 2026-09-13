@@ -4,7 +4,7 @@ import { fetchWithAuth } from '../lib/api';
 export interface LessonSummaryResult {
   bullets: string[];
   keyConcept: string;
-  source: 'gemini' | 'curriculum';
+  source: 'curriculum';
   generatedAt: string;
 }
 
@@ -130,7 +130,7 @@ export async function fetchLessonAISummary(lesson: Lesson, sectionTitle: string)
         return {
           bullets: data.bullets.slice(0, 3),
           keyConcept: data.keyConcept || lesson.keyTakeaway || 'Core Computer Networks Principle',
-          source: 'gemini',
+          source: 'curriculum',
           generatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
       }

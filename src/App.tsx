@@ -186,7 +186,7 @@ function MainApp() {
   };
 
   const handleNavigate = (tab: NavTab, lessonId?: string, sectionId?: number) => {
-    if (tab === 'guidemaster-select' || tab === 'companion-select') {
+    if (tab === 'companion-select') {
       setCurrentTab('home');
       return;
     }

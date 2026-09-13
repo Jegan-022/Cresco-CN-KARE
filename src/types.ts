@@ -30,8 +30,6 @@ export type NavTab =
   | '403'
   | '404'
   | 'companion-select'
-  | 'guidemaster-select'
-  | 'guidemaster-tutor'
   | 'prelaunch'
   | 'landing';
 
