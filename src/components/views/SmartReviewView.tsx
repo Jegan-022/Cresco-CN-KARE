@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { 
@@ -223,20 +223,22 @@ export const SmartReviewView: React.FC<SmartReviewViewProps> = ({
             })}
           </div>
 
-          {/* Byte Bot Guidance Panel */}
+          {/* Network Octopus Guidance Panel */}
           <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm flex items-center justify-center">
-            <ByteBot
-              pose="explaining"
-              size="lg"
-              showSpeech={true}
+            <CrescoMascot
+              pose="problem-solving"
+              size="xl"
+              animation="float"
+              withGlow
               speechText="Smart review targets concepts you hesitated on earlier. 5 minutes here prevents network amnesia!"
+              speechPosition="top"
             />
           </div>
         </div>
       ) : reviewCompleted ? (
         /* Review Complete Celebration */
         <div className="bg-white dark:bg-[#1F2937] border-2 border-[#35A86B] rounded-3xl p-8 text-center space-y-6 animate-scaleUp">
-          <ByteBot pose="celebrating" size="xl" className="justify-center" />
+          <CrescoMascot pose="achievement" size="2xl" animation="bounce" withGlow speechText="Weak nodes strengthened! Outstanding!" speechPosition="top" />
           <div>
             <span className="text-xs font-mono font-black text-[#35A86B] uppercase tracking-widest">
               SMART REVIEW COMPLETE

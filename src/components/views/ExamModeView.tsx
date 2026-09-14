@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Sparkles
 } from 'lucide-react';
+import { CrescoMascot } from '../brand/CrescoMascot';
 
 interface ExamModeViewProps {
   onNavigate: (tab: NavTab) => void;
@@ -225,17 +226,20 @@ export const ExamModeView: React.FC<ExamModeViewProps> = ({ onNavigate }) => {
           
           {/* Header */}
           <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-mono font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-widest">
-                <GraduationCap size={16} />
-                <span>FORMAL ASSESSMENT</span>
+            <div className="flex items-center gap-4">
+              <CrescoMascot pose="exam-mode" size="lg" animation="float" />
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-widest">
+                  <GraduationCap size={16} />
+                  <span>FORMAL ASSESSMENT</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#172033] dark:text-[#F9FAFB] tracking-tight mt-1">
+                  Exam Mode
+                </h1>
+                <p className="text-xs sm:text-sm font-medium text-[#64748B] dark:text-slate-400 mt-0.5">
+                  "Test what you've learned. Timed conditions, negative marks, and topic diagnostic evaluations."
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#172033] dark:text-[#F9FAFB] tracking-tight mt-1">
-                Exam Mode
-              </h1>
-              <p className="text-xs sm:text-sm font-medium text-[#64748B] dark:text-slate-400 mt-0.5">
-                "Test what you've learned. Timed conditions, negative marks, and topic diagnostic evaluations."
-              </p>
             </div>
 
             <div className="px-4 py-2 bg-[#F7F5F0] dark:bg-[#111827] rounded-2xl border border-[#E5E0D8] dark:border-slate-700 text-xs font-mono font-bold text-[#64748B]">

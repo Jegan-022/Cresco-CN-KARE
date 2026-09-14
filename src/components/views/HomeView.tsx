@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavTab } from '../../types';
 import { soundFx } from '../../utils/soundEffects';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { useAuth } from '../../context/AuthContext';
 import { ALL_MODULES } from '../../data/courseContent';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -205,33 +206,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
               </div>
 
-              {/* Isometric Floating Hardware Graphic */}
+              {/* Network Octopus Mascot */}
               <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
-                <div className="absolute inset-0 bg-surface-tint/30 rounded-full blur-2xl" />
-                <div className="relative w-36 h-36 rounded-2xl bg-surface-container-lowest/10 backdrop-blur-md p-3 flex flex-col items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-                  {/* 3D Node Mesh Glyph with Conic Emerald Texture */}
-                  <div 
-                    className="w-20 h-20 rounded-xl flex items-center justify-center shadow-[0_6px_0_0_#047857] text-white"
-                    style={{
-                      backgroundImage: 'conic-gradient(#10b981, #059669)',
-                      backgroundSize: '100% 100%',
-                      backgroundColor: '#10b981'
-                    }}
-                  >
-                    <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M12 3v6m0 6v6M3 12h6m6 0h6" />
-                      <circle cx="12" cy="3" r="1.5" />
-                      <circle cx="12" cy="21" r="1.5" />
-                      <circle cx="3" cy="12" r="1.5" />
-                      <circle cx="21" cy="12" r="1.5" />
-                    </svg>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <span className="font-label-md text-label-md text-on-primary block font-bold">Frame Buffer</span>
-                    <span className="font-body-sm text-body-sm text-primary-fixed text-[11px] block">8 Octets Queued</span>
-                  </div>
-                </div>
+                <div className="absolute inset-0 bg-surface-tint/20 rounded-full blur-3xl" />
+                <CrescoMascot
+                  pose={currentStreak >= 3 ? 'streak' : 'front'}
+                  size="hero"
+                  animation="float"
+                  withGlow
+                  speechText={`Let's conquer ${nextModule.title?.split('—')[0]?.trim() || 'the next module'}!`}
+                  speechPosition="left"
+                />
               </div>
             </div>
           </section>

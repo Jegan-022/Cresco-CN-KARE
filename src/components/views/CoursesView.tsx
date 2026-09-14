@@ -38,6 +38,15 @@ import {
 } from 'lucide-react';
 import { GooeyButton } from '../ui/GooeyButton';
 import { PacketIcon } from '../brand/NetworkNodeIcons';
+import { CrescoMascot, MascotPose } from '../brand/CrescoMascot';
+
+const getUnitMascotPose = (unitIdx: number, isPassed: boolean): MascotPose => {
+  if (isPassed) return 'achievement';
+  if (unitIdx === 0) return 'connected';    // Network Layer
+  if (unitIdx === 1) return 'security';     // Transport Layer
+  if (unitIdx === 2) return 'coding-lab';   // Application Layer
+  return 'front';
+};
 
 interface CoursesViewProps {
   course: Course;
@@ -142,6 +151,12 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
 
         {/* Course Progress Summary Capsule */}
         <div className="flex items-center gap-4 bg-white dark:bg-[#172033] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-xs shrink-0">
+          <CrescoMascot
+            pose={isCourseComplete ? 'achievement' : overallProgress > 50 ? 'levelup' : 'front'}
+            size="sm"
+            animation="float"
+            withGlow={isCourseComplete || overallProgress > 50}
+          />
           <div className="space-y-1">
             <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
               Overall Completion
@@ -266,16 +281,13 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
               {/* Unit Header Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3.5">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-bold text-xs border ${
-                      isQuizPassed
-                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                        : isUnlocked
-                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200'
-                    }`}
-                  >
-                    {isQuizPassed ? <Check size={18} className="stroke-[3]" /> : isUnlocked ? `U${unitIdx + 3}` : <Lock size={16} />}
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <CrescoMascot
+                      pose={getUnitMascotPose(unitIdx, isQuizPassed)}
+                      size="sm"
+                      animation={isQuizPassed ? 'glow' : 'float'}
+                      withGlow={isQuizPassed}
+                    />
                   </div>
 
                   <div>
@@ -471,17 +483,14 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
 
                 {/* Unit Final Challenge Exam Milestone Card */}
                 <div className="mt-8 p-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 ${
-                        isQuizPassed
-                          ? 'bg-emerald-500 text-white shadow-xs'
-                          : allModulesDone && isUnlocked
-                          ? 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      {allModulesDone || isQuizPassed ? <Award size={24} /> : <Lock size={20} />}
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 flex items-center justify-center">
+                      <CrescoMascot
+                        pose={isQuizPassed ? 'exam-excellent' : allModulesDone ? 'challenge' : 'boss'}
+                        size="md"
+                        animation={allModulesDone && !isQuizPassed ? 'bounce' : 'float'}
+                        withGlow={allModulesDone || isQuizPassed}
+                      />
                     </div>
                     <div>
                       <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

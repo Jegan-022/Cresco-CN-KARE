@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { 
@@ -240,17 +240,19 @@ export const NetworkChallengesView: React.FC<NetworkChallengesViewProps> = ({
               )}
             </div>
 
-            {/* Byte Companion */}
+            {/* Network Octopus Companion */}
             <div className="flex justify-center">
-              <ByteBot
-                pose={routingSuccess ? 'celebrating' : 'thinking'}
-                size="md"
-                showSpeech={true}
+              <CrescoMascot
+                pose={routingSuccess ? 'correct' : 'thinking'}
+                size="lg"
+                animation={routingSuccess ? 'bounce' : 'float'}
+                withGlow
                 speechText={
                   routingSuccess
                     ? 'Superb! Dynamic link-state algorithms always converge on the lowest cost metric.'
                     : 'Analyze both paths. One route is significantly faster!'
                 }
+                speechPosition="top"
               />
             </div>
 

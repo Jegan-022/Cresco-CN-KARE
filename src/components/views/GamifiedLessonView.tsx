@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ByteBot, BytePose } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { getLessonById } from '../lesson/lessonDatabase';
@@ -608,7 +609,7 @@ export const GamifiedLessonView: React.FC<GamifiedLessonViewProps> = ({
             {/* Instant Educational Feedback Panel */}
             {mcqState === 'correct' && (
               <div className="p-5 rounded-3xl bg-[#35A86B]/10 border-2 border-[#35A86B] flex items-center gap-4 animate-slideUp">
-                <ByteBot pose="celebrating" size="md" />
+                <CrescoMascot pose="correct" size="md" animation="bounce" withGlow />
                 <div>
                   <div className="text-base font-black text-[#35A86B] flex items-center gap-1.5">
                     <Sparkles size={18} />
@@ -623,7 +624,7 @@ export const GamifiedLessonView: React.FC<GamifiedLessonViewProps> = ({
 
             {mcqState === 'incorrect' && (
               <div className="p-5 rounded-3xl bg-[#F0A63A]/10 border-2 border-[#F0A63A] flex items-center gap-4 animate-slideUp">
-                <ByteBot pose="wrong" size="md" />
+                <CrescoMascot pose="wrong" size="md" animation="float" />
                 <div>
                   <div className="text-sm font-black text-[#B45309] dark:text-[#F0A63A]">
                     Not quite.
@@ -817,7 +818,16 @@ export const GamifiedLessonView: React.FC<GamifiedLessonViewProps> = ({
         {isLessonComplete && (
           <div className="bg-white dark:bg-[#1F2937] border-2 border-[#35A86B] rounded-3xl p-6 sm:p-10 text-center space-y-6 animate-scaleUp">
             
-            <ByteBot pose="celebrating" size="xl" className="justify-center" />
+            <div className="flex justify-center">
+              <CrescoMascot
+                pose="achievement"
+                size="2xl"
+                animation="bounce"
+                withGlow
+                speechText="Connection Complete! Outstanding!"
+                speechPosition="top"
+              />
+            </div>
 
             <div>
               <span className="text-xs font-mono font-black text-[#35A86B] uppercase tracking-widest">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { 
@@ -346,12 +347,13 @@ export const BossChallengeView: React.FC<BossChallengeViewProps> = ({
 
         </div>
 
-        {/* Byte Bot Companion in Boss Battle Pose */}
+        {/* Network Octopus Companion in Boss Battle Pose */}
         <div className="rounded-3xl bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 p-6 shadow-sm flex items-center justify-center">
-          <ByteBot
-            pose={stage === 5 ? 'celebrating' : 'boss-battle'}
-            size="lg"
-            showSpeech={true}
+          <CrescoMascot
+            pose={stage === 5 ? 'achievement' : 'boss'}
+            size="xl"
+            animation={stage === 5 ? 'bounce' : 'float'}
+            withGlow
             speechText={
               stage === 1
                 ? 'Check the trunk link! Router 1 and Router 2 cannot handshake.'
@@ -363,6 +365,7 @@ export const BossChallengeView: React.FC<BossChallengeViewProps> = ({
                 ? 'Send the verification packet across the new route!'
                 : 'Spectacular work, Network Engineer! The network is safe.'
             }
+            speechPosition="top"
           />
         </div>
 

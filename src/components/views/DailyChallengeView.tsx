@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { 
@@ -188,17 +188,19 @@ export const DailyChallengeView: React.FC<DailyChallengeViewProps> = ({
 
       </div>
 
-      {/* 3. Byte Bot Commentary */}
+      {/* 3. Network Octopus Commentary */}
       <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm flex items-center justify-center">
-        <ByteBot
-          pose={isCorrect ? 'celebrating' : 'thinking'}
-          size="lg"
-          showSpeech={true}
+        <CrescoMascot
+          pose={isCorrect ? 'correct' : 'challenge'}
+          size="xl"
+          animation={isCorrect ? 'bounce' : 'float'}
+          withGlow
           speechText={
             isCorrect
               ? 'Spot on! DNS is the phonebook of the Internet, translating human names into 32-bit or 128-bit IP addresses.'
               : 'Inspect the UDP port number 53 and query payload!'
           }
+          speechPosition="top"
         />
       </div>
 

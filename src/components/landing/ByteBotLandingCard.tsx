@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bot, Sparkles, MessageSquare, Zap, CheckCircle2 } from 'lucide-react';
+import { CrescoMascot } from '../brand/CrescoMascot';
 
 interface QnA {
   question: string;
@@ -52,18 +53,18 @@ export const ByteBotLandingCard: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] border border-white/20">
-            <Bot size={24} />
+          <div className="shrink-0 flex items-center justify-center">
+            <CrescoMascot pose="thinking" size="md" animation="float" withGlow />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-extrabold text-white">ByteBot</h3>
+              <h3 className="text-xl font-extrabold text-white">Network Octopus Companion</h3>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold">
-                AI Companion Live
+                Live Companion
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Personal Computer Networks Interactive Learning Companion
+              Personal Computer Networks Interactive Learning & Guidance Companion
             </p>
           </div>
         </div>
@@ -99,11 +100,11 @@ export const ByteBotLandingCard: React.FC = () => {
         </div>
       </div>
 
-      {/* ByteBot Live Response Bubble */}
+      {/* Octopus Live Response Bubble */}
       <div className="mt-5 p-5 rounded-xl bg-[#090A12] border border-cyan-500/20 relative shadow-inner">
         <div className="flex items-center gap-2 mb-2 text-cyan-400 text-xs font-mono font-bold">
-          <Sparkles size={14} />
-          <span>ByteBot Explanation:</span>
+          <CrescoMascot pose="connected" size="xs" animation="float" />
+          <span>Octopus Explanation:</span>
           <span className="text-[10px] text-slate-500 uppercase tracking-wider ml-auto">
             {selectedQnA.category}
           </span>

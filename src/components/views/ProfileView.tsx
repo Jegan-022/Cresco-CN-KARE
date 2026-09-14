@@ -1,6 +1,7 @@
 import React from 'react';
 import { Course, NavTab } from '../../types';
 import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { 
   Flame, 
@@ -89,7 +90,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate }) => {
       <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
           {/* Byte Mascot Companion */}
-          <ByteBot pose="celebrating" size="md" />
+          <CrescoMascot pose="front" size="lg" animation="float" withGlow />
 
           <div>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">

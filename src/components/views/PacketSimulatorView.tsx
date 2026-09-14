@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { 
   Laptop, 
@@ -285,17 +285,19 @@ export const PacketSimulatorView: React.FC<PacketSimulatorViewProps> = ({ onBack
           </p>
         </div>
 
-        {/* Byte Bot Companion */}
+        {/* Network Octopus Mascot Companion */}
         <div className="rounded-3xl bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 p-6 shadow-sm flex items-center justify-center">
-          <ByteBot
-            pose={protocol === 'TCP' ? 'explaining' : 'thinking'}
-            size="lg"
-            showSpeech={true}
+          <CrescoMascot
+            pose={protocol === 'TCP' ? 'connected' : 'problem-solving'}
+            size="xl"
+            animation="float"
+            withGlow
             speechText={
               protocol === 'TCP'
                 ? 'TCP establishes connection trust before sending data.'
                 : 'UDP does not wait for an ACK. Faster, but vulnerable to dropped packets!'
             }
+            speechPosition="top"
           />
         </div>
 

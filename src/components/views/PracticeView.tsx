@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { soundFx } from '../../utils/audio';
 import { SplitMcqPlayer, SplitMcqQuestionData } from '../quiz/SplitMcqPlayer';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { 
   Activity, 
   RefreshCw, 
@@ -376,17 +377,25 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
         {/* Practice Header & Mastery Matrix */}
         <div className="space-y-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-mono font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-widest">
-                <Target className="w-4 h-4" />
-                <span>SKILL REINFORCEMENT</span>
+            <div className="flex items-center gap-4">
+              <CrescoMascot
+                pose="problem-solving"
+                size="md"
+                animation="float"
+                withGlow
+              />
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-widest">
+                  <Target className="w-4 h-4" />
+                  <span>SKILL REINFORCEMENT</span>
+                </div>
+                <h1 className="text-3xl font-black text-[#172033] dark:text-[#F9FAFB] tracking-tight mt-1">
+                  PRACTICE
+                </h1>
+                <p className="text-sm font-medium text-[#64748B] dark:text-[#9CA3AF] mt-0.5">
+                  "Strengthen your weakest connections."
+                </p>
               </div>
-              <h1 className="text-3xl font-black text-[#172033] dark:text-[#F9FAFB] tracking-tight mt-1">
-                PRACTICE
-              </h1>
-              <p className="text-sm font-medium text-[#64748B] dark:text-[#9CA3AF] mt-0.5">
-                "Strengthen your weakest connections."
-              </p>
             </div>
 
             {activeTab === 'quiz' && quizStarted && !isQuizCompleted && (
@@ -911,8 +920,15 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                 
                 {/* Result Card */}
                 <div className="bg-white dark:bg-[#172033] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs relative overflow-hidden">
-                  <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center mb-6 border border-amber-200 dark:border-amber-500/20">
-                    <Trophy className="w-10 h-10" />
+                  <div className="mb-6 flex justify-center">
+                    <CrescoMascot
+                      pose={Math.round((score / (quizQuestions.length || 1)) * 100) >= 90 ? 'exam-excellent' : Math.round((score / (quizQuestions.length || 1)) * 100) >= 70 ? 'correct' : 'thinking'}
+                      size="xl"
+                      animation="bounce"
+                      withGlow
+                      speechText={Math.round((score / (quizQuestions.length || 1)) * 100) >= 70 ? "Great job mastering these questions!" : "Keep practicing, you've got this!"}
+                      speechPosition="top"
+                    />
                   </div>
 
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">

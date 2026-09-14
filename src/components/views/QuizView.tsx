@@ -3,6 +3,7 @@ import { soundFx } from '../../utils/audio';
 import { ALL_MODULE_QUIZ_QUESTIONS } from '../../data/courseContent';
 import { SplitMcqPlayer, SplitMcqQuestionData } from '../quiz/SplitMcqPlayer';
 import { Bolt, Calculator, Layers, Trophy, Sparkles, CheckCircle2 } from 'lucide-react';
+import { CrescoMascot } from '../brand/CrescoMascot';
 
 interface QuizViewProps {
   onStartBlitz?: () => void;
@@ -41,16 +42,24 @@ export const QuizView: React.FC<QuizViewProps> = ({ onStartBlitz }) => {
       
       {/* Header Banner */}
       <div className="bg-white dark:bg-[#101422] p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-            HIGH-YIELD ASSESSMENT ARENA
-          </span>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
-            RFC Protocol & Practice Quiz
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Master RFC header decodes, CIDR bitwise arithmetic, and state-space transport layer transitions.
-          </p>
+        <div className="flex items-center gap-4">
+          <CrescoMascot
+            pose={sessionCompleted ? (sessionScore && sessionScore.accuracy >= 80 ? 'exam-excellent' : 'exam-done') : 'thinking'}
+            size="lg"
+            animation={sessionCompleted ? 'bounce' : 'float'}
+            withGlow={sessionCompleted && sessionScore !== null && sessionScore.accuracy >= 80}
+          />
+          <div>
+            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+              HIGH-YIELD ASSESSMENT ARENA
+            </span>
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
+              RFC Protocol & Practice Quiz
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Master RFC header decodes, CIDR bitwise arithmetic, and state-space transport layer transitions.
+            </p>
+          </div>
         </div>
 
         {/* Tab Selector */}

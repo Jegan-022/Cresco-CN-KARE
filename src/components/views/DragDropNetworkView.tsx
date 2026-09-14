@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { 
@@ -282,7 +282,7 @@ export const DragDropNetworkView: React.FC<DragDropNetworkViewProps> = ({
       {isComplete && (
         <div className="bg-[#35A86B]/15 border-2 border-[#35A86B] rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 animate-scaleUp">
           <div className="flex items-center gap-4">
-            <ByteBot pose="celebrating" size="md" />
+            <CrescoMascot pose="connected" size="lg" animation="bounce" withGlow />
             <div>
               <div className="text-lg font-black text-[#35A86B] flex items-center gap-2">
                 <Sparkles size={20} />

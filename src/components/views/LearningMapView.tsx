@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavTab } from '../../types';
-import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -237,13 +237,21 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
 
         {/* Active Unit Banner */}
         <div className="mt-5 pt-5 border-t border-[#EFECE6] dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-xs font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase font-mono">
-              {activeUnitTab === 3 ? 'UNIT III — NETWORK LAYER' : activeUnitTab === 4 ? 'UNIT IV — TRANSPORT LAYER' : 'UNIT V — APPLICATION LAYER'}
-            </span>
-            <h2 className="text-lg font-black text-[#172033] dark:text-[#F9FAFB]">
-              {activeUnitTab === 3 ? '"Find the best path."' : activeUnitTab === 4 ? '"Move data reliably."' : '"Explore the Internet."'}
-            </h2>
+          <div className="flex items-center gap-3">
+            <CrescoMascot
+              pose={activeUnitTab === 3 ? 'connected' : activeUnitTab === 4 ? 'security' : 'coding-lab'}
+              size="sm"
+              animation="float"
+              withGlow
+            />
+            <div>
+              <span className="text-xs font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase font-mono">
+                {activeUnitTab === 3 ? 'UNIT III — NETWORK LAYER' : activeUnitTab === 4 ? 'UNIT IV — TRANSPORT LAYER' : 'UNIT V — APPLICATION LAYER'}
+              </span>
+              <h2 className="text-lg font-black text-[#172033] dark:text-[#F9FAFB]">
+                {activeUnitTab === 3 ? '"Find the best path."' : activeUnitTab === 4 ? '"Move data reliably."' : '"Explore the Internet."'}
+              </h2>
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
@@ -292,13 +300,17 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
                 {/* Node Tile */}
                 <div className={`relative z-10 transform ${translateX} transition-all duration-200`}>
                   
-                  {/* Mascot BYTE floating above current node */}
+                  {/* Network Octopus Mascot floating above current node */}
                   {isCurrent && (
-                    <div className="absolute -top-20 left-1/2 -translate-x-1/2 pointer-events-none animate-bounce">
-                      <ByteBot pose="explaining" size="sm" />
-                      <div className="bg-[#3157D5] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-xs -mt-1">
-                        YOU ARE HERE
-                      </div>
+                    <div className="absolute -top-24 left-1/2 -translate-x-1/2 pointer-events-none flex flex-col items-center z-20">
+                      <CrescoMascot
+                        pose="front"
+                        size="sm"
+                        animation="bounce"
+                        withGlow
+                        speechText="YOU ARE HERE"
+                        speechPosition="top"
+                      />
                     </div>
                   )}
 

@@ -29,6 +29,7 @@ import { InteractiveTerminal } from '../landing/InteractiveTerminal';
 import { SubnetCalculatorWidget } from '../landing/SubnetCalculatorWidget';
 import { InteractiveOsiExplorer } from '../landing/InteractiveOsiExplorer';
 import { ByteBotLandingCard } from '../landing/ByteBotLandingCard';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { ThemeToggleSwitch } from '../ThemeToggleSwitch';
 
 interface LandingViewProps {
@@ -183,10 +184,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
         <div className="grid lg:grid-cols-12 gap-12 items-center">
           {/* Left Hero Content */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Academic Eyebrow Pill */}
+            {/* Academic Eyebrow Pill with Mascot */}
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-md text-xs font-mono text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-bold tracking-wider uppercase">CRESCO CN • KLU CSE</span>
+              <CrescoMascot pose="front" size="xs" animation="float" />
+              <span className="font-bold tracking-wider uppercase">CRESCO CN • NETWORK OCTOPUS COMPANION</span>
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.05]">
@@ -200,7 +201,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 max-w-xl leading-relaxed font-normal">
-              Master the physical wire to the application layer. Trace live TCP 3-way handshakes, calculate CIDR subnet masks interactively, and conquer boss exams with ByteBot AI.
+              Master the physical wire to the application layer. Trace live TCP 3-way handshakes, calculate CIDR subnet masks interactively, and conquer boss exams with your gamified Network Octopus Companion.
             </p>
 
             {/* CTAs */}
