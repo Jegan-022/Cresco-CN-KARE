@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured, fromSupabaseStudentRow } from "../../lib/supabase";
+import { db } from "../../lib/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Trophy, 
@@ -376,68 +377,55 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
   }, [currentUser, userProfile]);
 
   // Real-time Firestore sync listener across all students (clean, read-only subscription)
-  const fetchStudents = useCallback(async () => {
-    if (!isSupabaseConfigured()) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*');
-
-      if (!error && data) {
-        const cloudData: FirestoreStudentEntry[] = data.map((row: any) => {
-          const parsed = fromSupabaseStudentRow(row);
-          return {
-            uid: parsed.uid,
-            ...parsed,
-            resetEpoch: parsed.resetEpoch,
-            totalXP: parsed.totalXP,
-            xp: parsed.xp,
-            overallProgress: parsed.overallProgress,
-            modulesCompleted: parsed.modulesCompleted,
-            courseCompletedAt: parsed.courseCompletedAt,
-            updatedAt: parsed.updatedAt,
-            isOnline: parsed.isOnline,
-            lastLogin: parsed.lastLogin,
-          };
-        });
-        setRemoteStudents(cloudData);
-        setLastSyncTime(new Date());
-      }
-    } catch (err) {
-      console.warn("Supabase leaderboard query error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchStudents();
+    setLoading(true);
+    let unsubscribe = () => {};
 
-    if (!isSupabaseConfigured()) return;
-
-    let channel: any = null;
     try {
-      channel = supabase
-        .channel('public:students_leaderboard')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'students' },
-          () => {
-            fetchStudents();
-          }
-        )
-        .subscribe();
+      const studentsRef = collection(db, 'students');
+      unsubscribe = onSnapshot(
+        studentsRef,
+        (snapshot) => {
+          const cloudData: FirestoreStudentEntry[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            const isCurrentEpoch = data.resetEpoch === GLOBAL_RESET_EPOCH;
+            const completedList = isCurrentEpoch ? (data.completedModules || []) : [];
+            const calculatedXP = isCurrentEpoch ? (data.totalXP ?? data.xp ?? 0) : 0;
+            const calculatedProgress = isCurrentEpoch ? (data.overallProgress ?? Math.min(100, Math.round((completedList.length / (TOTAL_MODULES_COUNT || 30)) * 100))) : 0;
+
+            cloudData.push({
+              uid: docSnap.id,
+              ...data,
+              resetEpoch: data.resetEpoch,
+              totalXP: calculatedXP,
+              xp: calculatedXP,
+              overallProgress: calculatedProgress,
+              modulesCompleted: isCurrentEpoch ? (data.modulesCompleted ?? completedList.length) : 0,
+              courseCompletedAt: data.courseCompletedAt || data.completedAt,
+              updatedAt: data.updatedAt,
+              isOnline: !!data.isOnline,
+              lastLogin: data.lastLogin,
+            });
+          });
+          setRemoteStudents(cloudData);
+          setLastSyncTime(new Date());
+          setLoading(false);
+        },
+        (err) => {
+          console.warn("Real-time leaderboard snapshot fallback to local:", err);
+          setLoading(false);
+        }
+      );
     } catch (err) {
-      console.warn("Real-time leaderboard listener fallback:", err);
+      console.warn("Failed to attach leaderboard listener:", err);
+      setLoading(false);
     }
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      unsubscribe();
     };
-  }, [fetchStudents]);
+  }, []);
 
   // Listen to cross-tab storage changes and custom XP updates
   useEffect(() => {

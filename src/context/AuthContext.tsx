@@ -1,10 +1,21 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
-  supabase, 
-  isSupabaseConfigured, 
-  toSupabaseStudentRow, 
-  fromSupabaseStudentRow 
-} from '../lib/supabase';
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  updateProfile,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  deleteUser
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, increment, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 import { AlertTriangle, X } from 'lucide-react';
 import { fetchWithAuth } from '../lib/api';
 import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } from '../config/developers';
@@ -18,13 +29,6 @@ export const extractStudentId = (email: string): string => {
   const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@klu\.ac\.in$/i);
   return match ? match[1] : email.split('@')[0];
 };
-
-export interface AuthUser {
-  uid: string;
-  email?: string | null;
-  displayName?: string | null;
-  getIdToken?: () => Promise<string>;
-}
 
 export interface UserProfileData {
   uid: string;
@@ -66,7 +70,7 @@ export interface UserProfileData {
 export const GLOBAL_RESET_EPOCH = '2026_09_RESET_SCRATCH_V1';
 
 interface AuthContextType {
-  currentUser: AuthUser | null;
+  currentUser: User | null;
   userProfile: UserProfileData | null;
   loading: boolean;
   authError: string | null;
@@ -139,16 +143,16 @@ const createZeroStudentState = (
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showDomainError, setShowDomainError] = useState(false);
-  const channelRef = useRef<any>(null);
+  const userDocUnsubRef = useRef<(() => void) | null>(null);
   const clearAuthError = () => setAuthError(null);
 
-  // Fetch current student's profile from Supabase with resilient local fallback
-  const syncAndFetchProfile = async (user: AuthUser, fallbackName?: string, fallbackRole?: 'student' | 'teacher' | 'developer') => {
+  // Fetch current student's profile from Firestore with timeout resilience
+  const syncAndFetchProfile = async (user: User, fallbackName?: string, fallbackRole?: 'student' | 'teacher' | 'developer') => {
     let studentId = extractStudentId(user.email || '');
     if (user.uid.startsWith('dev_')) {
       const devCandidate = user.uid.replace(/^dev_/, '');
@@ -198,135 +202,144 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(user);
     setUserProfile(currentProfile);
 
-    // 2. Sync with Supabase Database
-    if (isSupabaseConfigured()) {
-      try {
-        const { data: remoteRow, error } = await supabase
-          .from('students')
-          .select('*')
-          .eq('uid', user.uid)
-          .maybeSingle();
+    try {
+      const userRef = doc(db, 'students', user.uid);
+      const getDocPromise = getDoc(userRef);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore timeout')), 2500)
+      );
+      const snap = await Promise.race([getDocPromise, timeoutPromise]);
 
-        if (error || !remoteRow) {
-          // Document doesn't exist yet: insert initial profile
-          const payload = toSupabaseStudentRow({
-            ...currentProfile,
-            uid: user.uid,
-            isOnline: true,
-            lastLogin: new Date().toISOString(),
-          });
-          await supabase.from('students').upsert(payload);
-          setUserProfile(currentProfile);
-        } else {
-          const remoteData = fromSupabaseStudentRow(remoteRow);
-
-          const needsReset = 
-            remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
-            (remoteData.totalXP || 0) >= 9000 || 
-            (remoteData.streak || 0) >= 90 || 
-            (remoteData.completedUnits >= 3 && (remoteData.completedModules || []).length === 0);
-
-          if (needsReset) {
-            console.warn("Resetting student profile to scratch in Supabase:", user.uid);
-            const resetPayload = toSupabaseStudentRow({
-              ...zeroState,
-              uid: user.uid,
-              studentId,
-              role: isDev ? 'developer' : (remoteData.role || 'student'),
-              resetEpoch: GLOBAL_RESET_EPOCH,
-              updatedAt: new Date().toISOString()
-            });
-            await supabase.from('students').upsert(resetPayload);
-            setUserProfile(zeroState);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(storageKey, JSON.stringify(zeroState));
-            }
-          } else {
-            // Intelligently merge remote data with local cache
-            const localModules = currentProfile.completedModules || [];
-            const remoteModules = remoteData.completedModules || [];
-            const mergedModules = Array.from(new Set([...localModules, ...remoteModules]));
-            const mergedXP = Math.max(
-              currentProfile.totalXP || 0, 
-              currentProfile.xp || 0,
-              remoteData.totalXP || 0, 
-              remoteData.xp || 0
-            );
-
-            let calculatedCompletedUnits = remoteData.completedUnits || 0;
-            if (mergedModules.length === 0 && (remoteData.completedSteps || []).filter((s: string) => s.startsWith('quiz_')).length === 0) {
-              calculatedCompletedUnits = 0;
-            }
-
-            const isFinished = mergedModules.length >= (ALL_MODULES.length || 30);
-            const completionTime = remoteData.courseCompletedAt || currentProfile.courseCompletedAt || (isFinished ? (currentProfile.updatedAt || new Date().toISOString()) : undefined);
-
-            const profile: UserProfileData = {
-              ...zeroState,
-              ...remoteData,
-              ...currentProfile,
-              resetEpoch: GLOBAL_RESET_EPOCH,
-              role: isDev ? 'developer' : (remoteData.role || currentProfile.role || zeroState.role),
-              completedModules: mergedModules,
-              totalXP: mergedXP,
-              xp: mergedXP,
-              completedUnits: calculatedCompletedUnits,
-              modulesCompleted: mergedModules.length,
-              overallProgress: Math.min(100, Math.round((mergedModules.length / (ALL_MODULES.length || 30)) * 100)),
-              ...(completionTime ? { courseCompletedAt: completionTime } : {}),
-              updatedAt: new Date().toISOString()
-            };
-            
-            setUserProfile(profile);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(storageKey, JSON.stringify(profile));
-              if (isDev) {
-                localStorage.setItem('klu_active_dev_id', studentId);
-              }
-            }
-
-            // Keep Supabase in sync with merged state
-            await supabase.from('students').upsert(toSupabaseStudentRow({
-              ...profile,
-              isOnline: true,
-              lastLogin: new Date().toISOString(),
-            }));
-          }
-        }
-
-        // Attach Realtime listener for active user row
-        if (channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        }
-
-        channelRef.current = supabase
-          .channel(`student_realtime_${user.uid}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'students',
-              filter: `uid=eq.${user.uid}`,
-            },
-            (payload) => {
-              if (payload.new) {
-                const liveData = fromSupabaseStudentRow(payload.new);
-                if (!isDev && (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000)) return;
-                setUserProfile((prev) => prev ? { ...prev, ...liveData } : liveData);
-              }
-            }
-          )
-          .subscribe();
-
-      } catch (error) {
-        console.warn('Supabase profile sync fallback (using local cache):', error);
+      if (!snap.exists()) {
+        setDoc(userRef, { 
+          ...currentProfile, 
+          uid: user.uid,
+          resetEpoch: GLOBAL_RESET_EPOCH,
+          isOnline: true,
+          lastLogin: serverTimestamp(),
+          createdAt: serverTimestamp(), 
+          updatedAt: serverTimestamp() 
+        }, { merge: true }).catch(() => {});
         setUserProfile(currentProfile);
-      }
-    }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, JSON.stringify(currentProfile));
+        }
+      } else {
+        const remoteData = snap.data() as any;
+        
+        // Reset if remote doc has pre-reset epoch or corrupted stats
+        const needsReset = 
+          remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
+          (remoteData.totalXP || 0) >= 9000 || 
+          (remoteData.streak || 0) >= 90 || 
+          (remoteData.completedUnits >= 3 && (remoteData.completedModules || []).length === 0);
 
-    setLoading(false);
+        if (needsReset) {
+          console.warn("Resetting student profile to scratch in Firestore:", user.uid);
+          await setDoc(userRef, {
+            ...zeroState,
+            uid: user.uid,
+            studentId,
+            role: isDev ? 'developer' : (remoteData.role || 'student'),
+            resetEpoch: GLOBAL_RESET_EPOCH,
+            updatedAt: serverTimestamp()
+          });
+          setUserProfile(zeroState);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, JSON.stringify(zeroState));
+          }
+        } else {
+          // Intelligently merge remote data with local cache
+          const localModules = currentProfile.completedModules || [];
+          const remoteModules = remoteData.completedModules || [];
+          const mergedModules = Array.from(new Set([...localModules, ...remoteModules]));
+          const mergedXP = Math.max(
+            currentProfile.totalXP || 0, 
+            currentProfile.xp || 0,
+            remoteData.totalXP || 0, 
+            remoteData.xp || 0
+          );
+
+          let calculatedCompletedUnits = remoteData.completedUnits || 0;
+          if (mergedModules.length === 0 && (remoteData.completedSteps || []).filter((s: string) => s.startsWith('quiz_')).length === 0) {
+            calculatedCompletedUnits = 0;
+          }
+
+          const isFinished = mergedModules.length >= (ALL_MODULES.length || 30);
+          const completionTime = remoteData.courseCompletedAt || currentProfile.courseCompletedAt || (isFinished ? (currentProfile.updatedAt || new Date().toISOString()) : undefined);
+
+          const profile: UserProfileData = {
+            ...zeroState,
+            ...remoteData,
+            ...currentProfile,
+            resetEpoch: GLOBAL_RESET_EPOCH,
+            role: isDev ? 'developer' : (remoteData.role || currentProfile.role || zeroState.role),
+            completedModules: mergedModules,
+            totalXP: mergedXP,
+            xp: mergedXP,
+            completedUnits: calculatedCompletedUnits,
+            modulesCompleted: mergedModules.length,
+            overallProgress: Math.min(100, Math.round((mergedModules.length / (ALL_MODULES.length || 30)) * 100)),
+            ...(completionTime ? { courseCompletedAt: completionTime } : {}),
+            updatedAt: new Date().toISOString()
+          };
+          
+          setUserProfile(profile);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, JSON.stringify(profile));
+            if (isDev) {
+              localStorage.setItem('klu_active_dev_id', studentId);
+            }
+          }
+
+          // Keep remote in sync with the merged state and set active presence
+          setDoc(userRef, {
+            name: profile.name || profile.displayName,
+            displayName: profile.displayName || profile.name,
+            email: profile.email,
+            studentId: profile.studentId,
+            college: profile.college || 'KLU',
+            role: isDev ? 'developer' : (profile.role || 'student'),
+            completedModules: mergedModules,
+            totalXP: profile.totalXP,
+            xp: profile.xp,
+            completedUnits: profile.completedUnits,
+            modulesCompleted: mergedModules.length,
+            overallProgress: profile.overallProgress,
+            ...(profile.courseCompletedAt ? { courseCompletedAt: profile.courseCompletedAt } : {}),
+            isOnline: true,
+            lastLogin: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true }).catch(() => {});
+        }
+      }
+
+      // Attach real-time snapshot listener on the active user doc
+      try {
+        if (userDocUnsubRef.current) {
+          userDocUnsubRef.current();
+          userDocUnsubRef.current = null;
+        }
+        userDocUnsubRef.current = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const liveData = docSnap.data() as any;
+            if (!isDev && (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000)) return;
+            if ((liveData.totalXP || 0) >= 9000) return;
+            if (liveData.completedUnits >= 3 && (!liveData.completedModules || liveData.completedModules.length === 0)) {
+              liveData.completedUnits = 0;
+            }
+            setUserProfile((prev) => prev ? { ...prev, ...liveData } : liveData);
+          }
+        });
+      } catch (e) {
+        console.warn('Real-time profile subscription failed:', e);
+      }
+    } catch (error) {
+      console.warn('Firestore profile sync fallback (using local cache):', error);
+      setUserProfile(currentProfile);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -351,10 +364,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (activeDevId && isAuthorizedDeveloper(activeDevId)) {
       const devInfo = getDeveloperProfile(activeDevId);
       const uid = `dev_${devInfo.id.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-      const syntheticDevUser: AuthUser = {
+      const syntheticDevUser: any = {
         uid,
         email: devInfo.email || `${activeDevId.toLowerCase()}@klu.ac.in`,
         displayName: devInfo.name,
+        emailVerified: true,
         getIdToken: async () => `token_${uid}`,
       };
       const zeroDev = createZeroStudentState(
@@ -381,6 +395,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(syntheticDevUser);
       setUserProfile(devProfile);
       setLoading(false);
+      // Fetch genuine remote Firestore data in background
       syncAndFetchProfile(syntheticDevUser, devInfo.name, 'developer');
       return;
     }
@@ -396,10 +411,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.removeItem(`klu_profile_${activeStudentId}`);
             localStorage.removeItem('klu_active_student_id');
           } else {
-            const syntheticUser: AuthUser = {
+            const syntheticUser: any = {
               uid: profile.uid,
               email: profile.email,
               displayName: profile.name || profile.displayName,
+              emailVerified: true,
               getIdToken: async () => `token_${profile.uid}`,
             };
             setCurrentUser(syntheticUser);
@@ -412,49 +428,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Supabase auth state change listener
-    let authListener: any = null;
-    if (isSupabaseConfigured()) {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user) {
-          const email = (session.user.email || '').toLowerCase().trim();
+    // Handle redirect result if user was redirected for Google Sign-in
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          const email = (result.user.email || '').toLowerCase().trim();
           if (!KLU_EMAIL_REGEX.test(email)) {
-            await supabase.auth.signOut();
+            await signOut(auth);
             setShowDomainError(true);
             setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
             return;
           }
-
-          const authUser: AuthUser = {
-            uid: session.user.id,
-            email: session.user.email,
-            displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.display_name || email.split('@')[0],
-            getIdToken: async () => session.access_token,
-          };
-          setCurrentUser(authUser);
-          syncAndFetchProfile(authUser);
-        } else {
-          const hasDev = typeof window !== 'undefined' && localStorage.getItem('klu_active_dev_id');
-          const hasLocal = typeof window !== 'undefined' && localStorage.getItem('klu_active_student_id');
-          if (!hasDev && !hasLocal) {
-            setCurrentUser(null);
-            setUserProfile(null);
-          }
-          setLoading(false);
+          await syncAndFetchProfile(result.user);
         }
+      })
+      .catch((err) => {
+        console.warn('Redirect auth result error:', err);
       });
-      authListener = data?.subscription;
-    }
 
-    // Safety timeout: ensure loader never hangs longer than 2.5 seconds
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const email = (user.email || '').toLowerCase().trim();
+        const isGoogle = user.providerData?.some((p) => p.providerId === 'google.com');
+        if (isGoogle && !KLU_EMAIL_REGEX.test(email)) {
+          await signOut(auth);
+          setShowDomainError(true);
+          setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
+          return;
+        }
+        setCurrentUser(user);
+        syncAndFetchProfile(user);
+      } else {
+        const hasDev = typeof window !== 'undefined' && localStorage.getItem('klu_active_dev_id');
+        const hasLocal = typeof window !== 'undefined' && localStorage.getItem('klu_active_student_id');
+        if (!hasDev && !hasLocal) {
+          setCurrentUser(null);
+          setUserProfile(null);
+        }
+        setLoading(false);
+      }
+    });
+
+    // Safety timeout: ensure BootTerminal never hangs longer than 2.5 seconds
     const safetyTimer = setTimeout(() => {
       setLoading(false);
     }, 2500);
 
     return () => {
       clearTimeout(safetyTimer);
-      if (authListener) authListener.unsubscribe();
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      unsubscribeAuth();
     };
   }, []);
 
@@ -480,15 +502,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('students')
-          .update({ portal_password: cleanPassword, updated_at: new Date().toISOString() })
-          .eq('uid', uid);
-      } catch (err) {
-        console.warn('Supabase password reset fallback:', err);
+    try {
+      const userRef = doc(db, 'students', uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        await updateDoc(userRef, { portalPassword: cleanPassword, updatedAt: serverTimestamp() });
       }
+    } catch (err) {
+      console.warn('Firestore password reset fallback:', err);
     }
   };
 
@@ -534,13 +555,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(msg);
     }
 
-    // If ID belongs to an authorized developer, route through developer login automatically
+    // If ID belongs to an authorized developer, route through developer login automatically!
     if (isAuthorizedDeveloper(studentId) || isAuthorizedDeveloper(email)) {
       await loginWithDeveloperId(studentId, password);
       return;
     }
 
-    // Password persistence with expected password
+    // Password persistence with new password
     const pwdStorageKey = `klu_pwd_${studentId}`;
     if (typeof window !== 'undefined') {
       localStorage.setItem(pwdStorageKey, expectedPassword);
@@ -549,10 +570,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const name = studentName || (rosterStudent ? rosterStudent.name : `Student (${studentId})`);
     const uid = `klu_${studentId}`;
 
-    const syntheticUser: AuthUser = {
+    const syntheticUser: any = {
       uid,
       email,
       displayName: name,
+      emailVerified: true,
       getIdToken: async () => `token_${uid}`,
     };
 
@@ -576,56 +598,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Connect to Supabase database
-    if (isSupabaseConfigured()) {
-      try {
-        const { data: remoteRow } = await supabase
-          .from('students')
-          .select('*')
-          .eq('uid', uid)
-          .maybeSingle();
+    // Connect to real-time Firestore database
+    try {
+      const userRef = doc(db, 'students', uid);
+      const snap = await getDoc(userRef);
 
-        if (remoteRow) {
-          const remoteData = fromSupabaseStudentRow(remoteRow);
-          const needsReset = remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
-            remoteData.role === 'developer' || 
-            (remoteData.totalXP || 0) >= 9000;
-
-          if (needsReset) {
-            console.warn("Resetting student doc to zeroState in Supabase:", uid);
-            await supabase.from('students').upsert(toSupabaseStudentRow({
-              ...zeroState,
-              uid,
-              studentId,
-              role: 'student',
-              resetEpoch: GLOBAL_RESET_EPOCH,
-              portalPassword: password?.trim(),
-              updatedAt: new Date().toISOString(),
-            }));
-            profile = zeroState;
-          } else {
-            profile = {
-              ...zeroState,
-              ...remoteData,
-              role: 'student',
-              studentId,
-              resetEpoch: GLOBAL_RESET_EPOCH,
-            };
+      if (snap.exists()) {
+        const remoteData = snap.data() as any;
+        // All passwords unlocked - update portal password in Firestore if provided
+        if (password) {
+          try {
+            await updateDoc(userRef, { portalPassword: password.trim(), updatedAt: serverTimestamp() });
+          } catch (e) {
+            // Firestore update fallback
           }
         }
 
-        // Update active presence and lastLogin in Supabase
-        await supabase.from('students').upsert(toSupabaseStudentRow({
-          ...profile,
-          uid,
-          studentId,
-          isOnline: true,
-          lastLogin: new Date().toISOString(),
-          portalPassword: password?.trim(),
-        }));
-      } catch (err) {
-        console.warn("Supabase sync in loginWithStudentId fallback:", err);
+        // Reset if remote doc has pre-reset epoch or developer permissions
+        const needsReset = remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
+          remoteData.role === 'developer' || 
+          (remoteData.totalXP || 0) >= 9000;
+
+        if (needsReset) {
+          console.warn("Resetting student doc to zeroState in Firestore:", uid);
+          await setDoc(userRef, { 
+            ...zeroState, 
+            uid,
+            studentId,
+            role: 'student',
+            resetEpoch: GLOBAL_RESET_EPOCH,
+            ...(password ? { portalPassword: password.trim() } : {}),
+            updatedAt: serverTimestamp() 
+          });
+          profile = zeroState;
+        } else {
+          profile = {
+            ...zeroState,
+            ...remoteData,
+            role: 'student',
+            studentId,
+            resetEpoch: GLOBAL_RESET_EPOCH,
+          };
+        }
+      } else {
+        profile = zeroState;
       }
+
+      // Update real-time presence, login timestamp, and synced profile in Firestore
+      const liveLoginPayload = {
+        uid,
+        studentId,
+        name: profile.name || profile.displayName || `KLU Student (${studentId})`,
+        displayName: profile.displayName || profile.name || `KLU Student (${studentId})`,
+        email: profile.email || `${studentId}@klu.ac.in`,
+        college: profile.college || 'KLU',
+        role: 'student',
+        totalXP: profile.totalXP || 0,
+        xp: profile.xp || 0,
+        overallProgress: profile.overallProgress || 0,
+        modulesCompleted: profile.modulesCompleted || (profile.completedModules || []).length,
+        completedModules: profile.completedModules || [],
+        streak: profile.streak ?? 0,
+        isOnline: true,
+        lastLogin: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...(password ? { portalPassword: password.trim() } : {})
+      };
+      await setDoc(userRef, liveLoginPayload, { merge: true });
+    } catch (err: any) {
+      if (err?.message?.includes('Incorrect password')) {
+        throw err;
+      }
+      console.warn("Firestore sync in loginWithStudentId fallback:", err);
     }
 
     if (typeof window !== 'undefined') {
@@ -637,61 +681,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(syntheticUser);
     setUserProfile(profile);
 
-    // Attach Realtime listener to student's record
-    if (isSupabaseConfigured()) {
-      try {
-        if (channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        }
-        channelRef.current = supabase
-          .channel(`student_realtime_${uid}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'students',
-              filter: `uid=eq.${uid}`,
-            },
-            (payload) => {
-              if (payload.new) {
-                const liveData = fromSupabaseStudentRow(payload.new);
-                if (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000) return;
-                setUserProfile((prev) => prev ? { ...prev, ...liveData, role: 'student' } : liveData);
-              }
-            }
-          )
-          .subscribe();
-      } catch (e) {
-        console.warn("Could not attach real-time listener to student doc:", e);
+    // Attach real-time snapshot listener on the user's Firestore document
+    try {
+      const userRef = doc(db, 'students', uid);
+      if (userDocUnsubRef.current) {
+        userDocUnsubRef.current();
+        userDocUnsubRef.current = null;
       }
+      userDocUnsubRef.current = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const liveData = docSnap.data() as any;
+          if (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000) return;
+          setUserProfile((prev) => prev ? { ...prev, ...liveData, role: 'student' } : liveData);
+        }
+      });
+    } catch (e) {
+      console.warn("Could not attach real-time listener to student doc:", e);
     }
   };
 
   const loginWithGoogle = async () => {
     setAuthError(null);
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase authentication is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-    }
-
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            prompt: 'select_account',
-            hd: 'klu.ac.in',
-          },
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        },
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ 
+        prompt: 'select_account',
+        hd: 'klu.ac.in'
       });
-
-      if (error) {
-        throw error;
+      
+      let user: User | null = null;
+      try {
+        const cred = await signInWithPopup(auth, provider);
+        user = cred.user;
+      } catch (popupErr: any) {
+        // If popup was blocked by the browser or restricted in iframe, fallback to redirect
+        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+          console.info('Sign-in popup was blocked or cancelled, falling back to signInWithRedirect...');
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw popupErr;
       }
+      
+      if (!user || !user.email) {
+        throw new Error('No valid email found on this Google account.');
+      }
+
+      const email = user.email.toLowerCase().trim();
+      if (!KLU_EMAIL_REGEX.test(email)) {
+        await signOut(auth);
+        setShowDomainError(true);
+        const domainMsg = 'Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.';
+        setAuthError(domainMsg);
+        throw new Error(domainMsg);
+      }
+      
+      // Sync and establish profile immediately
+      await syncAndFetchProfile(user);
     } catch (err: any) {
-      const message = err?.message || 'An error occurred during Google Sign-In.';
+      if (err.code === 'auth/popup-closed-by-user') {
+        throw new Error('SIGN_IN_CANCELLED');
+      }
+      const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);
       throw new Error(message);
     }
@@ -707,37 +758,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(errorMsg);
     }
 
-    if (!isSupabaseConfigured()) {
-      // Fallback: check against student roster if Supabase keys not set yet
-      const roster = findStudentCredential(trimmedEmail);
-      if (roster && roster.password === pass) {
-        await loginWithStudentId(roster.studentId, pass, roster.name);
-        return;
-      }
-      throw new Error('Supabase is not configured yet. Please log in using your 11-digit Student ID.');
-    }
-
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password: pass,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.user) {
-        const authUser: AuthUser = {
-          uid: data.user.id,
-          email: data.user.email,
-          displayName: data.user.user_metadata?.display_name || data.user.email?.split('@')[0],
-          getIdToken: async () => data.session?.access_token || '',
-        };
-        await syncAndFetchProfile(authUser);
-      }
+      const cred = await signInWithEmailAndPassword(auth, trimmedEmail, pass);
+      // Wait for backend sync to finish before resolving the login promise
+      await syncAndFetchProfile(cred.user);
     } catch (err: any) {
-      const message = err?.message || 'Invalid email or password.';
+      const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);
       throw new Error(message);
     }
@@ -764,38 +790,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(errorMsg);
     }
 
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase is not configured. Please use your Student ID to sign in directly.');
-    }
-
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password: pass,
-        options: {
-          data: {
-            display_name: name.trim(),
-            role,
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
+      const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, pass);
+      const studentName = name.trim();
+      
+      try {
+        await updateProfile(cred.user, { displayName: studentName });
+      } catch (e) {
+        console.warn('Could not update Auth displayName:', e);
       }
 
-      if (data.user) {
-        const studentName = name.trim();
-        const authUser: AuthUser = {
-          uid: data.user.id,
-          email: data.user.email,
-          displayName: studentName,
-          getIdToken: async () => data.session?.access_token || '',
-        };
-        await syncAndFetchProfile(authUser, studentName, role);
+      // Wait for backend sync to finish before resolving the registration promise
+      await syncAndFetchProfile(cred.user, studentName, role);
+
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (e) {
+        console.warn('Could not send verification email:', e);
       }
     } catch (err: any) {
-      const message = err?.message || 'Registration failed.';
+      const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);
       throw new Error(message);
     }
@@ -803,35 +817,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setAuthError(null);
-    if (currentUser?.uid && isSupabaseConfigured()) {
+    if (currentUser?.uid) {
       try {
-        await supabase
-          .from('students')
-          .update({
-            is_online: false,
-            last_logout: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('uid', currentUser.uid);
+        const userRef = doc(db, 'students', currentUser.uid);
+        await updateDoc(userRef, {
+          isOnline: false,
+          lastLogout: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
       } catch (e) {
-        // Fallback
+        // Offline or permission fallback
       }
     }
-
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    if (userDocUnsubRef.current) {
+      userDocUnsubRef.current();
+      userDocUnsubRef.current = null;
     }
-
     if (typeof window !== 'undefined') {
       localStorage.removeItem('klu_active_student_id');
       localStorage.removeItem('klu_active_dev_id');
     }
-
     try {
-      if (isSupabaseConfigured()) {
-        await supabase.auth.signOut();
-      }
+      await signOut(auth);
       setUserProfile(null);
       setCurrentUser(null);
     } catch (err: any) {
@@ -849,15 +856,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(errorMsg);
     }
 
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase is not configured yet. Please reset using your student ID.');
-    }
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
-      if (error) throw error;
+      await sendPasswordResetEmail(auth, trimmedEmail);
     } catch (err: any) {
-      const message = err?.message || 'Password reset request failed.';
+      const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);
       throw new Error(message);
     }
@@ -866,19 +868,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithDeveloperId = async (developerId: string, password?: string) => {
     setAuthError(null);
     const cleanId = developerId.trim() || '285';
+    // All developer logins unlocked for instant pre-launch and development testing
     const devInfo = getDeveloperProfile(cleanId);
     const uid = `dev_${devInfo.id.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
 
-    const syntheticUser: AuthUser = {
+    const syntheticUser: any = {
       uid,
       email: devInfo.email || `${cleanId.toLowerCase()}@klu.ac.in`,
       displayName: devInfo.name,
+      emailVerified: true,
       getIdToken: async () => `dev_token_${uid}`,
     };
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem('klu_active_student_id');
       localStorage.setItem('klu_active_dev_id', devInfo.id);
+      // Purge any corrupted localStorage keys for this developer
       const keysToClean = [`klu_profile_${devInfo.id}`, `klu_profile_${cleanId}`, `klu_profile_${uid}`];
       for (const k of keysToClean) {
         const item = localStorage.getItem(k);
@@ -895,6 +900,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    // Connect to Firestore and sync real profile (starts at zero if new, loads genuine progress if exists)
     await syncAndFetchProfile(syntheticUser, devInfo.name, 'developer');
   };
 
@@ -904,61 +910,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): Promise<{ success: boolean; message: string }> => {
     const resetXP = options?.resetXP ?? false;
     try {
+      const userRef = doc(db, 'students', studentUidOrId);
+      let existingData: any = {};
+      try {
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          existingData = snap.data();
+        }
+      } catch (e) {
+        console.warn("Could not read student doc before reset:", e);
+      }
+
       const resetPayload: any = {
-        completed_modules: [],
-        completed_steps: [],
-        overall_progress: 0,
-        unit3_progress: 0,
-        unit4_progress: 0,
-        unit5_progress: 0,
-        modules_completed: 0,
-        lessons_completed: 0,
-        completed_units: 0,
-        current_unit: 3,
-        current_module: 'u3_m01',
-        last_lesson: null,
-        unlocked_units: ['unit_3', 'unit-3'],
-        course_completed_at: null,
-        updated_at: new Date().toISOString(),
+        completedModules: [],
+        completedSteps: [],
+        overallProgress: 0,
+        unit3Progress: 0,
+        unit4Progress: 0,
+        unit5Progress: 0,
+        modulesCompleted: 0,
+        lessonsCompleted: 0,
+        completedUnits: 0,
+        currentUnit: 3,
+        currentModule: 'u3_m01',
+        lastLesson: null,
+        unlockedUnits: ['unit_3', 'unit-3'],
+        courseCompletedAt: null,
+        updatedAt: serverTimestamp(),
       };
 
       if (resetXP) {
-        resetPayload.total_xp = 0;
+        resetPayload.totalXP = 0;
         resetPayload.xp = 0;
         resetPayload.streak = 0;
       }
 
-      if (isSupabaseConfigured()) {
-        await supabase
-          .from('students')
-          .update(resetPayload)
-          .eq('uid', studentUidOrId);
-      }
+      await setDoc(userRef, resetPayload, { merge: true });
 
       if (typeof window !== 'undefined') {
-        const targetStudentId = studentUidOrId.replace('klu_', '');
+        const targetStudentId = existingData.studentId || studentUidOrId.replace('klu_', '');
         localStorage.removeItem(`klu_profile_${targetStudentId}`);
         if (localStorage.getItem('klu_active_student_id') === targetStudentId) {
           if (userProfile?.studentId === targetStudentId) {
-            setUserProfile(prev => prev ? { 
-              ...prev, 
-              completedModules: [],
-              completedSteps: [],
-              overallProgress: 0,
-              unit3Progress: 0,
-              unit4Progress: 0,
-              unit5Progress: 0,
-              modulesCompleted: 0,
-              lessonsCompleted: 0,
-              completedUnits: 0,
-              currentUnit: 3,
-              currentModule: 'u3_m01',
-              lastLesson: null,
-              unlockedUnits: ['unit_3', 'unit-3'],
-              courseCompletedAt: undefined,
-              ...(resetXP ? { totalXP: 0, xp: 0, streak: 0 } : {}),
-              updatedAt: new Date().toISOString() 
-            } : null);
+            setUserProfile(prev => prev ? { ...prev, ...resetPayload, updatedAt: new Date().toISOString() } : null);
           }
         }
       }
@@ -970,6 +964,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  
   const updateStudentProfile = async (updates: Partial<UserProfileData>) => {
     if (!currentUser) return;
     setUserProfile((prev) => {
@@ -980,17 +975,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return next;
     });
-
-    if (isSupabaseConfigured()) {
-      try {
-        const row = toSupabaseStudentRow(updates);
-        await supabase
-          .from('students')
-          .update(row)
-          .eq('uid', currentUser.uid);
-      } catch (e) {
-        console.warn('Failed to update student profile in Supabase:', e);
-      }
+    try {
+      const userRef = doc(db, 'students', currentUser.uid);
+      await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to update student profile in Firestore:', e);
     }
   };
 
@@ -1016,6 +1005,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedAt: new Date().toISOString(),
     };
 
+    // Optimistic local state update
     setUserProfile(prev => prev ? { ...prev, ...payload } : null);
     if (typeof window !== 'undefined' && userProfile.studentId) {
       const updatedFull = { ...userProfile, ...payload };
@@ -1023,26 +1013,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: updatedFull }));
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('students')
-          .update({
-            completed_steps: nextSteps,
-            total_xp: nextXP,
-            xp: nextXP,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('uid', currentUser.uid);
-      } catch (err) {
-        console.warn('awardStepXP Supabase sync error:', err);
-      }
+    try {
+      const userRef = doc(db, 'students', currentUser.uid);
+      await setDoc(userRef, {
+        uid: currentUser.uid,
+        name: userProfile.name || userProfile.displayName || 'KLU Student',
+        displayName: userProfile.displayName || userProfile.name || 'KLU Student',
+        studentId: userProfile.studentId,
+        email: userProfile.email,
+        college: userProfile.college || 'KLU',
+        role: userProfile.role || 'student',
+        completedSteps: arrayUnion(stepKey),
+        totalXP: nextXP,
+        xp: nextXP,
+        overallProgress: userProfile.overallProgress || 0,
+        modulesCompleted: (userProfile.completedModules || []).length,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (err) {
+      console.warn('awardStepXP firestore sync error:', err);
     }
 
     return { success: true, duplicate: false };
   };
 
-  // Record completed module with duplicate completion protection, local storage persistence, and resilient Supabase upsert
+  // Record completed module with duplicate completion protection, local storage persistence, and resilient Firestore setDoc
   const recordModuleCompletion = async (
     moduleId: string, 
     unitId: 'unit-3' | 'unit-4' | 'unit-5' | string, 
@@ -1100,26 +1095,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: updatedProfile }));
     }
 
-    // 3. Save to Supabase
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('students')
-          .upsert(toSupabaseStudentRow(updatedProfile));
-
-        // Also record in lesson_completions table
-        await supabase
-          .from('lesson_completions')
-          .upsert({
-            user_id: currentUser.uid,
-            lesson_id: moduleId,
-            completed: true,
-            xp_earned: moduleXp,
-            completed_at: new Date().toISOString(),
-          });
-      } catch (err) {
-        console.warn("Failed to record module completion in Supabase:", err);
-      }
+    // 3. Save to Firestore with setDoc(..., { merge: true }) so it ALWAYS creates or updates
+    try {
+      const userRef = doc(db, 'students', currentUser.uid);
+      await setDoc(userRef, {
+        uid: currentUser.uid,
+        name: updatedProfile.name || updatedProfile.displayName,
+        displayName: updatedProfile.displayName || updatedProfile.name,
+        email: updatedProfile.email,
+        studentId: updatedProfile.studentId,
+        college: updatedProfile.college || 'KLU',
+        role: updatedProfile.role || 'student',
+        completedModules: newCompletedList,
+        completedSteps: newSteps,
+        totalXP: nextXP,
+        xp: nextXP,
+        modulesCompleted: newCompletedList.length,
+        overallProgress: newOverallProgress,
+        unit3Progress,
+        unit4Progress,
+        unit5Progress,
+        lastLesson: moduleId,
+        ...(courseCompletedAt ? { courseCompletedAt } : {}),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (err) {
+      console.warn("Failed to record module completion in Firestore:", err);
     }
     return { success: true, duplicate: false };
   };
@@ -1182,11 +1183,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateStudentProfile(payload);
   };
 
+  
+  
   const recordPracticeAttempt = async (categoryId: string, scorePercent: number, xpBonus: number = 20) => {
     if (!currentUser || !userProfile) return;
     const currentScores = userProfile.practiceScores || {};
     const bestScore = currentScores[categoryId] || 0;
     
+    // Only update if new score is better, or if it's the first time
     const newBest = Math.max(bestScore, scorePercent);
     const newScores = { ...currentScores, [categoryId]: newBest };
     
@@ -1197,6 +1201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedAt: new Date().toISOString(),
     };
     
+    // Optimistic
     setUserProfile(prev => prev ? { ...prev, ...payload } : null);
     if (typeof window !== 'undefined' && userProfile.studentId) {
       const updatedFull = { ...userProfile, ...payload };
@@ -1204,20 +1209,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: updatedFull }));
     }
     
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('students')
-          .update({
-            practice_scores: newScores,
-            total_xp: (userProfile.totalXP || 0) + xpBonus,
-            xp: (userProfile.xp || 0) + xpBonus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('uid', currentUser.uid);
-      } catch (e) {
-        console.warn("Failed to persist practice score in Supabase:", e);
-      }
+    // Persist
+    try {
+      const userRef = doc(db, 'students', currentUser.uid);
+      await setDoc(userRef, {
+        [`practiceScores.${categoryId}`]: newBest,
+        totalXP: increment(xpBonus),
+        xp: increment(xpBonus),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (e) {
+      console.warn("Failed to persist practice score:", e);
     }
   };
 
@@ -1248,7 +1250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     >
       {children}
       {showDomainError && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80  animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-red-50">
               <div className="flex items-center space-x-2 text-red-600">
@@ -1280,6 +1282,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )}
     </AuthContext.Provider>
   );
+
 };
 
 export const useAuth = () => {
@@ -1289,3 +1292,42 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Helpful mapping for Firebase Auth error codes
+function getHumanErrorMessage(codeOrMessage: string): string {
+  if (typeof codeOrMessage !== 'string') return 'An unexpected authentication error occurred.';
+  if (codeOrMessage.includes('auth/invalid-credential') || codeOrMessage.includes('auth/wrong-password') || codeOrMessage.includes('auth/user-not-found')) {
+    return 'Invalid email address or password. Please verify and try again.';
+  }
+  if (codeOrMessage.includes('auth/email-already-in-use')) {
+    return 'This KLU email is already registered. Please log in instead or reset your password.';
+  }
+  if (codeOrMessage.includes('auth/weak-password')) {
+    return 'Password is too weak. Please use at least 6 characters.';
+  }
+  if (codeOrMessage.includes('auth/invalid-email')) {
+    return 'Please use your KLU college email address ending with @klu.ac.in.';
+  }
+  if (codeOrMessage.includes('auth/operation-not-allowed')) {
+    return 'Email/Password authentication is not yet enabled in the Firebase Console.';
+  }
+  if (codeOrMessage.includes('auth/too-many-requests')) {
+    return 'Too many failed login attempts. Please wait a few moments and try again.';
+  }
+  if (codeOrMessage.includes('auth/popup-blocked')) {
+    return 'The sign-in pop-up was blocked by your browser. Please enable pop-ups for this site or try again.';
+  }
+  if (codeOrMessage.includes('auth/cancelled-popup-request')) {
+    return 'Sign-in was cancelled or another sign-in window was already open. Please try again.';
+  }
+  if (codeOrMessage.includes('auth/unauthorized-domain')) {
+    return 'Domain unauthorized in Firebase: Please add this domain to Firebase Console > Authentication > Settings > Authorized domains.';
+  }
+  if (codeOrMessage.includes('auth/configuration-not-found')) {
+    return 'Google Sign-In is not enabled yet in your Firebase Project. Please go to Firebase Console > Authentication > Sign-in method and enable Google.';
+  }
+  if (codeOrMessage.includes('auth/network-request-failed')) {
+    return 'Network connection error. Please check your internet connection and try again.';
+  }
+  return codeOrMessage;
+}

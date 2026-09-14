@@ -2,5 +2,5 @@
   "name": "NetQuest - Computer Networks Learning Platform",
   "description": "A clean, modern, student-focused educational platform for college students mastering Computer Networks.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

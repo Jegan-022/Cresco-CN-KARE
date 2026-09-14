@@ -83,20 +83,15 @@ export const PreLaunchView: React.FC<PreLaunchViewProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left: Brand Tag (Desktop) */}
           <div className="hidden md:flex items-center gap-3 min-w-[180px]">
-            <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-cyan-400/40 shadow-[0_4px_12px_rgba(6,182,212,0.3)] shrink-0 bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center">
-              <img 
-                src="/assets/brand/cresco-favicon.png" 
-                alt="Cresco CN Mascot Logo" 
-                className="w-full h-full object-contain p-0.5" 
-              />
-              <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900 shadow-xs animate-packet-beacon" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-black text-xs shadow-md shadow-emerald-500/30">
+              CCN
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-lg tracking-tight text-white leading-none font-headline">
-                CRESCO<span className="text-cyan-400 font-black">-CN</span>
+                CRESCO <span className="text-emerald-400 font-black">CN</span>
               </span>
-              <span className="text-[9px] font-mono text-emerald-400 tracking-wider uppercase leading-none mt-1">
-                GAMIFIED LEARNING
+              <span className="text-[9px] font-mono text-slate-400 tracking-wider uppercase leading-none mt-1">
+                KLU CSE
               </span>
             </div>
           </div>

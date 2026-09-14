@@ -61,9 +61,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Allow Supabase Database and Auth networks to pass through directly.
+  // 2. Allow Firestore and Firebase Auth networks to pass through directly.
+  // The Firebase JS SDK handles its own IndexedDB offline caching and synchronization queues!
   if (
-    url.hostname.includes('supabase.co') ||
     url.hostname.includes('firestore.googleapis.com') ||
     url.hostname.includes('identitytoolkit.googleapis.com') ||
     url.hostname.includes('securetoken.googleapis.com') ||

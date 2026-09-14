@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TeacherMetric, CourseSection, NavTab } from '../../types';
-import { supabase, isSupabaseConfigured, fromSupabaseStudentRow } from '../../lib/supabase';
+import { db } from '../../lib/firebase';
+import { collection, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { isAuthorizedDeveloper } from '../../config/developers';
 import { 
   GraduationCap, 
@@ -40,84 +41,43 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     21: true, 22: true, 23: true
   });
 
-  // Real-time Supabase sync with students collection
+  // Real-time Firestore sync with students collection
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-
-    const loadStudents = async () => {
-      try {
-        const { data, error } = await supabase.from('students').select('*');
-        if (!error && data) {
-          const list: any[] = [];
-          data.forEach((d: any) => {
-            const parsed = fromSupabaseStudentRow(d);
-            if (parsed.role !== 'developer' && !isAuthorizedDeveloper(parsed.studentId || '') && !isAuthorizedDeveloper(parsed.uid)) {
-              list.push({ id: parsed.uid, ...parsed });
-            }
-          });
-          setRealStudents(list);
-        }
-      } catch (e) {
-        console.warn('Teacher dashboard supabase students error:', e);
-      }
-    };
-
-    loadStudents();
-
-    let channel: any = null;
+    let unsubscribe = () => {};
     try {
-      channel = supabase
-        .channel('teacher_students')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-          loadStudents();
-        })
-        .subscribe();
+      unsubscribe = onSnapshot(collection(db, 'students'), (snap) => {
+        const list: any[] = [];
+        snap.forEach((d) => {
+          const data = d.data();
+          if (data.role !== 'developer' && !isAuthorizedDeveloper(data.studentId || '') && !isAuthorizedDeveloper(d.id)) {
+            list.push({ id: d.id, ...data });
+          }
+        });
+        setRealStudents(list);
+      });
     } catch (e) {
-      // Fallback
+      console.warn('Teacher dashboard firestore listener error:', e);
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, []);
 
-  // Real-time Supabase sync for curriculum section published status
+  // Real-time Firestore sync for curriculum section published status
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-
-    const loadSections = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('course_sections')
-          .select('published_status')
-          .eq('id', 'sections')
-          .maybeSingle();
-
-        if (!error && data?.published_status) {
-          setPublishedStatus((prev) => ({ ...prev, ...data.published_status }));
-        }
-      } catch (e) {
-        console.warn('Teacher sections sync fallback:', e);
-      }
-    };
-
-    loadSections();
-
-    let channel: any = null;
+    let unsubscribe = () => {};
     try {
-      channel = supabase
-        .channel('teacher_sections')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'course_sections' }, () => {
-          loadSections();
-        })
-        .subscribe();
+      const sectionsRef = doc(db, 'course_management', 'sections');
+      unsubscribe = onSnapshot(sectionsRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && typeof data === 'object') {
+            setPublishedStatus((prev) => ({ ...prev, ...data }));
+          }
+        }
+      });
     } catch (e) {
-      // Fallback
+      console.warn('Teacher sections sync fallback:', e);
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, []);
 
   const totalStudentsCount = realStudents.length;
@@ -135,20 +95,12 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
   const togglePublish = async (id: number) => {
     const nextVal = !publishedStatus[id];
-    const newStatus = { ...publishedStatus, [id]: nextVal };
-    setPublishedStatus(newStatus);
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('course_sections')
-          .upsert({
-            id: 'sections',
-            published_status: newStatus,
-            updated_at: new Date().toISOString(),
-          });
-      } catch (e) {
-        console.warn('Could not persist section status to Supabase:', e);
-      }
+    setPublishedStatus((prev) => ({ ...prev, [id]: nextVal }));
+    try {
+      const sectionsRef = doc(db, 'course_management', 'sections');
+      await setDoc(sectionsRef, { [id]: nextVal, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.warn('Could not persist section status to Firestore:', e);
     }
   };
 
@@ -163,7 +115,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
             <span className="uppercase tracking-wider">Instructor Administration</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 text-[10px] font-mono font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              REAL-TIME SUPABASE DB
+              REAL-TIME FIREBASE DB
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">

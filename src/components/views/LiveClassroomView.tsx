@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LiveClassroomState, NavTab, UserRole } from '../../types';
 import { INITIAL_LIVE_CLASSROOM } from '../../data/networkCourse';
 import { useAuth } from '../../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { doc, onSnapshot, setDoc, collection } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { 
   Radio, 
   Users, 
@@ -67,114 +68,79 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [questionIndex, setQuestionIndex] = useState<number>(0);
   const [explanation, setExplanation] = useState<string>(SAMPLE_QUESTIONS[0].explanation);
-  const [isSupabaseSynced, setIsSupabaseSynced] = useState<boolean>(false);
+  const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
   const [connectedStudentsCount, setConnectedStudentsCount] = useState<number>(1);
 
   // 1. Listen to real-time student presence / count
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-
-    const loadOnlineCount = async () => {
-      try {
-        const { data } = await supabase.from('students').select('is_online');
-        if (data) {
-          const countOnline = data.filter((s: any) => s.is_online).length;
+    try {
+      const studentsRef = collection(db, 'students');
+      const unsubscribeStudents = onSnapshot(studentsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          let countOnline = 0;
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.isOnline) countOnline++;
+          });
           setConnectedStudentsCount(Math.max(countOnline, 1));
         }
-      } catch (e) {
-        console.warn('LiveClassroom: students count warning', e);
-      }
-    };
+      }, (err) => console.warn('LiveClassroom: students count warning', err));
 
-    loadOnlineCount();
-
-    let channel: any = null;
-    try {
-      channel = supabase
-        .channel('live_students_presence')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-          loadOnlineCount();
-        })
-        .subscribe();
+      return () => unsubscribeStudents();
     } catch (e) {
-      // Fallback
+      console.warn('LiveClassroom: error attaching students listener', e);
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
   }, []);
 
-  // 2. Connect to live Supabase poll table
+  // 2. Connect to live Firestore poll document
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setIsSupabaseSynced(false);
-      return;
-    }
-
-    const loadPoll = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('live_polls')
-          .select('*')
-          .eq('id', 'current_poll')
-          .maybeSingle();
-
-        if (data && !error) {
+    try {
+      const pollDocRef = doc(db, 'live_classroom', 'current_poll');
+      const unsubscribePoll = onSnapshot(pollDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
           setLiveState((prev) => ({
             ...prev,
-            isActive: data.is_active ?? true,
-            connectedCount: data.connected_count ?? connectedStudentsCount,
-            totalEnrolled: data.total_enrolled ?? 66,
-            currentQuestion: data.current_question || SAMPLE_QUESTIONS[0].question,
+            isActive: data.isActive ?? true,
+            connectedCount: data.connectedCount ?? connectedStudentsCount,
+            totalEnrolled: data.totalEnrolled ?? 66,
+            currentQuestion: data.currentQuestion || SAMPLE_QUESTIONS[0].question,
             options: data.options || SAMPLE_QUESTIONS[0].options,
-            isAnswerRevealed: data.is_answer_revealed ?? false,
+            isAnswerRevealed: data.isAnswerRevealed ?? false,
           }));
-          if (data.question_index !== undefined) {
-            setQuestionIndex(data.question_index);
+          if (data.questionIndex !== undefined) {
+            setQuestionIndex(data.questionIndex);
           }
           if (data.explanation) {
             setExplanation(data.explanation);
           }
-          setIsSupabaseSynced(true);
+          setIsFirebaseSynced(true);
         } else {
-          // Initialize poll in Supabase if not seeded
-          await supabase.from('live_polls').upsert({
-            id: 'current_poll',
-            is_active: true,
-            connected_count: 66,
-            total_enrolled: 66,
-            current_question: SAMPLE_QUESTIONS[0].question,
+          // Initialize document in Firestore if not yet seeded
+          const initialData = {
+            isActive: true,
+            connectedCount: 66,
+            totalEnrolled: 66,
+            currentQuestion: SAMPLE_QUESTIONS[0].question,
             explanation: SAMPLE_QUESTIONS[0].explanation,
             options: SAMPLE_QUESTIONS[0].options,
-            is_answer_revealed: false,
-            question_index: 0,
-            updated_at: new Date().toISOString(),
+            isAnswerRevealed: false,
+            questionIndex: 0,
+            updatedAt: new Date().toISOString(),
+          };
+          setDoc(pollDocRef, initialData).catch((err) => {
+            console.warn('Could not seed live_classroom poll:', err);
           });
         }
-      } catch (e) {
-        console.warn('LiveClassroom: Supabase poll query error:', e);
-      }
-    };
+      }, (err) => {
+        console.warn('LiveClassroom: Firestore poll listener warning:', err);
+      });
 
-    loadPoll();
-
-    let channel: any = null;
-    try {
-      channel = supabase
-        .channel('live_poll_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'live_polls' }, () => {
-          loadPoll();
-        })
-        .subscribe();
+      return () => unsubscribePoll();
     } catch (e) {
-      // Fallback
+      console.warn('LiveClassroom: Firestore init error:', e);
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [connectedStudentsCount]);
+  }, []);
 
   // Track vote per question
   useEffect(() => {
@@ -216,19 +182,15 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
       userVotedOptionId: optionId,
     }));
 
-    // Sync to Supabase in real time
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('live_polls')
-          .update({
-            options: withPercentages,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', 'current_poll');
-      } catch (e) {
-        console.warn('Failed to sync vote to Supabase:', e);
-      }
+    // Sync to Firestore in real time
+    try {
+      const pollDocRef = doc(db, 'live_classroom', 'current_poll');
+      await setDoc(pollDocRef, {
+        options: withPercentages,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to sync vote to Firestore:', e);
     }
   };
 
@@ -236,18 +198,14 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
     const nextRevealed = !liveState.isAnswerRevealed;
     setLiveState((prev) => ({ ...prev, isAnswerRevealed: nextRevealed }));
 
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('live_polls')
-          .update({
-            is_answer_revealed: nextRevealed,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', 'current_poll');
-      } catch (e) {
-        console.warn('Failed to update answer reveal state:', e);
-      }
+    try {
+      const pollDocRef = doc(db, 'live_classroom', 'current_poll');
+      await setDoc(pollDocRef, {
+        isAnswerRevealed: nextRevealed,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to update answer reveal state:', e);
     }
   };
 
@@ -279,25 +237,11 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
       isAnswerRevealed: false,
     }));
 
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase
-          .from('live_polls')
-          .update({
-            is_active: true,
-            connected_count: Math.max(connectedStudentsCount, 1),
-            total_enrolled: 66,
-            current_question: nextQ.question,
-            explanation: nextQ.explanation,
-            options: nextQ.options,
-            is_answer_revealed: false,
-            question_index: nextIdx,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', 'current_poll');
-      } catch (e) {
-        console.warn('Failed to advance question in Supabase:', e);
-      }
+    try {
+      const pollDocRef = doc(db, 'live_classroom', 'current_poll');
+      await setDoc(pollDocRef, nextState, { merge: true });
+    } catch (e) {
+      console.warn('Failed to advance question in Firestore:', e);
     }
   };
 
@@ -322,11 +266,11 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           </p>
         </div>
 
-        {/* Real-Time Supabase Connected Badges */}
+        {/* Real-Time Firebase Connected Badges */}
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
           <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-bold text-emerald-700 dark:text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-mono text-[11px]">{isSupabaseSynced ? 'REAL-TIME SUPABASE DB' : 'CONNECTING...'}</span>
+            <span className="font-mono text-[11px]">{isFirebaseSynced ? 'REAL-TIME FIREBASE DB' : 'CONNECTING...'}</span>
           </div>
           <div className="flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-700 dark:text-slate-300 text-xs font-semibold">
             <Users className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
@@ -427,7 +371,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           <div className="mt-5 p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-900 dark:text-blue-200 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Your response was synced to Supabase. Waiting for instructor explanation...</span>
+              <span>Your response was synced to Firebase. Waiting for instructor explanation...</span>
             </div>
             <span className="font-semibold text-blue-700 dark:text-blue-400 font-mono">{displayName}: Active</span>
           </div>

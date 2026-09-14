@@ -12,7 +12,8 @@ import {
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/AuthModal';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { collection, onSnapshot, getDocsFromCache } from 'firebase/firestore';
+import { db } from './lib/firebase';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
@@ -56,6 +57,7 @@ import { MyLearningView } from './components/views/MyLearningView';
 import { LoginView } from './components/views/LoginView';
 import { PreLaunchView } from './components/views/PreLaunchView';
 import { LandingView } from './components/views/LandingView';
+import { GuideMasterFloatingTrigger } from './components/guidemaster/GuideMasterFloatingTrigger';
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -63,6 +65,8 @@ import { Offline403Page } from './components/errors/Offline403Page';
 import { ServerCrash404Page } from './components/errors/ServerCrash404Page';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { CharacterProvider, useCharacter } from './context/CharacterContext';
+import { CharacterHubModal } from './components/character/CharacterHubModal';
+import { FloatingCompanion } from './components/character/FloatingCompanion';
 
 function MainApp() {
   const { currentUser, userProfile, loading, recordModuleCompletion } = useAuth();
@@ -118,7 +122,7 @@ function MainApp() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Synchronize authenticated user profile & restore genuine metrics from Supabase
+  // Synchronize authenticated user profile & restore genuine metrics from Firebase
   useEffect(() => {
     if (!currentUser) return;
 
@@ -141,32 +145,21 @@ function MainApp() {
       hearts: 5,
     });
 
-    let unsubscribe = () => {};
-    if (isSupabaseConfigured() && currentUser?.uid) {
-      try {
-        const channel = supabase
-          .channel(`lesson_completions_${currentUser.uid}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'lesson_completions',
-              filter: `user_id=eq.${currentUser.uid}`,
-            },
-            () => {
-              setPendingWritesCount(0);
-            }
-          )
-          .subscribe();
-
-        unsubscribe = () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (err) {
-        console.warn('Supabase realtime listener fallback:', err);
+    const completionsRef = collection(db, 'users', currentUser.uid, 'lessonCompletions');
+    const unsubscribe = onSnapshot(
+      completionsRef,
+      { includeMetadataChanges: true },
+      (snap) => {
+        if (snap.metadata.hasPendingWrites) {
+          setPendingWritesCount((c) => Math.max(1, c));
+        } else {
+          setPendingWritesCount(0);
+        }
+      },
+      async (err) => {
+        console.warn('Firestore onSnapshot listener error (offline cache fallback):', err);
       }
-    }
+    );
 
     return () => unsubscribe();
   }, [currentUser, userProfile]);
@@ -186,7 +179,7 @@ function MainApp() {
   };
 
   const handleNavigate = (tab: NavTab, lessonId?: string, sectionId?: number) => {
-    if (tab === 'companion-select') {
+    if (tab === 'guidemaster-select' || tab === 'companion-select') {
       setCurrentTab('home');
       return;
     }
@@ -213,7 +206,7 @@ function MainApp() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  // Loading State while Supabase resolves
+  // Loading State while Firebase resolves
   if (loading) {
     return <BootTerminal />;
   }
@@ -564,7 +557,7 @@ function MainApp() {
         onClose={() => setActivePracticeCategory(null)}
       />
 
-      {/* Supabase Auth Modal */}
+      {/* Firebase Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -583,6 +576,8 @@ function MainApp() {
         />
       )}
  
+      {/* Production GuideMaster AI Tutor */}
+      <GuideMasterFloatingTrigger />
 
       </div>
     </Preloader>

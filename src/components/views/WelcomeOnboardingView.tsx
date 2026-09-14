@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ByteBot } from '../character/ByteBot';
 import { NetQuestLogo } from '../brand/NetQuestLogo';
-import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { ArrowRight, Sparkles, Network, BookOpen, Compass } from 'lucide-react';
 
@@ -116,16 +115,13 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
               </div>
             </div>
 
-            {/* Cresco CN Network Octopus Mascot Standing Beside the Topology */}
-            <div className="mt-6 flex items-center justify-center w-full">
-              <CrescoMascot
-                pose="front"
-                size="xl"
-                animation="float"
-                withGlow={true}
-                speechText="Welcome to Cresco CN! Every module you master adds a real connection to your network! 🌐"
-                speechPosition="top"
-                badge="CRESCO CN MASCOT"
+            {/* Mascot Byte Standing Beside the Topology */}
+            <div className="mt-6 flex items-center gap-4 w-full">
+              <ByteBot
+                pose="explaining"
+                size="lg"
+                showSpeech={true}
+                speechText="Hi! I'm Byte. In Cresco CN, every concept you master adds a real connection to your network!"
               />
             </div>
           </div>

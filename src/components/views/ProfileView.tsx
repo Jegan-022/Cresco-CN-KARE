@@ -106,7 +106,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate }) => {
               )}
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                <span>REAL-TIME SUPABASE SYNC</span>
+                <span>REAL-TIME FIREBASE SYNC</span>
               </div>
             </div>
 

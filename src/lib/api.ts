@@ -1,17 +1,14 @@
 /// <reference types="vite/client" />
-import { supabase, isSupabaseConfigured } from './supabase';
+import { auth } from './firebase';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   let token = '';
-  if (isSupabaseConfigured()) {
-    try {
-      const { data } = await supabase.auth.getSession();
-      token = data?.session?.access_token || '';
-    } catch (e) {
-      // Fallback
-    }
+  const user = auth.currentUser;
+  
+  if (user) {
+    token = await user.getIdToken();
   }
 
   const headers = new Headers(options.headers || {});

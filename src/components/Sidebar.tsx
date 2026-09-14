@@ -15,7 +15,6 @@ import {
   User 
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
-import { CrescoMascot } from './brand/CrescoMascot';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -172,25 +171,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </nav>
 
-        {/* Cresco CN Engine Mascot Card */}
-        <div className="p-3 rounded-2xl bg-surface-container border border-cyan-500/25 flex items-center gap-3 mt-2 shadow-xs group cursor-pointer hover:border-cyan-400/50 transition-all">
-          <CrescoMascot 
-            pose="coding-lab" 
-            size="sm" 
-            animation="float" 
-            withGlow={true}
-            className="shrink-0"
-            alt="Cresco CN Network Mascot"
-          />
-          <div className="flex flex-col min-w-0">
-            <div className="text-[11px] font-headline font-black text-cyan-700 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-packet-beacon shrink-0" />
-              <span className="truncate">OCTO ENGINE</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant dark:text-slate-400 font-semibold leading-tight truncate">
-              Node packet sync active
-            </p>
+        {/* Engine Status Card */}
+        <div className="p-3.5 rounded-2xl bg-surface-container border border-emerald-500/25 text-center space-y-1 mt-2 shadow-xs">
+          <div className="text-xs font-headline font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+            <Sparkles size={14} className="text-emerald-500" />
+            <span>CRESCO CN ENGINE</span>
           </div>
+          <p className="text-[11px] text-on-surface-variant dark:text-slate-400 font-semibold leading-tight">
+            Curriculum flight path synchronized.
+          </p>
         </div>
       </div>
 

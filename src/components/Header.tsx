@@ -3,6 +3,8 @@ import { NavTab } from '../types';
 import { soundFx } from '../utils/soundEffects';
 import { useAuth } from '../context/AuthContext';
 import { useCharacter } from '../context/CharacterContext';
+import { GuideMasterAvatar } from './guidemaster/GuideMasterAvatar';
+import { GUIDE_MASTERS, getGuideMasterById, GuideMasterId } from '../data/guideMasterCharacters';
 import { 
   Zap, 
   Bell,
@@ -46,6 +48,16 @@ export const Header: React.FC<HeaderProps> = ({
   const { userProfile, currentUser, logout, resetStudentCourse } = useAuth();
   const { activeCharacter, openCharacterHub, isSpeaking, audioAmplitude, hasElevenLabsKey } = useCharacter();
 
+  const activeGuideMasterId = (() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('netquest_guidemaster_id');
+      if (saved && GUIDE_MASTERS.some((m) => m.id === saved)) {
+        return saved as GuideMasterId;
+      }
+    }
+    return 'mira';
+  })();
+  const activeGuideMaster = getGuideMasterById(activeGuideMasterId);
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -99,21 +111,23 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="flex items-center gap-2.5 text-left cursor-pointer focus:outline-hidden group"
           >
-            {/* Official Cresco CN Network Octopus Mascot Brand Logo */}
-            <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-cyan-400/40 shadow-[0_4px_12px_rgba(6,182,212,0.25)] group-hover:scale-108 group-hover:rotate-2 transition-all duration-300 shrink-0 bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center">
-              <img 
-                src="/assets/brand/cresco-favicon.png" 
-                alt="Cresco CN Mascot Logo" 
-                className="w-full h-full object-contain p-0.5" 
-              />
-              <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900 shadow-xs animate-packet-beacon" />
+            {/* Stylized Network Hub 3D Logo with green conic/emerald theme */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.35)] group-hover:scale-105 transition-all shrink-0">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 3v6m0 6v6M3 12h6m6 0h6" />
+                <circle cx="12" cy="3" r="1.5" />
+                <circle cx="12" cy="21" r="1.5" />
+                <circle cx="3" cy="12" r="1.5" />
+                <circle cx="21" cy="12" r="1.5" />
+              </svg>
             </div>
             <div className="flex flex-col">
-              <span className="font-headline text-2xl sm:text-[25px] font-black tracking-tight leading-none text-slate-900 dark:text-white flex items-center gap-1">
-                CRESCO<span className="text-cyan-600 dark:text-cyan-400 font-black">-CN</span>
+              <span className="font-headline text-2xl sm:text-[26px] font-black tracking-tight leading-none text-slate-900 dark:text-white flex items-center gap-1.5">
+                CRESCO <span className="text-emerald-500 dark:text-emerald-400 font-black">CN</span>
               </span>
-              <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 font-extrabold tracking-widest uppercase leading-none mt-1">
-                GAMIFIED NETWORK LEARNING
+              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400/90 font-extrabold tracking-widest uppercase leading-none mt-1">
+                COMPUTER NETWORKS
               </span>
             </div>
           </button>
@@ -171,18 +185,10 @@ export const Header: React.FC<HeaderProps> = ({
               if (onOpenStreak) onOpenStreak();
               else onNavigate('streak');
             }}
-            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-tertiary transition-all cursor-pointer group"
+            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-tertiary transition-all cursor-pointer"
             title={`${streak}-Day Active Streak`}
           >
-            {streak > 0 ? (
-              <img 
-                src="/assets/mascot/mascot-streak.png" 
-                alt="Streak Mascot" 
-                className="w-5 h-5 object-contain group-hover:scale-125 transition-transform" 
-              />
-            ) : (
-              <span className="text-sm leading-none">🔥</span>
-            )}
+            <span className="text-sm leading-none">🔥</span>
             <span className="font-headline text-xs font-bold text-on-surface dark:text-[#F9FAFB]">
               {streak} {streak === 1 ? 'Day' : 'Days'}
             </span>
@@ -196,6 +202,24 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
+          {/* Active GuideMaster AI Tutor Pill */}
+          <button
+            onClick={() => {
+              soundFx.playClick();
+              window.dispatchEvent(new CustomEvent('netquest_toggle_guidemaster'));
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container dark:bg-slate-800 border border-outline-variant/30 hover:border-primary transition-all cursor-pointer shadow-2xs group"
+            title={`GuideMaster: ${activeGuideMaster.name} • Click to chat`}
+          >
+            <GuideMasterAvatar
+              characterId={activeGuideMaster.id}
+              size="xs"
+            />
+            <span className="text-xs font-bold text-on-surface dark:text-[#F9FAFB] hidden md:inline">
+              {activeGuideMaster.name}
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </button>
 
           {/* Notification Icon & Dropdown */}
           <div className="relative" ref={notifMenuRef}>

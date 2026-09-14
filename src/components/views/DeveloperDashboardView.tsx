@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured, fromSupabaseStudentRow } from '../../lib/supabase';
+import { 
+  collection, 
+  onSnapshot,
+  getDocs
+} from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { TOTAL_MODULES_COUNT } from '../../data/courseContent';
 import { NavTab } from '../../types';
@@ -190,94 +195,94 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
   // Real-time Firestore sync on all students
   useEffect(() => {
     setLoading(true);
-    const loadStudents = async () => {
-      if (!isSupabaseConfigured()) {
-        setStudents(getMergedStudents([]));
-        setLoading(false);
-        return;
-      }
-      try {
-        const { data, error } = await supabase.from('students').select('*');
-        if (error) {
-          setFirestoreError(error.message);
-          setStudents(getMergedStudents([]));
-        } else if (data) {
+    let unsubscribe = () => {};
+
+    try {
+      const studentsRef = collection(db, 'students');
+      unsubscribe = onSnapshot(
+        studentsRef,
+        (snapshot) => {
           setFirestoreError(null);
           const list: StudentData[] = [];
-          data.forEach((row: any) => {
-            const parsed = fromSupabaseStudentRow(row);
-            const sId = parsed.studentId || parsed.uid.replace('klu_', '').replace('dev_', '');
-            if (parsed.role === 'developer' || isAuthorizedDeveloper(sId) || isAuthorizedDeveloper(parsed.email || '')) {
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            const sId = data.studentId || docSnap.id.replace('klu_', '').replace('dev_', '');
+            if (data.role === 'developer' || isAuthorizedDeveloper(sId) || isAuthorizedDeveloper(data.email || '')) {
               return;
             }
-            const completedList = parsed.completedModules || [];
-            const calculatedProgress = parsed.overallProgress ?? Math.min(100, Math.round((completedList.length / TOTAL_MODULES_COUNT) * 100));
-            const calculatedXP = parsed.totalXP ?? parsed.xp ?? 0;
+            const completedList = data.completedModules || [];
+            const calculatedProgress = data.overallProgress ?? Math.min(100, Math.round((completedList.length / TOTAL_MODULES_COUNT) * 100));
+            const calculatedXP = data.totalXP ?? data.xp ?? 0;
 
             list.push({
-              uid: parsed.uid,
-              ...parsed,
+              uid: docSnap.id,
+              ...data,
               completedModules: completedList,
-              modulesCompleted: parsed.modulesCompleted ?? completedList.length,
+              modulesCompleted: data.modulesCompleted ?? completedList.length,
               overallProgress: calculatedProgress,
               totalXP: calculatedXP,
-              isOnline: !!parsed.isOnline,
-              lastLogin: parsed.lastLogin,
+              isOnline: !!data.isOnline,
+              lastLogin: data.lastLogin,
             });
           });
           setStudents(getMergedStudents(list));
+          setLoading(false);
+        },
+        (err: any) => {
+          console.warn("Developer Dashboard Firestore sync error:", err);
+          const errMsg = err?.message || String(err);
+          if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
+            setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'computernetworks-af026'. Please create the database in the Firebase Console so student progress syncs across devices.");
+          } else {
+            setFirestoreError(errMsg);
+          }
+          setStudents(getMergedStudents([]));
+          setLoading(false);
         }
-      } catch (err: any) {
-        console.warn("Developer Dashboard Supabase sync error:", err);
-        setFirestoreError(err?.message || String(err));
-        setStudents(getMergedStudents([]));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStudents();
-
-    let channel: any = null;
-    if (isSupabaseConfigured()) {
-      try {
-        channel = supabase
-          .channel('dev_dashboard_students')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-            loadStudents();
-          })
-          .subscribe();
-      } catch (err) {
-        // Fallback
-      }
+      );
+    } catch (err: any) {
+      console.warn("Failed to listen to students collection:", err);
+      setFirestoreError(err?.message || String(err));
+      setStudents(getMergedStudents([]));
+      setLoading(false);
     }
 
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, []);
 
   const handleRetryConnection = async () => {
     setIsRetryingDb(true);
-    if (!isSupabaseConfigured()) {
-      setFirestoreError("Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not yet configured.");
-      showToast("Supabase is not configured yet. Please check .env or Vercel settings.", "error");
-      setIsRetryingDb(false);
-      return;
-    }
     try {
-      const { data, error } = await supabase.from('students').select('*').limit(5);
-      if (error) {
-        setFirestoreError(error.message);
-        showToast("Could not connect to Supabase: " + error.message, "error");
-      } else {
-        setFirestoreError(null);
-        showToast("Successfully connected to Supabase Database!", "success");
-      }
+      const snap = await getDocs(collection(db, 'students'));
+      setFirestoreError(null);
+      const list: StudentData[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data() as any;
+        const sId = data.studentId || docSnap.id.replace('klu_', '').replace('dev_', '');
+        if (data.role === 'developer' || isAuthorizedDeveloper(sId) || isAuthorizedDeveloper(data.email || '')) {
+          return;
+        }
+        const completedList = data.completedModules || [];
+        const calculatedProgress = data.overallProgress ?? Math.min(100, Math.round((completedList.length / TOTAL_MODULES_COUNT) * 100));
+        list.push({
+          uid: docSnap.id,
+          ...data,
+          completedModules: completedList,
+          modulesCompleted: data.modulesCompleted ?? completedList.length,
+          overallProgress: calculatedProgress,
+          totalXP: data.totalXP ?? data.xp ?? 0,
+        });
+      });
+      setStudents(getMergedStudents(list));
+      showToast("Successfully connected to Cloud Firestore!", "success");
     } catch (err: any) {
       const errMsg = err?.message || String(err);
-      setFirestoreError(errMsg);
-      showToast("Could not connect to Supabase database.", "error");
+      if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
+        setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'computernetworks-af026'. Please create the database in the Firebase Console.");
+      } else {
+        setFirestoreError(errMsg);
+      }
+      showToast("Could not connect to Cloud Firestore. See warning banner above.", "error");
     } finally {
       setIsRetryingDb(false);
     }
@@ -429,7 +434,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
               </span>
               <span className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>REAL-TIME SUPABASE DB</span>
+                <span>REAL-TIME FIREBASE DB</span>
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
@@ -538,10 +543,10 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
               </div>
               <div>
                 <h3 className="font-bold text-base text-white">
-                  Supabase Database Is Not Connected
+                  Cloud Firestore Database Is Not Activated
                 </h3>
                 <p className="text-xs text-red-300">
-                  Supabase Project: <span className="font-mono font-bold">VITE_SUPABASE_URL</span>
+                  Firebase Project: <span className="font-mono font-bold">computernetworks-af026</span>
                 </p>
               </div>
             </div>
@@ -561,17 +566,27 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            Configure <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> in your Vercel Environment Variables to sync student progress across all devices.
+            Student course completions cannot sync across multiple devices until <strong>Cloud Firestore</strong> is initialized in your Firebase Console. Please follow step 1 below to activate it in 30 seconds.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <a
-              href="https://supabase.com/dashboard"
+              href="https://console.firebase.google.com/project/computernetworks-af026/firestore"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-red-600/20 cursor-pointer"
             >
-              <span>1. Open Supabase Dashboard (Run supabase-schema.sql)</span>
+              <span>1. Click Here: Create Firestore Database (Firebase Console)</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+
+            <a
+              href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=computernetworks-af026"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#1A1F2B] hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              <span>2. Enable Firestore API in Google Cloud</span>
               <ArrowUpRight className="w-4 h-4" />
             </a>
           </div>
@@ -594,7 +609,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
             {loading ? <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" /> : students.filter(s => s.isOnline).length}
           </div>
           <div className="text-xs text-emerald-500/80 font-medium mt-1">
-            Active sessions in Supabase
+            Active sessions in Firebase
           </div>
         </div>
 

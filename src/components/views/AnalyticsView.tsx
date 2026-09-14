@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { COURSE_UNITS } from '../../data/courseContent';
-import { supabase, isSupabaseConfigured, fromSupabaseStudentRow } from '../../lib/supabase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { 
   TrendingUp, 
   Target, 
@@ -43,33 +44,33 @@ export const AnalyticsView: React.FC = () => {
   });
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
-  // Subscribe to Supabase 'students' table for cohort benchmarking
+  // Subscribe to live Firestore 'students' collection for cohort benchmarking
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setIsLiveConnected(false);
-      return;
-    }
+    try {
+      const studentsRef = collection(db, 'students');
+      const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const studentsList: any[] = [];
+          snapshot.forEach((doc) => {
+            studentsList.push({ id: doc.id, ...doc.data() });
+          });
 
-    const loadCohortData = async () => {
-      try {
-        const { data, error } = await supabase.from('students').select('*');
-        if (!error && data && data.length > 0) {
-          const studentsList = data.map((d: any) => fromSupabaseStudentRow(d));
           const total = studentsList.length;
           let sumXP = 0;
           let sumAccuracy = 0;
           let sumCompleted = 0;
 
-          studentsList.forEach((s: any) => {
+          studentsList.forEach((s) => {
             sumXP += (s.totalXP ?? s.xp ?? 0);
             sumAccuracy += (s.quizAverage ?? s.quizAccuracy ?? 75);
             sumCompleted += (s.completedModules?.length ?? s.modulesCompleted ?? 0);
           });
 
-          studentsList.sort((a: any, b: any) => (b.totalXP ?? b.xp ?? 0) - (a.totalXP ?? a.xp ?? 0));
+          // Sort descending by XP to compute user's rank
+          studentsList.sort((a, b) => (b.totalXP ?? b.xp ?? 0) - (a.totalXP ?? a.xp ?? 0));
           const currentUid = currentUser?.uid;
           const rankIndex = studentsList.findIndex(
-            (s: any) => s.uid === currentUid || (studentId && s.studentId === studentId)
+            (s) => s.id === currentUid || s.uid === currentUid || (studentId && s.studentId === studentId)
           );
           const computedRank = rankIndex !== -1 ? rankIndex + 1 : 1;
 
@@ -82,28 +83,14 @@ export const AnalyticsView: React.FC = () => {
           });
           setIsLiveConnected(true);
         }
-      } catch (e) {
-        console.warn('AnalyticsView: Supabase query error:', e);
-      }
-    };
+      }, (error) => {
+        console.warn('AnalyticsView: Firestore students listener warning:', error);
+      });
 
-    loadCohortData();
-
-    let channel: any = null;
-    try {
-      channel = supabase
-        .channel('analytics_cohort_students')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-          loadCohortData();
-        })
-        .subscribe();
+      return () => unsubscribe();
     } catch (e) {
-      // Fallback
+      console.warn('AnalyticsView: Firestore setup error:', e);
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
   }, [currentUser, studentId]);
   
   // Calculate completion by unit

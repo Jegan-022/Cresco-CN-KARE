@@ -81,23 +81,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center space-x-3">
-            <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-cyan-400/40 shadow-xs bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center shrink-0">
-              <img 
-                src="/assets/brand/cresco-favicon.png" 
-                alt="Cresco CN Mascot" 
-                className="w-full h-full object-contain p-0.5" 
-              />
-              <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 border border-slate-900 shadow-xs animate-packet-beacon" />
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <GraduationCap className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-headline font-black text-slate-900 tracking-tight leading-none">
-                Cresco<span className="text-cyan-600">-CN</span> Portal
-              </h2>
-              <span className="text-[10px] font-mono text-emerald-600 font-bold tracking-wider uppercase leading-none block mt-1">
-                Student Verification
-              </span>
-            </div>
+            <h2 className="text-lg font-bold text-slate-800">
+              Cresco CN Student Portal
+            </h2>
           </div>
           <button 
             onClick={onClose}

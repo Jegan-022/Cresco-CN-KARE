@@ -14,12 +14,8 @@ export const AcademicExamCard: React.FC = () => {
         className="bg-[#f2f3ff] p-4 rounded-2xl flex items-center justify-between border border-[#dae2fd]/70 cursor-pointer hover:bg-[#eaedff] transition-all transform-gpu group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform transform-gpu overflow-hidden border border-[#dae2fd]">
-            <img 
-              src="/assets/mascot/mascot-exam-mode.png" 
-              alt="Exam Mode Mascot" 
-              className="w-full h-full object-contain p-0.5" 
-            />
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#004ac6] shadow-sm group-hover:scale-105 transition-transform transform-gpu">
+            <span className="material-symbols-outlined">event</span>
           </div>
           <div>
             <div className="text-[14px] font-bold text-[#131b2e]">

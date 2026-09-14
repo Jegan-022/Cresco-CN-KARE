@@ -57,18 +57,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center">
               <button 
                 onClick={() => onNavigate('home')}
-                className="flex items-center space-x-3 text-white hover:text-cyan-300 transition-colors group cursor-pointer"
+                className="flex items-center space-x-3 text-white hover:text-emerald-400 transition-colors group cursor-pointer"
               >
-                <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-cyan-400/40 shadow-[0_4px_12px_rgba(6,182,212,0.3)] group-hover:scale-108 group-hover:rotate-2 transition-all duration-300 shrink-0 bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center">
-                  <img 
-                    src="/assets/brand/cresco-favicon.png" 
-                    alt="Cresco CN Mascot Logo" 
-                    className="w-full h-full object-contain p-0.5" 
-                  />
-                  <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900 shadow-xs animate-packet-beacon" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                  CCN
                 </div>
-                <span className="font-headline font-black text-2xl tracking-tight text-white hidden sm:flex items-center gap-1">
-                  CRESCO<span className="text-cyan-400 font-black">-CN</span>
+                <span className="font-headline font-black text-2xl tracking-tight text-white hidden sm:flex items-center gap-1.5">
+                  CRESCO <span className="text-emerald-500 font-black">CN</span>
                 </span>
               </button>
             </div>

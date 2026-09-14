@@ -1,6 +1,5 @@
 import React from 'react';
 import { ByteBot } from '../character/ByteBot';
-import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { X, Unlock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -56,15 +55,9 @@ export const LevelProgressModal: React.FC<LevelProgressModalProps> = ({
           <X size={18} />
         </button>
 
-        {/* Cresco CN Mascot in Rocket Level-Up Pose */}
+        {/* Mascot Avatar */}
         <div className="flex justify-center mb-4">
-          <CrescoMascot 
-            pose={xp > 0 ? "levelup" : "front"} 
-            size="xl" 
-            animation="float" 
-            withGlow={true}
-            alt="Cresco CN Level Up Mascot"
-          />
+          <ByteBot pose={xp > 0 ? "celebrating" : "idle"} size="md" />
         </div>
 
         {/* Level Header */}
