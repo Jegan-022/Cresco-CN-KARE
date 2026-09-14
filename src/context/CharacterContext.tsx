@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CHARACTERS, CharacterId, CharacterProfile, getCharacterById } from '../data/characters';
-import { elevenLabsVoice } from '../services/elevenLabsVoice';
+import { characterVoice } from '../services/characterVoice';
 
 interface CharacterContextType {
   characters: CharacterProfile[];
@@ -17,12 +17,6 @@ interface CharacterContextType {
   stopSpeaking: () => void;
   pauseSpeaking: () => void;
   resumeSpeaking: () => void;
-  
-  // ElevenLabs Configuration
-  elevenLabsApiKey: string;
-  setElevenLabsApiKey: (key: string) => void;
-  testElevenLabsApiKey: (keyToTest?: string) => Promise<{ valid: boolean; message: string }>;
-  hasElevenLabsKey: boolean;
 
   // Character Hub UI Modal
   isCharacterHubOpen: boolean;
@@ -38,18 +32,15 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isPaused, setIsPaused] = useState(false);
   const [audioAmplitude, setAudioAmplitude] = useState(0);
   const [currentSpokenText, setCurrentSpokenText] = useState<string | null>(null);
-  const [elevenLabsApiKey, setElevenLabsApiKeyState] = useState<string>('');
   const [isCharacterHubOpen, setIsCharacterHubOpen] = useState(false);
 
-  // Restore saved active character and API key on mount
+  // Restore saved active character on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedChar = localStorage.getItem('netquest_active_character') as CharacterId;
       if (savedChar && CHARACTERS.some((c) => c.id === savedChar)) {
         setActiveCharacterIdState(savedChar);
       }
-      const savedKey = elevenLabsVoice.getApiKey();
-      setElevenLabsApiKeyState(savedKey);
     }
   }, []);
 
@@ -62,17 +53,9 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
-  const setElevenLabsApiKey = useCallback((key: string) => {
-    elevenLabsVoice.setApiKey(key);
-    setElevenLabsApiKeyState(key);
-  }, []);
-
-  const testElevenLabsApiKey = useCallback(async (keyToTest?: string) => {
-    return await elevenLabsVoice.testApiKey(keyToTest);
-  }, []);
 
   const stopSpeaking = useCallback(() => {
-    elevenLabsVoice.stop();
+    characterVoice.stop();
     setIsSpeaking(false);
     setIsPaused(false);
     setAudioAmplitude(0);
@@ -80,12 +63,12 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const pauseSpeaking = useCallback(() => {
-    elevenLabsVoice.pause();
+    characterVoice.pause();
     setIsPaused(true);
   }, []);
 
   const resumeSpeaking = useCallback(() => {
-    elevenLabsVoice.resume();
+    characterVoice.resume();
     setIsPaused(false);
   }, []);
 
@@ -94,7 +77,7 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const targetChar = characterId ? getCharacterById(characterId) : activeCharacter;
       setCurrentSpokenText(text);
 
-      await elevenLabsVoice.speak(text, targetChar, {
+      await characterVoice.speak(text, targetChar, {
         onStart: () => {
           setIsSpeaking(true);
           setIsPaused(false);
@@ -139,10 +122,6 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stopSpeaking,
         pauseSpeaking,
         resumeSpeaking,
-        elevenLabsApiKey,
-        setElevenLabsApiKey,
-        testElevenLabsApiKey,
-        hasElevenLabsKey: !!elevenLabsApiKey,
         isCharacterHubOpen,
         openCharacterHub,
         closeCharacterHub,

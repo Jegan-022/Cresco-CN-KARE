@@ -57,7 +57,6 @@ import { MyLearningView } from './components/views/MyLearningView';
 import { LoginView } from './components/views/LoginView';
 import { PreLaunchView } from './components/views/PreLaunchView';
 import { LandingView } from './components/views/LandingView';
-import { GuideMasterFloatingTrigger } from './components/guidemaster/GuideMasterFloatingTrigger';
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -575,9 +574,6 @@ function MainApp() {
           onClose={() => setSectionCompletionCelebration(null)}
         />
       )}
- 
-      {/* Production GuideMaster AI Tutor */}
-      <GuideMasterFloatingTrigger />
 
       </div>
     </Preloader>

@@ -63,7 +63,7 @@ export const ByteBotLandingCard: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Personal Computer Networks AI Tutor built with Gemini 2.0 Flash
+              Personal Computer Networks Interactive Learning Companion
             </p>
           </div>
         </div>

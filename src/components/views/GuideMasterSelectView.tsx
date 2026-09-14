@@ -36,7 +36,7 @@ export const GuideMasterSelectView: React.FC<GuideMasterSelectViewProps> = ({
         return saved as GuideMasterId;
       }
     }
-    return 'mira';
+    return 'anaya';
   });
 
   const [auditioningId, setAuditioningId] = useState<GuideMasterId | null>(null);
@@ -45,7 +45,7 @@ export const GuideMasterSelectView: React.FC<GuideMasterSelectViewProps> = ({
 
   const selectedMaster = GUIDE_MASTERS.find((m) => m.id === selectedId) || GUIDE_MASTERS[0];
 
-  // Test / Audition Voice via ElevenLabs or Web Speech API
+  // Test / Audition Voice via Web Speech API
   const handleAuditionVoice = (master: GuideMasterProfile, e: React.MouseEvent) => {
     e.stopPropagation();
     soundFx.playClick();

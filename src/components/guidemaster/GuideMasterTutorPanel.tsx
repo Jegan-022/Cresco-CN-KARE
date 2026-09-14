@@ -65,7 +65,7 @@ export const GuideMasterTutorPanel: React.FC<GuideMasterTutorPanelProps> = ({
         return saved as GuideMasterId;
       }
     }
-    return 'mira';
+    return 'anaya';
   });
 
   const master: GuideMasterProfile = getGuideMasterById(activeMasterId);

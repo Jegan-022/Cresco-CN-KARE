@@ -41,9 +41,8 @@ export interface CharacterProfile {
   badgeText: string;
   avatarMood: string;
   
-  // ElevenLabs Voice Configuration
+  // Speech & Voice Configuration
   voiceName: string;
-  elevenLabsVoiceId: string;
   voiceDescription: string;
   voiceStyleTag: string;
   voiceSettings: {
@@ -79,7 +78,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'CHIEF ARCHITECT',
     avatarMood: 'Glasses & Ponytail, Confident Smile',
     voiceName: 'Rachel',
-    elevenLabsVoiceId: '21m00Tcm4TlvDq8ikWAM',
     voiceDescription: 'Articulate, warm, inspiring and encouraging mentor voice',
     voiceStyleTag: 'Clear & Authoritative',
     voiceSettings: {
@@ -114,7 +112,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'SECURITY SENTINEL',
     avatarMood: 'Tactical Headset, Crimson Hair Bangs',
     voiceName: 'Nicole',
-    elevenLabsVoiceId: 'piTKgcLEGmPE4e6mEKli',
     voiceDescription: 'Energetic, protective, confident and alert tactical tone',
     voiceStyleTag: 'Energetic & Crisp',
     voiceSettings: {
@@ -149,7 +146,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'PROTOCOL GENIUS',
     avatarMood: 'Pink Twin-Tails, Cyber Goggles',
     voiceName: 'Emily',
-    elevenLabsVoiceId: 'LcfcDJNUP1GQjkzn1xUU',
     voiceDescription: 'Cheerful, upbeat, enthusiastic and sweet student voice',
     voiceStyleTag: 'Playful & Uplifting',
     voiceSettings: {
@@ -184,7 +180,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'ROUTE CAPTAIN',
     avatarMood: 'Golden Waves, Holographic Visor',
     voiceName: 'Charlotte',
-    elevenLabsVoiceId: 'XB0fDUnXU5ikZZmIExI5',
     voiceDescription: 'Smooth, charismatic, commanding yet deeply supportive leader',
     voiceStyleTag: 'Warm & Strategic',
     voiceSettings: {
@@ -219,7 +214,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'DATA LINK MASTER',
     avatarMood: 'Sleek Dark Hair, Jade Hairpins, Glowing Scarf',
     voiceName: 'Serena',
-    elevenLabsVoiceId: 'pMsXgqL9q4pS2lB3C7d6',
     voiceDescription: 'Serene, elegant, soothing and melodious tone',
     voiceStyleTag: 'Calm & Graceful',
     voiceSettings: {
@@ -254,7 +248,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'CLOUD PRO',
     avatarMood: 'Sunny Honey Bob, Wireless Tech Headset',
     voiceName: 'Freya',
-    elevenLabsVoiceId: 'jsCqWAovK2LkecY7zXl4',
     voiceDescription: 'Bright, enthusiastic, friendly, approachable Silicon Valley engineer',
     voiceStyleTag: 'Bright & Natural',
     voiceSettings: {
@@ -289,7 +282,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'OPTICAL PHYSICIST',
     avatarMood: 'Silver-Lavender Hair, Lab Coat, Holographic Glasses',
     voiceName: 'Lily',
-    elevenLabsVoiceId: 'pFZP5JQG7iQjIQuC4Bku',
     voiceDescription: 'Velvety, poised, highly intellectual and scientific cadence',
     voiceStyleTag: 'Poised & Scholarly',
     voiceSettings: {
@@ -324,7 +316,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'SYSTEMS CAPTAIN',
     avatarMood: 'Braided Crown, Neon Tech Wristbands',
     voiceName: 'Matilda',
-    elevenLabsVoiceId: 'XrExE9yKIg1WjnnlVkGX',
     voiceDescription: 'Dynamic, visionary, rhythmic, empowering and inspiring voice',
     voiceStyleTag: 'Empowering & Resonant',
     voiceSettings: {
@@ -359,7 +350,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'CIPHER PRODIGY',
     avatarMood: 'Cat-Ear Neon Headphones, Oversized Cyber Hoodie',
     voiceName: 'Mimi',
-    elevenLabsVoiceId: 'g5CIjZEefAph4nQFvHAz',
     voiceDescription: 'Playful, sweet, witty, clever and adorable tone',
     voiceStyleTag: 'Sweet & Clever',
     voiceSettings: {
@@ -394,7 +384,6 @@ export const CHARACTERS: CharacterProfile[] = [
     badgeText: 'CYBER DETECTIVE',
     avatarMood: 'Violet Hair, High-Collar Cyber Trench Coat, Monocle',
     voiceName: 'Alice',
-    elevenLabsVoiceId: 'Xb7hH8MSUJpSbSDYk0k2',
     voiceDescription: 'Cool, composed, magnetic, mysterious and perceptive voice',
     voiceStyleTag: 'Mysterious & Sharp',
     voiceSettings: {

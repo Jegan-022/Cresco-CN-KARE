@@ -3,8 +3,6 @@ import { NavTab } from '../types';
 import { soundFx } from '../utils/soundEffects';
 import { useAuth } from '../context/AuthContext';
 import { useCharacter } from '../context/CharacterContext';
-import { GuideMasterAvatar } from './guidemaster/GuideMasterAvatar';
-import { GUIDE_MASTERS, getGuideMasterById, GuideMasterId } from '../data/guideMasterCharacters';
 import { 
   Zap, 
   Bell,
@@ -46,18 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   onTriggerPreloader,
 }) => {
   const { userProfile, currentUser, logout, resetStudentCourse } = useAuth();
-  const { activeCharacter, openCharacterHub, isSpeaking, audioAmplitude, hasElevenLabsKey } = useCharacter();
-
-  const activeGuideMasterId = (() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('netquest_guidemaster_id');
-      if (saved && GUIDE_MASTERS.some((m) => m.id === saved)) {
-        return saved as GuideMasterId;
-      }
-    }
-    return 'mira';
-  })();
-  const activeGuideMaster = getGuideMasterById(activeGuideMasterId);
+  const { activeCharacter, openCharacterHub, isSpeaking, audioAmplitude } = useCharacter();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -201,25 +188,6 @@ export const Header: React.FC<HeaderProps> = ({
               Diamond Tier
             </span>
           </div>
-
-          {/* Active GuideMaster AI Tutor Pill */}
-          <button
-            onClick={() => {
-              soundFx.playClick();
-              window.dispatchEvent(new CustomEvent('netquest_toggle_guidemaster'));
-            }}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container dark:bg-slate-800 border border-outline-variant/30 hover:border-primary transition-all cursor-pointer shadow-2xs group"
-            title={`GuideMaster: ${activeGuideMaster.name} • Click to chat`}
-          >
-            <GuideMasterAvatar
-              characterId={activeGuideMaster.id}
-              size="xs"
-            />
-            <span className="text-xs font-bold text-on-surface dark:text-[#F9FAFB] hidden md:inline">
-              {activeGuideMaster.name}
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          </button>
 
           {/* Notification Icon & Dropdown */}
           <div className="relative" ref={notifMenuRef}>

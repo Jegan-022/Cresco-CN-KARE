@@ -10,11 +10,6 @@ import {
   Zap, 
   BookOpen, 
   Gamepad2, 
-  Key, 
-  RefreshCw, 
-  ShieldCheck, 
-  AlertCircle,
-  ExternalLink,
   Flame
 } from 'lucide-react';
 
@@ -31,20 +26,10 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
     speak,
     stopSpeaking,
     isSpeaking,
-    currentSpokenText,
-    elevenLabsApiKey,
-    setElevenLabsApiKey,
-    testElevenLabsApiKey,
-    hasElevenLabsKey,
   } = useCharacter();
 
-  const [activeTab, setActiveTab] = useState<'roster' | 'elevenlabs' | 'balance'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'balance'>('roster');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'architect' | 'security' | 'developer' | 'routing' | 'optical'>('all');
-  
-  // ElevenLabs Key testing state
-  const [apiKeyInput, setApiKeyInput] = useState(elevenLabsApiKey);
-  const [testingKey, setTestingKey] = useState(false);
-  const [testResult, setTestResult] = useState<{ valid: boolean; message: string } | null>(null);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -74,17 +59,6 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
     }
   };
 
-  const handleSaveApiKey = async () => {
-    setTestingKey(true);
-    setTestResult(null);
-    const result = await testElevenLabsApiKey(apiKeyInput.trim());
-    setTestingKey(false);
-    setTestResult(result);
-    if (result.valid) {
-      setElevenLabsApiKey(apiKeyInput.trim());
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-[#0E1626] border border-slate-200 dark:border-cyan-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
@@ -100,13 +74,13 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                   Cresco CN Character Studio & Voice Hub
                 </h2>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
                   <Sparkles className="w-2.5 h-2.5" />
-                  ELEVENLABS TTS
+                  VOICE COMPANIONS
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                10 Animated Network Companions • Learn & Play Balance • Natural AI Voice Generation
+                10 Animated Network Companions • Interactive Learning & Gameplay Balance
               </p>
             </div>
           </div>
@@ -151,20 +125,6 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
               <span>Learn & Play Balance</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('elevenlabs')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'elevenlabs'
-                  ? 'bg-white dark:bg-[#1A253C] text-purple-600 dark:text-purple-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>ElevenLabs API Setup</span>
-              {hasElevenLabsKey && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-            </button>
           </div>
 
           {/* Character Roster Category Filter (Only on Roster tab) */}
@@ -280,7 +240,7 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
                             ? 'bg-purple-600 text-white animate-pulse'
                             : 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 dark:text-purple-300 border border-purple-500/30'
                         }`}
-                        title={`Audition ElevenLabs voice (${char.voiceName})`}
+                        title={`Audition voice (${char.voiceName})`}
                       >
                         <Volume2 className="w-3.5 h-3.5" />
                         <span>{isVoicePlaying ? 'Playing...' : `Voice: ${char.voiceName}`}</span>
@@ -327,7 +287,7 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
                       <th className="p-3">Network Layer</th>
                       <th className="p-3">Learning Focus (Theory)</th>
                       <th className="p-3">Play & Gameplay Bonus</th>
-                      <th className="p-3">ElevenLabs Voice</th>
+                      <th className="p-3">Voice Persona</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -341,108 +301,12 @@ export const CharacterHubModal: React.FC<CharacterHubModalProps> = ({ isOpen, on
                         <td className="p-3 text-slate-600 dark:text-slate-300 max-w-xs">{c.learnBio}</td>
                         <td className="p-3 text-amber-700 dark:text-amber-400 font-semibold">{c.gameplayPerk}</td>
                         <td className="p-3 font-mono text-purple-600 dark:text-purple-400">
-                          {c.voiceName} ({c.elevenLabsVoiceId.slice(0, 6)}...)
+                          {c.voiceName}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: ELEVENLABS API SETUP */}
-          {activeTab === 'elevenlabs' && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="p-5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 space-y-3">
-                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-bold">
-                  <Sparkles className="w-5 h-5" />
-                  <h3 className="text-base">ElevenLabs AI Voice Engine Integration</h3>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Cresco CN utilizes the official ElevenLabs Text-to-Speech API to synthesize natural, expressive character voices in real time. Each of our 10 network characters is mapped to a dedicated voice persona (e.g. Rachel, Adam, Bella, Elli, Antoni, Nicole, Domi, Sam, Glinda).
-                </p>
-                <div className="flex items-center gap-2 pt-1 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Status:</span>
-                  {hasElevenLabsKey ? (
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                      <ShieldCheck className="w-4 h-4" />
-                      ElevenLabs API Key Configured & Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold font-mono">
-                      <AlertCircle className="w-4 h-4" />
-                      Fallback Mode (Web Speech Synthesis Active)
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* API Key Input Form */}
-              <div className="bg-white dark:bg-[#131C2E] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    ElevenLabs API Key (xi-api-key)
-                  </label>
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="e.g. sk_1234567890abcdef..."
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1A253C] border border-slate-300 dark:border-slate-700 focus:border-purple-500 rounded-xl text-slate-900 dark:text-white text-sm font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-                    Your key is saved locally in your browser session (<code className="text-purple-500">localStorage</code>) and never exposed to other students.
-                  </p>
-                </div>
-
-                {testResult && (
-                  <div
-                    className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
-                      testResult.valid
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                        : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-500/30'
-                    }`}
-                  >
-                    {testResult.valid ? (
-                      <ShieldCheck className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                    )}
-                    <span>{testResult.message}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleSaveApiKey}
-                    disabled={testingKey}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-xs"
-                  >
-                    {testingKey ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Verifying with ElevenLabs...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>Verify & Save Key</span>
-                      </>
-                    )}
-                  </button>
-
-                  <a
-                    href="https://elevenlabs.io"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:underline"
-                  >
-                    <span>Get a free key at elevenlabs.io</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
               </div>
             </div>
           )}

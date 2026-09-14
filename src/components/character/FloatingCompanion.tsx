@@ -22,7 +22,6 @@ export const FloatingCompanion: React.FC = () => {
     isSpeaking,
     isPaused,
     audioAmplitude,
-    hasElevenLabsKey,
     openCharacterHub,
   } = useCharacter();
 
@@ -54,7 +53,7 @@ export const FloatingCompanion: React.FC = () => {
       {isExpanded && (
         <div className="mb-3 w-72 sm:w-80 bg-white dark:bg-[#0E1626] border border-slate-200 dark:border-cyan-500/40 rounded-3xl p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-3 duration-200 space-y-3">
           
-          {/* Header with Character Name & ElevenLabs Indicator */}
+          {/* Header with Character Name & Voice Indicator */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm text-slate-900 dark:text-white">
@@ -81,7 +80,7 @@ export const FloatingCompanion: React.FC = () => {
           {/* Voice & Perk Actions */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              {/* Listen to Tip via ElevenLabs */}
+              {/* Listen to Tip via Voice */}
               <button
                 onClick={() => {
                   if (isSpeaking && !isPaused) pauseSpeaking();
@@ -116,8 +115,8 @@ export const FloatingCompanion: React.FC = () => {
             {/* Switch Companion Link */}
             <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-purple-500" />
-                {hasElevenLabsKey ? 'ElevenLabs AI' : 'Smart Voice'}
+                <Sparkles className="w-3 h-3 text-blue-500" />
+                Voice Guide
               </span>
               <button
                 onClick={() => {

@@ -2,7 +2,6 @@
 // Designed specifically for Cresco CN with rich pedagogy, distinct personas, and interactive teaching.
 
 export type GuideMasterId = 
-  | 'mira' 
   | 'anaya' 
   | 'kiara' 
   | 'aira' 
@@ -56,7 +55,6 @@ export interface GuideMasterProfile {
     background: string;
     border: string;
   };
-  elevenLabsVoiceId: string;
   voiceName: string;
   voiceStyleTag: string;
   introMessage: string;
@@ -68,31 +66,6 @@ export interface GuideMasterProfile {
 }
 
 export const GUIDE_MASTERS: GuideMasterProfile[] = [
-  {
-    id: 'mira',
-    name: 'Mira',
-    role: 'Friendly General Tutor',
-    archetype: 'Warm & Patient Mentor',
-    personality: 'Warm, patient, approachable, and encouraging. She never makes you feel bad for asking fundamental questions.',
-    teachingStyle: 'Conversational analogies, empathetic pacing, breaking complex jargon into real-life human scenarios.',
-    gestureProfile: 'Warm open palms, reassuring nods, gentle hand sweeps to illustrate ideas.',
-    expressionProfile: 'Gentle attentive gaze, empathetic smile, soft inquisitive brow when listening.',
-    color: {
-      primary: '#EA580C',
-      accent: '#F97316',
-      background: '#FFF7ED',
-      border: '#FDBA74',
-    },
-    elevenLabsVoiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel
-    voiceName: 'Rachel',
-    voiceStyleTag: 'Warm, Natural & Conversational',
-    introMessage: "Hey there! I'm Mira. Whatever topic we're tackling today, we're going to take it step by step with zero stress. What's on your mind?",
-    catchphrase: "Let's forget the dense textbook jargon for a second and look at how this really works.",
-    defaultTopic: 'TCP 3-Way Handshake & Reliable Transport',
-    biography: 'Mira specializes in demystifying intimidating engineering topics. She believes that if a student struggles to grasp a concept, the explanation needs to change, not the student.',
-    specialtyAreas: ['Network Fundamentals', 'Mental Models', 'Conceptual Analogies', 'Foundational Systems'],
-    studentPerk: 'Stress-Free Learning: Breaks complicated protocol definitions into intuitive 3-step analogies.',
-  },
   {
     id: 'anaya',
     name: 'Anaya',
@@ -108,7 +81,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#F0F9FF',
       border: '#7DD3FC',
     },
-    elevenLabsVoiceId: 'XB0fDUnXU5powFXDhCwa', // Charlotte
     voiceName: 'Charlotte',
     voiceStyleTag: 'Crisp, Authoritative & Academic',
     introMessage: "Hello. I am Anaya. Let's make sure your foundational understanding meets the highest academic and examination standards. Where shall we begin?",
@@ -133,7 +105,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#F0FDFA',
       border: '#5EEAD4',
     },
-    elevenLabsVoiceId: 'jsCqWAovK2LkecY7zXl4', // Freya
     voiceName: 'Freya',
     voiceStyleTag: 'Dynamic, Confident & Uplifting',
     introMessage: "Let's do this! I'm Kiara. You've got the brainpower to master this network stuff — we're going to level up your skills right now. Ready to dive in?",
@@ -158,7 +129,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#EEF2FF',
       border: '#A5B4FC',
     },
-    elevenLabsVoiceId: 'piTKgcLEGmPE4e6mEKli', // Nicole
     voiceName: 'Nicole',
     voiceStyleTag: 'Sharp, Tech-Savvy & Insightful',
     introMessage: "Hi, I'm Aira. Networks aren't just abstract theory — they're the physical nervous system of the modern internet. Let's inspect the actual packets together.",
@@ -183,7 +153,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#ECFDF5',
       border: '#6EE7B7',
     },
-    elevenLabsVoiceId: 'pMsXgVXv3BLzUgS65P5P', // Serena
     voiceName: 'Serena',
     voiceStyleTag: 'Calm, Analytical & Eloquent',
     introMessage: "Welcome. I am Tara. Every network protocol is rooted in elegant mathematics and logic. Let us break it down into clean, manageable steps.",
@@ -208,7 +177,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#FDF2F8',
       border: '#F9A8D4',
     },
-    elevenLabsVoiceId: 'LcfcDJNUP1GQjkzn1xUU', // Emily
     voiceName: 'Emily',
     voiceStyleTag: 'Expressive, Warm & Creative',
     introMessage: "Hello! I'm Isha. To truly understand a system, we have to see the story behind why it was built. Let's bring this concept to life together.",
@@ -233,7 +201,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#F8FAFC',
       border: '#CBD5E1',
     },
-    elevenLabsVoiceId: 'XrExE9yKIg1WjnnlVkGX', // Matilda
     voiceName: 'Matilda',
     voiceStyleTag: 'Professional, Polished & Strategic',
     introMessage: "Good to meet you. I'm Naina. Understanding the theory is step one; knowing how it impacts production uptime and FAANG interview questions is step two. Let's get down to business.",
@@ -258,7 +225,6 @@ export const GUIDE_MASTERS: GuideMasterProfile[] = [
       background: '#F7FEE7',
       border: '#BEF264',
     },
-    elevenLabsVoiceId: 'pFZP5JQG7iQjIQuC4Bku', // Lily
     voiceName: 'Lily',
     voiceStyleTag: 'Soft, Gentle & Soothing',
     introMessage: "Welcome. I'm Yuna. Take a deep breath. There is no rush at all. We have all the time we need to explore this concept peacefully.",

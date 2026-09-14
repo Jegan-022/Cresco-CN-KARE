@@ -108,7 +108,7 @@ export const CompanionSelectView: React.FC<CompanionSelectViewProps> = ({
             Choose Your Guide Mentor
           </h1>
           <p className="font-body text-sm sm:text-base text-on-surface-variant max-w-xl mx-auto">
-            Your animated guide will accompany you through packet labs, deliver ElevenLabs voice explanations, and cheer your exam victories.
+            Your animated guide will accompany you through packet labs, deliver interactive voice explanations, and cheer your exam victories.
           </p>
         </div>
 

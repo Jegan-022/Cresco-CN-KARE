@@ -12,7 +12,7 @@ interface GuideMasterAvatarProps {
 }
 
 export const GuideMasterAvatar: React.FC<GuideMasterAvatarProps> = ({
-  characterId = 'mira',
+  characterId = 'anaya',
   mood = 'idle',
   size = 'md',
   isSpeaking = false,
@@ -176,48 +176,7 @@ export const GuideMasterAvatar: React.FC<GuideMasterAvatarProps> = ({
     );
   };
 
-  // 1. MIRA — Friendly General Tutor (Warm Brown Wavy Hair, Terracotta Blazer)
-  const renderMira = () => (
-    <g>
-      {/* Back Hair */}
-      <path d="M 38 48 C 30 68 28 92 40 108 C 48 94 46 72 48 54 Z" fill="#451A03" />
-      <path d="M 82 48 C 90 68 92 92 80 108 C 72 94 74 72 72 54 Z" fill="#451A03" />
 
-      {/* Shoulders & Casual Blazer */}
-      <path d="M 28 112 C 34 88 48 82 60 82 C 72 82 86 88 92 112 Z" fill="#C2410C" />
-      {/* Cream Inner Top */}
-      <path d="M 52 84 L 60 102 L 68 84 Z" fill="#FFFBEB" />
-      <path d="M 46 84 L 60 106 L 54 112 L 38 112 Z" fill="#9A3412" />
-      <path d="M 74 84 L 60 106 L 66 112 L 82 112 Z" fill="#9A3412" />
-
-      {/* Neck & Face */}
-      <rect x="54" y="68" width="12" height="18" rx="4" fill={skinToneWarm} />
-      <path d="M 38 42 C 38 28 82 28 82 42 C 82 64 71 76 60 76 C 49 76 38 64 38 42 Z" fill={skinToneWarm} />
-      {/* Soft Blush */}
-      <ellipse cx="47" cy="58" rx="4" ry="2.2" fill={blushTone} />
-      <ellipse cx="73" cy="58" rx="4" ry="2.2" fill={blushTone} />
-
-      {/* Eyes & Nose */}
-      {renderEyes('#9A3412', 48, 72, 52, 'almond')}
-      <path d="M 59 58 L 60 63 L 62 63" stroke="#D97706" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-
-      {/* Mouth */}
-      {renderMouth('#BE123C', 60, 70)}
-
-      {/* Front Wavy Hair Strands */}
-      <path d="M 36 40 C 44 24 76 24 84 40 C 76 34 68 38 60 44 C 52 36 42 36 36 40 Z" fill="#5A2308" />
-      <path d="M 37 38 C 39 52 44 64 45 74 C 42 60 40 48 38 40 Z" fill="#451A03" />
-      <path d="M 83 38 C 81 52 76 64 75 74 C 78 60 80 48 82 40 Z" fill="#451A03" />
-
-      {/* Explaining Hand Gesture */}
-      {showGesture && isExplaining && (
-        <g className="animate-in fade-in duration-300">
-          <path d="M 86 100 C 92 90 98 84 104 88 C 108 92 102 102 96 110 Z" fill={skinToneWarm} stroke="#C2410C" strokeWidth="1" />
-          <circle cx="103" cy="89" r="3" fill={skinToneWarm} />
-        </g>
-      )}
-    </g>
-  );
 
   // 2. ANAYA — Academic & Exam Tutor (Sleek Bun, Thin Silver Specs, Navy Formal Shirt)
   const renderAnaya = () => (
@@ -474,7 +433,6 @@ export const GuideMasterAvatar: React.FC<GuideMasterAvatarProps> = ({
 
   const renderSelectedCharacter = () => {
     switch (characterId) {
-      case 'mira': return renderMira();
       case 'anaya': return renderAnaya();
       case 'kiara': return renderKiara();
       case 'aira': return renderAira();
@@ -482,7 +440,7 @@ export const GuideMasterAvatar: React.FC<GuideMasterAvatarProps> = ({
       case 'isha': return renderIsha();
       case 'naina': return renderNaina();
       case 'yuna': return renderYuna();
-      default: return renderMira();
+      default: return renderAnaya();
     }
   };
 

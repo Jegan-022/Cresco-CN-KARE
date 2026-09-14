@@ -37,7 +37,6 @@ export const ByteBot: React.FC<ByteBotProps> = ({
     isPaused,
     audioAmplitude,
     currentSpokenText,
-    hasElevenLabsKey,
     openCharacterHub,
   } = useCharacter();
 
@@ -117,7 +116,7 @@ export const ByteBot: React.FC<ByteBotProps> = ({
             {speechText}
           </p>
 
-          {/* Audio Controls Toolbar: PLAY, PAUSE, REPLAY + ELEVENLABS BADGE */}
+          {/* Audio Controls Toolbar: PLAY, PAUSE, REPLAY + VOICE BADGE */}
           <div className="mt-2.5 flex items-center justify-between gap-3 pt-2 border-t border-[#EFECE6] dark:border-slate-700/50">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-wider flex items-center gap-1.5">
@@ -132,19 +131,15 @@ export const ByteBot: React.FC<ByteBotProps> = ({
                 )}
               </span>
 
-              {/* ElevenLabs AI Voice Badge */}
+              {/* Companion Voice Badge */}
               {showVoiceBadge && (
                 <button
                   onClick={openCharacterHub}
-                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-semibold transition-colors cursor-pointer ${
-                    hasElevenLabsKey
-                      ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-purple-500'
-                  }`}
-                  title={hasElevenLabsKey ? 'ElevenLabs AI Voice Active' : 'Configure ElevenLabs Key in Character Hub'}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-semibold transition-colors cursor-pointer bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                  title="Companion Voice Guide Active"
                 >
                   <Sparkles className="w-2.5 h-2.5" />
-                  <span>{hasElevenLabsKey ? 'ElevenLabs' : 'Voice AI'}</span>
+                  <span>Voice Guide</span>
                 </button>
               )}
             </div>

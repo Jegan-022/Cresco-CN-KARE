@@ -32,8 +32,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
   const { 
     activeCharacter, 
     openCharacterHub, 
-    hasElevenLabsKey,
-    elevenLabsApiKey
   } = useCharacter();
 
   // Voice & Audio Settings
@@ -146,37 +144,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
                 className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
               >
                 Change Companion
-              </button>
-            </div>
-
-            {/* ElevenLabs AI Voice Generation */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-xs text-[#172033] dark:text-[#F9FAFB] block">
-                    ElevenLabs Natural Voice Generation
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    AI TTS
-                  </span>
-                </div>
-                <span className="text-[11px] text-[#64748B] dark:text-slate-400">
-                  {hasElevenLabsKey
-                    ? 'ElevenLabs API connected with custom character voice personas'
-                    : 'Using smart browser speech synthesis fallback (Add key to unlock ElevenLabs)'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={openCharacterHub}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer border ${
-                  hasElevenLabsKey
-                    ? 'bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/30'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
-                }`}
-              >
-                {hasElevenLabsKey ? 'Manage Key' : 'Setup Key'}
               </button>
             </div>
 

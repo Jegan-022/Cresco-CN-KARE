@@ -1,10 +1,9 @@
 import { Lesson } from '../types';
-import { fetchWithAuth } from '../lib/api';
 
 export interface LessonSummaryResult {
   bullets: string[];
   keyConcept: string;
-  source: 'gemini' | 'curriculum';
+  source: 'curriculum';
   generatedAt: string;
 }
 
@@ -108,38 +107,8 @@ const FALLBACK_SUMMARIES: Record<string, { bullets: [string, string, string]; ke
   }
 };
 
-export async function fetchLessonAISummary(lesson: Lesson, sectionTitle: string): Promise<LessonSummaryResult> {
-  // First attempt: call server-side Gemini API endpoint
-  try {
-    const response = await fetchWithAuth('/api/lesson-summary', {
-      method: 'POST',
-      body: JSON.stringify({
-        lessonId: lesson.id,
-        lessonTitle: lesson.title,
-        sectionTitle: sectionTitle,
-        overview: lesson.overview || '',
-        keyTakeaway: lesson.keyTakeaway || '',
-        duration: lesson.duration,
-        type: lesson.type,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (Array.isArray(data.bullets) && data.bullets.length >= 3) {
-        return {
-          bullets: data.bullets.slice(0, 3),
-          keyConcept: data.keyConcept || lesson.keyTakeaway || 'Core Computer Networks Principle',
-          source: 'gemini',
-          generatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-      }
-    }
-  } catch {
-    // Graceful fallback to client-side curriculum summary
-  }
-
-  // Check known curated fallback summaries
+export async function fetchLessonAISummary(lesson: Lesson, _sectionTitle: string): Promise<LessonSummaryResult> {
+  // Check known curated summaries
   const cached = FALLBACK_SUMMARIES[lesson.id];
   if (cached) {
     return {
@@ -150,7 +119,7 @@ export async function fetchLessonAISummary(lesson: Lesson, sectionTitle: string)
     };
   }
 
-  // Intelligent dynamic synthesis from lesson properties
+  // Synthesis from lesson curriculum properties
   const takeaway = lesson.keyTakeaway || 'Fundamental protocol architecture and communication standard.';
   const overview = lesson.overview || 'Exploration of packet structures, state machines, and transmission mechanics.';
   
@@ -158,7 +127,7 @@ export async function fetchLessonAISummary(lesson: Lesson, sectionTitle: string)
     bullets: [
       `Core Principle: ${takeaway}`,
       `Protocol Mechanics: ${overview}`,
-      `Exam Takeaway: Master the state transitions, header flags, and latency implications of ${lesson.title} for midterm review.`
+      `Exam Takeaway: Master the state transitions, header flags, and latency implications of ${lesson.title} for academic review.`
     ],
     keyConcept: lesson.title,
     source: 'curriculum',
