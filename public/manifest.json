@@ -7,20 +7,20 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#2563eb",
-  "background_color": "#faf8ff",
+  "theme_color": "#0e4b58",
+  "background_color": "#081510",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/assets/brand/cresco-app-icon.png",
       "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon.svg",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ]
 }

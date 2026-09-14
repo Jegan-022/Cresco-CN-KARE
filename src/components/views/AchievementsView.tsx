@@ -2,6 +2,7 @@ import React from 'react';
 import { NavTab } from '../../types';
 import { soundFx } from '../../utils/soundEffects';
 import { Trophy, Sparkles, Check, Lock, ShieldCheck, Zap, Award } from 'lucide-react';
+import { CrescoMascot } from '../brand/CrescoMascot';
 
 interface AchievementsViewProps {
   onNavigate?: (tab: NavTab) => void;
@@ -133,9 +134,14 @@ export const AchievementsView: React.FC<AchievementsViewProps> = ({ onNavigate }
       {/* Header */}
       <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#F0A63A]/15 text-[#F0A63A] flex items-center justify-center shrink-0">
-            <Trophy size={26} />
-          </div>
+          <CrescoMascot 
+            pose="achievement" 
+            size="lg" 
+            animation="bounce" 
+            withGlow={true}
+            alt="Achievement Trophy Mascot"
+            className="shrink-0"
+          />
           <div>
             <div className="flex items-center gap-2 text-xs font-mono font-black text-[#F0A63A] uppercase tracking-widest">
               <span>CREDENTIAL VAULT</span>

@@ -99,23 +99,21 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="flex items-center gap-2.5 text-left cursor-pointer focus:outline-hidden group"
           >
-            {/* Stylized Network Hub 3D Logo with green conic/emerald theme */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.35)] group-hover:scale-105 transition-all shrink-0">
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 3v6m0 6v6M3 12h6m6 0h6" />
-                <circle cx="12" cy="3" r="1.5" />
-                <circle cx="12" cy="21" r="1.5" />
-                <circle cx="3" cy="12" r="1.5" />
-                <circle cx="21" cy="12" r="1.5" />
-              </svg>
+            {/* Official Cresco CN Network Octopus Mascot Brand Logo */}
+            <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-cyan-400/40 shadow-[0_4px_12px_rgba(6,182,212,0.25)] group-hover:scale-108 group-hover:rotate-2 transition-all duration-300 shrink-0 bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center">
+              <img 
+                src="/assets/brand/cresco-favicon.png" 
+                alt="Cresco CN Mascot Logo" 
+                className="w-full h-full object-contain p-0.5" 
+              />
+              <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900 shadow-xs animate-packet-beacon" />
             </div>
             <div className="flex flex-col">
-              <span className="font-headline text-2xl sm:text-[26px] font-black tracking-tight leading-none text-slate-900 dark:text-white flex items-center gap-1.5">
-                CRESCO <span className="text-emerald-500 dark:text-emerald-400 font-black">CN</span>
+              <span className="font-headline text-2xl sm:text-[25px] font-black tracking-tight leading-none text-slate-900 dark:text-white flex items-center gap-1">
+                CRESCO<span className="text-cyan-600 dark:text-cyan-400 font-black">-CN</span>
               </span>
-              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400/90 font-extrabold tracking-widest uppercase leading-none mt-1">
-                COMPUTER NETWORKS
+              <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 font-extrabold tracking-widest uppercase leading-none mt-1">
+                GAMIFIED NETWORK LEARNING
               </span>
             </div>
           </button>
@@ -173,10 +171,18 @@ export const Header: React.FC<HeaderProps> = ({
               if (onOpenStreak) onOpenStreak();
               else onNavigate('streak');
             }}
-            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-tertiary transition-all cursor-pointer"
+            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-tertiary transition-all cursor-pointer group"
             title={`${streak}-Day Active Streak`}
           >
-            <span className="text-sm leading-none">🔥</span>
+            {streak > 0 ? (
+              <img 
+                src="/assets/mascot/mascot-streak.png" 
+                alt="Streak Mascot" 
+                className="w-5 h-5 object-contain group-hover:scale-125 transition-transform" 
+              />
+            ) : (
+              <span className="text-sm leading-none">🔥</span>
+            )}
             <span className="font-headline text-xs font-bold text-on-surface dark:text-[#F9FAFB]">
               {streak} {streak === 1 ? 'Day' : 'Days'}
             </span>

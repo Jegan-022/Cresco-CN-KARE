@@ -12,12 +12,23 @@ export const Footer: React.FC<FooterProps> = ({ onOpenReference }) => {
     <>
       <footer className="w-full bg-[#f2f3ff] border-t border-[#dae2fd]/60 py-8 mt-12">
         <div className="w-full max-w-[1440px] mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[#434655] text-[12px]">
-          <div className="flex items-center gap-4 flex-wrap justify-center md:justify-start">
-            <span className="font-mono text-[11px] font-semibold text-[#004ac6]">
-              CRESCO CN OS // v2.4.0
+          <div className="flex items-center gap-3 flex-wrap justify-center md:justify-start">
+            <div className="w-6 h-6 rounded-lg overflow-hidden border border-cyan-400/40 shadow-xs shrink-0 bg-gradient-to-br from-[#0d3b46] to-[#08252d] flex items-center justify-center">
+              <img 
+                src="/assets/brand/cresco-favicon.png" 
+                alt="Cresco CN Mascot" 
+                className="w-full h-full object-contain p-0.5" 
+              />
+            </div>
+            <span className="font-headline font-bold text-slate-900 dark:text-white flex items-center gap-1">
+              Cresco<span className="text-cyan-600 dark:text-cyan-400">-CN</span>
             </span>
             <span className="hidden sm:inline">•</span>
-            <span>Interactive Network Architecture Simulator</span>
+            <span className="font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              v2.4.0
+            </span>
+            <span className="hidden sm:inline">•</span>
+            <span>Gamified Network Learning Platform</span>
           </div>
 
           <div className="flex items-center gap-6 font-mono text-[11px] flex-wrap justify-center">

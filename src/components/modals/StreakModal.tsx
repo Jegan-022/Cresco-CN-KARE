@@ -1,5 +1,6 @@
 import React from 'react';
 import { ByteBot } from '../character/ByteBot';
+import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { Flame, Check, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -68,9 +69,15 @@ export const StreakModal: React.FC<StreakModalProps> = ({
           <X size={18} />
         </button>
 
-        {/* Mascot in Streak Pose */}
+        {/* Cresco CN Mascot in Fiery Streak Pose */}
         <div className="flex justify-center mb-4">
-          <ByteBot pose={actualStreak > 0 ? "streak" : "idle"} size="lg" />
+          <CrescoMascot 
+            pose={actualStreak > 0 ? "streak" : "front"} 
+            size="xl" 
+            animation="bounce" 
+            withGlow={true}
+            alt="Cresco CN Streak Mascot"
+          />
         </div>
 
         {/* Headline */}

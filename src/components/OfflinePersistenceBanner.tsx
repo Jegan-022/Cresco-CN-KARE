@@ -26,8 +26,12 @@ export const OfflinePersistenceBanner: React.FC<OfflinePersistenceBannerProps> =
   if (justReconnected) {
     return (
       <div className="bg-emerald-600 text-white px-4 py-2 text-xs font-medium flex items-center justify-between shadow-xs transition-all transform-gpu animate-fadeIn">
-        <div className="flex items-center space-x-2 max-w-5xl mx-auto w-full">
-          <CheckCircle2 className="w-4 h-4 text-emerald-100 shrink-0" />
+        <div className="flex items-center space-x-3 max-w-5xl mx-auto w-full">
+          <img 
+            src="/assets/mascot/mascot-connected.png" 
+            alt="Connection Established" 
+            className="w-8 h-8 object-contain shrink-0 animate-bounce" 
+          />
           <span>Connection restored — Firestore offline cache synchronized with server.</span>
         </div>
       </div>
@@ -41,13 +45,15 @@ export const OfflinePersistenceBanner: React.FC<OfflinePersistenceBannerProps> =
   return (
     <div
       id="offline-persistence-status-banner"
-      className="bg-amber-500 text-slate-900 border-b border-amber-600/20 px-4 py-2.5 text-xs shadow-xs transition-all transform-gpu"
+      className="bg-amber-500 text-slate-900 border-b border-amber-600/20 px-4 py-2 text-xs shadow-xs transition-all transform-gpu"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div className="flex items-center space-x-2.5">
-          <div className="p-1 rounded bg-amber-600/20 text-slate-950 shrink-0">
-            <WifiOff className="w-4 h-4" />
-          </div>
+        <div className="flex items-center space-x-3">
+          <img 
+            src="/assets/mascot/mascot-disconnected.png" 
+            alt="Connection Lost" 
+            className="w-9 h-9 object-contain shrink-0 animate-tentacle-sway" 
+          />
           <div>
             <span className="font-bold text-slate-950">
               {isIntermittent ? 'Intermittent Network Connection' : 'Offline Mode Active'}
