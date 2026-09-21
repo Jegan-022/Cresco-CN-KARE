@@ -54,9 +54,11 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           }
         });
         setRealStudents(list);
+      }, (err) => {
+        console.warn('Teacher dashboard firestore listener error:', err);
       });
     } catch (e) {
-      console.warn('Teacher dashboard firestore listener error:', e);
+      console.warn('Teacher dashboard firestore listener setup error:', e);
     }
     return () => unsubscribe();
   }, []);
@@ -73,6 +75,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
             setPublishedStatus((prev) => ({ ...prev, ...data }));
           }
         }
+      }, (err) => {
+        console.warn('Teacher sections sync error:', err);
       });
     } catch (e) {
       console.warn('Teacher sections sync fallback:', e);

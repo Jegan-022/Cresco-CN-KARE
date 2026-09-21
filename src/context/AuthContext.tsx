@@ -330,6 +330,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setUserProfile((prev) => prev ? { ...prev, ...liveData } : liveData);
           }
+        }, (err) => {
+          console.warn('[Firestore] Profile onSnapshot handled error (offline cache fallback):', err);
         });
       } catch (e) {
         console.warn('Real-time profile subscription failed:', e);
@@ -694,6 +696,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000) return;
           setUserProfile((prev) => prev ? { ...prev, ...liveData, role: 'student' } : liveData);
         }
+      }, (err) => {
+        console.warn('[Firestore] Student onSnapshot handled error:', err);
       });
     } catch (e) {
       console.warn("Could not attach real-time listener to student doc:", e);

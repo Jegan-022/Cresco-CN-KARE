@@ -1,5 +1,7 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { NavTab } from "../../types";
+import { useAuth } from "../../context/AuthContext";
+import { soundFx } from "../../utils/soundEffects";
 
 interface LearningMapViewProps {
   onSelectLesson?: (lessonId: string, sectionId: number) => void;
@@ -35,45 +37,312 @@ const imgCircleX = `${assetPathPrefix}/2add4.svg`;
 
 type NodeStatus = "completed" | "current" | "in-progress" | "locked";
 
-interface LevelNode {
+interface LevelNodeConfig {
   id: number;
   label: string;
   area: string;
-  status: NodeStatus;
-  xp: number;
+  title: string;
   description: string;
+  lessonId: string;
+  unitIndex: number;
+  xp: number;
   lessons: number;
-  completedLessons: number;
   left: number;
   top: number;
 }
 
-const NODES: LevelNode[] = [
-  { id: 1, label: "1", area: "LAN Village", status: "completed", xp: 100, description: "Learn the basics of Local Area Networks and how devices communicate.", lessons: 5, completedLessons: 5, left: 130, top: 470 },
-  { id: 2, label: "2", area: "LAN Village", status: "completed", xp: 120, description: "Explore IP addressing, subnets, and MAC addresses in a LAN environment.", lessons: 6, completedLessons: 6, left: 210, top: 490 },
-  { id: 3, label: "3", area: "LAN Village", status: "completed", xp: 110, description: "Master switching fundamentals and VLANs.", lessons: 5, completedLessons: 5, left: 250, top: 410 },
-  { id: 4, label: "4", area: "LAN Village", status: "completed", xp: 130, description: "Understand ARP, DHCP, and network troubleshooting.", lessons: 6, completedLessons: 6, left: 210, top: 310 },
-  { id: 5, label: "5", area: "LAN Village", status: "completed", xp: 140, description: "Bridge your LAN knowledge with routing principles.", lessons: 7, completedLessons: 7, left: 300, top: 270 },
-  { id: 6, label: "6", area: "Routing Mountains", status: "completed", xp: 150, description: "Conquer static and dynamic routing protocols.", lessons: 8, completedLessons: 8, left: 300, top: 180 },
-  { id: 7, label: "7", area: "Routing Mountains", status: "completed", xp: 160, description: "Master OSPF, EIGRP, and BGP routing protocols.", lessons: 8, completedLessons: 8, left: 380, top: 220 },
-  { id: 8, label: "8", area: "Security Fortress", status: "current", xp: 0, description: "Dive into network security fundamentals — firewalls, ACLs, and intrusion detection systems.", lessons: 10, completedLessons: 3, left: 440, top: 340 },
-  { id: 9, label: "9", area: "Seaside Village", status: "in-progress", xp: 0, description: "Explore NAT, PAT, and network address translation in real-world scenarios.", lessons: 6, completedLessons: 1, left: 550, top: 390 },
-  { id: 10, label: "10", area: "Seaside Village", status: "in-progress", xp: 0, description: "BOSS BATTLE: Defeat the network configuration challenge!", lessons: 1, completedLessons: 0, left: 650, top: 340 },
-  { id: 11, label: "11", area: "Seaside Village", status: "in-progress", xp: 0, description: "Practice port management and traffic shaping techniques.", lessons: 5, completedLessons: 0, left: 580, top: 470 },
-  { id: 12, label: "12", area: "Wireless Woods", status: "locked", xp: 0, description: "Unlock to explore wireless networking standards and protocols.", lessons: 8, completedLessons: 0, left: 760, top: 380 },
-  { id: 13, label: "13", area: "Wireless Woods", status: "locked", xp: 0, description: "Unlock to master Wi-Fi security and enterprise wireless setups.", lessons: 7, completedLessons: 0, left: 790, top: 290 },
-  { id: 14, label: "14", area: "Wireless Woods", status: "locked", xp: 0, description: "Unlock to learn about Bluetooth, Zigbee, and IoT networking.", lessons: 6, completedLessons: 0, left: 890, top: 260 },
-  { id: 15, label: "15", area: "Wireless Woods", status: "locked", xp: 0, description: "Unlock to study antenna theory and RF propagation.", lessons: 5, completedLessons: 0, left: 910, top: 360 },
-  { id: 16, label: "16", area: "Internet Ocean", status: "locked", xp: 0, description: "Unlock to navigate internet protocols and BGP routing.", lessons: 9, completedLessons: 0, left: 970, top: 480 },
-  { id: 17, label: "17", area: "Internet Ocean", status: "locked", xp: 0, description: "Unlock to master DNS, HTTP/S, and application layer protocols.", lessons: 8, completedLessons: 0, left: 1090, top: 470 },
-  { id: 18, label: "18", area: "Internet Ocean", status: "locked", xp: 0, description: "Unlock to explore CDNs, load balancers, and cloud networking.", lessons: 7, completedLessons: 0, left: 1180, top: 420 },
-  { id: 19, label: "19", area: "Mountain Trail", status: "locked", xp: 0, description: "Unlock to study advanced routing and MPLS.", lessons: 8, completedLessons: 0, left: 1210, top: 310 },
-  { id: 20, label: "20", area: "Mountain Trail", status: "locked", xp: 0, description: "Unlock to master VPN technologies and tunneling protocols.", lessons: 9, completedLessons: 0, left: 1250, top: 230 },
-  { id: 21, label: "21", area: "Lighthouse Point", status: "locked", xp: 0, description: "Final challenge: TCP/IP mastery and network architecture design.", lessons: 12, completedLessons: 0, left: 1330, top: 150 },
-];
+interface LevelNode extends LevelNodeConfig {
+  status: NodeStatus;
+  completedLessons: number;
+}
 
-const totalXP = NODES.filter((n) => n.status === "completed").reduce((s, n) => s + n.xp, 0);
-const totalCompleted = NODES.filter((n) => n.status === "completed").length;
+// 21 Island Pathway Levels mapped cleanly across Units 3, 4, and 5 Curriculum
+const LEVEL_CONFIGS: LevelNodeConfig[] = [
+  // ==========================================
+  // UNIT 3: NETWORK LAYER (Levels 1 - 8)
+  // ==========================================
+  {
+    id: 1,
+    label: "1",
+    area: "LAN Village",
+    title: "Network Layer: Need & Issues",
+    description: "Store-and-forward packet switching, connectionless datagram vs virtual circuit services, and Layer 3 design issues.",
+    lessonId: "u3_m01",
+    unitIndex: 0,
+    xp: 100,
+    lessons: 4,
+    left: 130,
+    top: 470,
+  },
+  {
+    id: 2,
+    label: "2",
+    area: "LAN Village",
+    title: "Routing Algorithms",
+    description: "Shortest path routing, graph traversal, Distance Vector vs Link State principles, and network metrics.",
+    lessonId: "u3_m02",
+    unitIndex: 0,
+    xp: 120,
+    lessons: 5,
+    left: 210,
+    top: 490,
+  },
+  {
+    id: 3,
+    label: "3",
+    area: "LAN Village",
+    title: "Quality of Service (QoS)",
+    description: "Traffic shaping, policing, Leaky Bucket and Token Bucket rate control algorithms, jitter, and delay guarantees.",
+    lessonId: "u3_m03",
+    unitIndex: 0,
+    xp: 110,
+    lessons: 5,
+    left: 250,
+    top: 410,
+  },
+  {
+    id: 4,
+    label: "4",
+    area: "LAN Village",
+    title: "IPv4 & IPv6 Packet Formats",
+    description: "IPv4 20-byte vs IPv6 40-byte fixed headers, extension headers, Path MTU discovery, and traffic classification.",
+    lessonId: "u3_m05",
+    unitIndex: 0,
+    xp: 130,
+    lessons: 6,
+    left: 210,
+    top: 310,
+  },
+  {
+    id: 5,
+    label: "5",
+    area: "LAN Village",
+    title: "Addressing & Router Configuration",
+    description: "Logical IPv4/IPv6 address structures, Cisco router console setup, interface configurations, and MOTD banners.",
+    lessonId: "u3_m06",
+    unitIndex: 0,
+    xp: 140,
+    lessons: 7,
+    left: 300,
+    top: 270,
+  },
+  {
+    id: 6,
+    label: "6",
+    area: "Routing Mountains",
+    title: "Distance Vector Routing & RIP",
+    description: "Routing Information Protocol, Bellman-Ford equation, 30-second periodic updates, hop counts, and split horizon.",
+    lessonId: "u3_m02",
+    unitIndex: 0,
+    xp: 150,
+    lessons: 8,
+    left: 300,
+    top: 180,
+  },
+  {
+    id: 7,
+    label: "7",
+    area: "Routing Mountains",
+    title: "Link State Routing, OSPF & BGP",
+    description: "Dijkstra algorithm, Autonomous Systems, OSPF area hierarchies, Link State Advertisements, and BGP inter-AS routing.",
+    lessonId: "u3_m07",
+    unitIndex: 0,
+    xp: 160,
+    lessons: 8,
+    left: 380,
+    top: 220,
+  },
+  {
+    id: 8,
+    label: "8",
+    area: "Security Fortress",
+    title: "Subnetting, CIDR, VLSM & Protocols",
+    description: "Classless Inter-Domain Routing, Variable Length Subnet Masks, DHCP DORA exchange, ARP, NAT & ICMP error reporting.",
+    lessonId: "u3_m08",
+    unitIndex: 0,
+    xp: 180,
+    lessons: 10,
+    left: 440,
+    top: 340,
+  },
+
+  // ==========================================
+  // UNIT 4: TRANSPORT LAYER (Levels 9 - 15)
+  // ==========================================
+  {
+    id: 9,
+    label: "9",
+    area: "Seaside Village",
+    title: "Transport Layer Services",
+    description: "Process-to-process delivery, port multiplexing, socket addresses, and connectionless vs connection-oriented transport.",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 120,
+    lessons: 6,
+    left: 550,
+    top: 390,
+  },
+  {
+    id: 10,
+    label: "10",
+    area: "Seaside Village",
+    title: "Transport Protocols: ARQ Challenge",
+    description: "BOSS BATTLE: Simple protocol, Stop-and-Wait, Go-Back-N, and Selective Repeat sliding window protocols!",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 250,
+    lessons: 1,
+    left: 650,
+    top: 340,
+  },
+  {
+    id: 11,
+    label: "11",
+    area: "Seaside Village",
+    title: "User Datagram Protocol (UDP)",
+    description: "Connectionless datagram service, minimal 8-byte header, lightweight checksum, real-time multimedia streaming, and DNS.",
+    lessonId: "u4_m06",
+    unitIndex: 1,
+    xp: 130,
+    lessons: 5,
+    left: 580,
+    top: 470,
+  },
+  {
+    id: 12,
+    label: "12",
+    area: "Wireless Woods",
+    title: "TCP Services & Segment Structure",
+    description: "Transmission Control Protocol features, byte streaming, sequence numbers, checksum validation, and header fields.",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 140,
+    lessons: 8,
+    left: 760,
+    top: 380,
+  },
+  {
+    id: 13,
+    label: "13",
+    area: "Wireless Woods",
+    title: "TCP Connection: 3-Way Handshake",
+    description: "Active open negotiation (SYN, SYN-ACK, ACK), full-duplex synchronization, initial sequence numbers, and teardown.",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 150,
+    lessons: 7,
+    left: 790,
+    top: 290,
+  },
+  {
+    id: 14,
+    label: "14",
+    area: "Wireless Woods",
+    title: "TCP State Transition Diagram",
+    description: "Finite state machine tracking (LISTEN, ESTABLISHED, FIN_WAIT, TIME_WAIT) and receive buffer sliding windows.",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 160,
+    lessons: 6,
+    left: 890,
+    top: 260,
+  },
+  {
+    id: 15,
+    label: "15",
+    area: "Wireless Woods",
+    title: "TCP Flow, Error & Congestion Control",
+    description: "Fast retransmit heuristics, duplicate ACKs, RTO calculation, and AIMD Slow Start / Congestion Avoidance algorithms.",
+    lessonId: "u4_m05",
+    unitIndex: 1,
+    xp: 180,
+    lessons: 8,
+    left: 910,
+    top: 360,
+  },
+
+  // ==========================================
+  // UNIT 5: APPLICATION LAYER (Levels 16 - 21)
+  // ==========================================
+  {
+    id: 16,
+    label: "16",
+    area: "Internet Ocean",
+    title: "Domain Name System (DNS)",
+    description: "Distributed hierarchical namespace (Root, TLD, Authoritative), recursive resolvers, and resource record types (A, MX, CNAME).",
+    lessonId: "u5_m02",
+    unitIndex: 2,
+    xp: 140,
+    lessons: 9,
+    left: 970,
+    top: 480,
+  },
+  {
+    id: 17,
+    label: "17",
+    area: "Internet Ocean",
+    title: "World Wide Web & HTTP / HTTPS",
+    description: "Client-server web transactions, HTTP request methods, response status codes, proxy caching, and TLS encryption.",
+    lessonId: "u5_m02",
+    unitIndex: 2,
+    xp: 150,
+    lessons: 8,
+    left: 1090,
+    top: 470,
+  },
+  {
+    id: 18,
+    label: "18",
+    area: "Internet Ocean",
+    title: "File Transfer Protocol (FTP)",
+    description: "Dual-channel architecture: Control channel (Port 21) vs Data channel (Port 20), active and passive connection modes.",
+    lessonId: "u5_m02",
+    unitIndex: 2,
+    xp: 140,
+    lessons: 7,
+    left: 1180,
+    top: 420,
+  },
+  {
+    id: 19,
+    label: "19",
+    area: "Mountain Trail",
+    title: "Email Protocols: SMTP, POP3 & IMAP",
+    description: "Electronic mail transfer via SMTP (Port 25/587) and mailbox retrieval/synchronization via POP3 (Port 110) and IMAP (Port 143).",
+    lessonId: "u5_m02",
+    unitIndex: 2,
+    xp: 150,
+    lessons: 8,
+    left: 1210,
+    top: 310,
+  },
+  {
+    id: 20,
+    label: "20",
+    area: "Mountain Trail",
+    title: "Remote Terminal: Telnet vs SSH",
+    description: "Network Virtual Terminal vulnerabilities on port 23 versus cryptographic SSH-2 tunneling on port 22.",
+    lessonId: "u5_m08",
+    unitIndex: 2,
+    xp: 160,
+    lessons: 9,
+    left: 1250,
+    top: 230,
+  },
+  {
+    id: 21,
+    label: "21",
+    area: "Lighthouse Point",
+    title: "TCP/IP Mastery & Internet Capstone",
+    description: "Final comprehensive challenge: Complete end-to-end packet journey through the full 5-layer internet protocol stack.",
+    lessonId: "u5_m08",
+    unitIndex: 2,
+    xp: 300,
+    lessons: 12,
+    left: 1330,
+    top: 150,
+  },
+];
 
 function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) => void }) {
   const isCompleted = node.status === "completed";
@@ -109,10 +378,12 @@ function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) =
 
   return (
     <div
-      className={`absolute flex items-center justify-center rounded-[18px] size-[36px] border-3 border-solid ${bg} ${border} ${shadow} cursor-pointer transition-transform hover:scale-110 active:scale-95 select-none ${isCurrent ? "node-current" : ""}`}
+      className={`absolute flex items-center justify-center rounded-[18px] size-[36px] border-3 border-solid ${bg} ${border} ${shadow} cursor-pointer transition-transform hover:scale-110 active:scale-95 select-none ${
+        isCurrent ? "node-current" : ""
+      }`}
       style={{ left: node.left, top: node.top }}
       onClick={() => !isLocked && onClick(node)}
-      title={isLocked ? "Complete previous levels to unlock" : node.area}
+      title={isLocked ? `Level ${node.id} — Complete previous levels to unlock` : `Level ${node.id}: ${node.title} (${node.area})`}
     >
       {isLocked ? (
         <div className="flex items-center justify-center size-full">
@@ -133,7 +404,7 @@ function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) =
 
       {/* Level badge for current */}
       {isCurrent && (
-        <div className="absolute -translate-x-1/2 left-1/2 top-[38px] bg-[#ffc229] border border-[#0a1428] border-solid flex items-center px-[6px] py-[2px] rounded-[4px]">
+        <div className="absolute -translate-x-1/2 left-1/2 top-[38px] bg-[#ffc229] border border-[#0a1428] border-solid flex items-center px-[6px] py-[2px] rounded-[4px] shadow-sm z-20">
           <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[8px] whitespace-nowrap leading-none">
             LEVEL {node.id}
           </p>
@@ -143,10 +414,18 @@ function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) =
   );
 }
 
-function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => void; onPlay: (n: LevelNode) => void }) {
+function NodeModal({
+  node,
+  onClose,
+  onPlay,
+}: {
+  node: LevelNode;
+  onClose: () => void;
+  onPlay: (n: LevelNode) => void;
+}) {
   const isLocked = node.status === "locked";
   const isCompleted = node.status === "completed";
-  const progress = Math.round((node.completedLessons / node.lessons) * 100);
+  const progress = Math.min(100, Math.round((node.completedLessons / node.lessons) * 100));
 
   const statusColor = isCompleted
     ? "text-[#4cd15b]"
@@ -169,7 +448,7 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
       className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-[2px]"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="modal-appear bg-[#fdf0d5] border-3 border-[#0a1428] border-solid rounded-[16px] w-[340px] shadow-[0px_8px_0px_rgba(0,0,0,0.3)] overflow-hidden">
+      <div className="modal-appear bg-[#fdf0d5] border-3 border-[#0a1428] border-solid rounded-[16px] w-[360px] max-w-[90vw] shadow-[0px_8px_0px_rgba(0,0,0,0.3)] overflow-hidden">
         {/* Header */}
         <div
           className={`px-5 pt-5 pb-4 ${
@@ -182,24 +461,22 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
               : "bg-[#94a3b8]/20"
           }`}
         >
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-['Sora:ExtraBold'] font-extrabold text-[22px] text-[#0a1428] leading-tight">
-                Level {node.id}
+              <p className="font-['Sora:ExtraBold'] font-extrabold text-[20px] text-[#0a1428] leading-tight">
+                Level {node.id}: {node.title}
               </p>
-              <p className="font-['Inter:Bold'] font-bold text-[12px] text-[#0a1428]/60 uppercase tracking-wider mt-0.5">
+              <p className="font-['Inter:Bold'] font-bold text-[11px] text-[#0a1428]/60 uppercase tracking-wider mt-0.5">
                 {node.area}
               </p>
             </div>
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1 shrink-0">
               <span className={`font-['Sora:ExtraBold'] font-extrabold text-[11px] ${statusColor}`}>
                 {statusLabel}
               </span>
-              {isCompleted && (
-                <span className="font-['Inter:Bold'] font-bold text-[11px] text-[#0a1428]/60">
-                  +{node.xp} XP earned
-                </span>
-              )}
+              <span className="font-['Inter:Bold'] font-bold text-[11px] text-[#0a1428]/70">
+                +{node.xp} XP
+              </span>
             </div>
           </div>
         </div>
@@ -250,7 +527,7 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
                 />
               ))}
               <span className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-[#0a1428]/60 ml-1">
-                Perfect score!
+                Completed!
               </span>
             </div>
           )}
@@ -260,14 +537,14 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
         <div className="px-5 pb-5 flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded-[10px] bg-[#0a1428]/10 border-2 border-[#0a1428]/20 border-solid font-['Sora:ExtraBold'] font-extrabold text-[13px] text-[#0a1428] cursor-pointer hover:bg-[#0a1428]/20 transition-colors active:scale-95"
+            className="flex-1 py-2.5 rounded-[10px] bg-[#0a1428]/10 border-2 border-[#0a1428]/20 border-solid font-['Sora:ExtraBold'] font-extrabold text-[13px] text-[#0a1428] cursor-pointer hover:bg-[#0a1428]/20 transition-colors active:scale-95"
           >
             Close
           </button>
           {!isLocked && (
             <button
               onClick={() => onPlay(node)}
-              className={`flex-[2] py-2 rounded-[10px] border-3 border-solid font-['Sora:ExtraBold'] font-extrabold text-[13px] cursor-pointer transition-all active:scale-95 shadow-[0px_4px_0px_rgba(0,0,0,0.2)] hover:shadow-[0px_2px_0px_rgba(0,0,0,0.2)] hover:translate-y-[2px]
+              className={`flex-[2] py-2.5 rounded-[10px] border-3 border-solid font-['Sora:ExtraBold'] font-extrabold text-[13px] cursor-pointer transition-all active:scale-95 shadow-[0px_4px_0px_rgba(0,0,0,0.2)] hover:shadow-[0px_2px_0px_rgba(0,0,0,0.2)] hover:translate-y-[2px]
                 ${
                   isCompleted
                     ? "bg-[#4cd15b] border-[#1e3a1e] text-white hover:bg-[#3cba4b]"
@@ -276,7 +553,7 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
                     : "bg-[#ff8e25] border-[#7c2d12] text-white hover:bg-[#f07d14]"
                 }`}
             >
-              {isCompleted ? "Play Again" : node.status === "current" ? "Continue →" : "Start →"}
+              {isCompleted ? "Play Again" : node.status === "current" ? "Start Lesson →" : "Start →"}
             </button>
           )}
         </div>
@@ -285,20 +562,47 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
   );
 }
 
-function HUD() {
-  const levelProgress = Math.round((totalXP / 1500) * 100);
+function HUD({
+  userXp,
+  completedCount,
+  currentLevelNumber,
+}: {
+  userXp: number;
+  completedCount: number;
+  currentLevelNumber: number;
+}) {
+  const targetXp = 1500;
+  const levelProgress = Math.min(100, Math.round((userXp / targetXp) * 100));
+
+  const rankTitle =
+    currentLevelNumber <= 2
+      ? "Novice"
+      : currentLevelNumber <= 4
+      ? "Scout"
+      : currentLevelNumber <= 7
+      ? "Ranger"
+      : currentLevelNumber <= 11
+      ? "Navigator"
+      : currentLevelNumber <= 16
+      ? "Commander"
+      : currentLevelNumber <= 20
+      ? "Architect"
+      : "Overlord";
+
   return (
     <div className="absolute top-[14px] right-[14px] z-10 bg-[#0a1428]/80 backdrop-blur-sm border-2 border-[#ffc229]/40 border-solid rounded-[14px] px-4 py-3 flex flex-col gap-2 min-w-[160px]">
       <div className="flex items-center gap-2">
         <div className="size-[32px] rounded-full bg-[#ffc229] border-2 border-[#0a1428] border-solid flex items-center justify-center">
-          <span className="font-['Sora:ExtraBold'] font-extrabold text-[12px] text-[#0a1428]">8</span>
+          <span className="font-['Sora:ExtraBold'] font-extrabold text-[12px] text-[#0a1428]">
+            {currentLevelNumber}
+          </span>
         </div>
         <div>
           <p className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-white/60 uppercase tracking-wider leading-none">
             Level
           </p>
           <p className="font-['Sora:ExtraBold'] font-extrabold text-[14px] text-white leading-tight">
-            Navigator
+            {rankTitle}
           </p>
         </div>
       </div>
@@ -306,23 +610,23 @@ function HUD() {
         <div className="flex justify-between mb-1">
           <span className="font-['Inter:Bold'] font-bold text-[9px] text-white/50 uppercase">XP</span>
           <span className="font-['Inter:Bold'] font-bold text-[9px] text-[#ffc229]">
-            {totalXP}/1500
+            {userXp}/{targetXp}
           </span>
         </div>
         <div className="h-[6px] bg-white/10 rounded-full overflow-hidden">
-          <div className="h-full bg-[#ffc229] rounded-full" style={{ width: `${levelProgress}%` }} />
+          <div className="h-full bg-[#ffc229] rounded-full transition-all duration-500" style={{ width: `${levelProgress}%` }} />
         </div>
       </div>
       <div className="flex justify-between pt-1 border-t border-white/10">
         <div className="text-center">
           <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#4cd15b] leading-none">
-            {totalCompleted}
+            {completedCount}
           </p>
           <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Done</p>
         </div>
         <div className="text-center">
           <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#ffc229] leading-none">
-            {21 - totalCompleted}
+            {Math.max(0, 21 - completedCount)}
           </p>
           <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Left</p>
         </div>
@@ -337,44 +641,94 @@ function HUD() {
   );
 }
 
-function ToastNotification({ message, onClose }: { message: string; onClose: () => void }) {
-  return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] modal-appear">
-      <div className="bg-[#0a1428] border-2 border-[#ffc229] border-solid rounded-[12px] px-6 py-3 flex items-center gap-3 shadow-[0px_8px_24px_rgba(0,0,0,0.4)]">
-        <img alt="star" className="size-[20px]" src={imgStar} />
-        <p className="font-['Sora:ExtraBold'] font-extrabold text-white text-[14px]">{message}</p>
-        <button onClick={onClose} className="text-white/50 hover:text-white text-[16px] cursor-pointer ml-2">
-          ×
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export const LearningMapView: React.FC<LearningMapViewProps> = () => {
+export const LearningMapView: React.FC<LearningMapViewProps> = ({
+  onSelectLesson,
+  onNavigate,
+}) => {
+  const { userProfile } = useAuth();
   const [selectedNode, setSelectedNode] = useState<LevelNode | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  const handlePlay = useCallback((node: LevelNode) => {
-    setSelectedNode(null);
-    const msgs = {
-      completed: `Replaying Level ${node.id} — ${node.area}!`,
-      current: `Continuing Level ${node.id} — Good luck, Navigator!`,
-      "in-progress": `Starting Level ${node.id} — Let's go!`,
-      locked: "",
-    };
-    const msg = msgs[node.status];
-    if (msg) {
-      setToast(msg);
-      setTimeout(() => setToast(null), 3000);
+  // Derive student's live progression from Firebase userProfile
+  const completedList = useMemo(() => userProfile?.completedModules || [], [userProfile?.completedModules]);
+  const userXp = useMemo(() => userProfile?.totalXP || userProfile?.xp || 0, [userProfile?.totalXP, userProfile?.xp]);
+
+  // Helper to check whether a level node is completed
+  const isLevelCompleted = useCallback(
+    (cfg: LevelNodeConfig) => {
+      if (completedList.includes(cfg.lessonId)) return true;
+      if (completedList.includes(`level_${cfg.id}`) || completedList.includes(`lvl_${cfg.id}`)) return true;
+      if (cfg.id === 1 && (completedList.includes("u3_m1") || completedList.includes("u3_m01"))) return true;
+      return false;
+    },
+    [completedList]
+  );
+
+  // Compute live node states (completed, current, in-progress, locked)
+  const nodes: LevelNode[] = useMemo(() => {
+    // Find the first uncompleted level index
+    let firstUncompletedIdx = LEVEL_CONFIGS.findIndex((cfg) => !isLevelCompleted(cfg));
+    if (firstUncompletedIdx === -1) {
+      firstUncompletedIdx = 999; // All completed!
     }
-  }, []);
+
+    return LEVEL_CONFIGS.map((cfg, index) => {
+      const completed = isLevelCompleted(cfg);
+      let status: NodeStatus = "locked";
+
+      if (completed) {
+        status = "completed";
+      } else if (index === firstUncompletedIdx) {
+        status = cfg.id === 10 ? "in-progress" : "current";
+      } else if (index < firstUncompletedIdx) {
+        status = "completed";
+      } else {
+        status = "locked";
+      }
+
+      const completedLessons = completed ? cfg.lessons : status === "current" ? 1 : 0;
+
+      return {
+        ...cfg,
+        status,
+        completedLessons,
+      };
+    });
+  }, [isLevelCompleted]);
+
+  const completedCount = useMemo(() => nodes.filter((n) => n.status === "completed").length, [nodes]);
+  const currentLevelNumber = useMemo(() => {
+    const currentNode = nodes.find((n) => n.status === "current" || n.status === "in-progress");
+    return currentNode ? currentNode.id : Math.min(21, completedCount + 1);
+  }, [nodes, completedCount]);
+
+  // Handle Play Action: launch actual interactive lesson player
+  const handlePlay = useCallback(
+    (node: LevelNode) => {
+      setSelectedNode(null);
+      soundFx.playClick();
+
+      // Boss battle level routes to challenges if navigated
+      if (node.id === 10 && onNavigate) {
+        onNavigate("boss-challenge");
+        return;
+      }
+
+      // Launch full gamified lesson view
+      if (onSelectLesson) {
+        onSelectLesson(node.lessonId, node.unitIndex);
+      }
+    },
+    [onSelectLesson, onNavigate]
+  );
 
   return (
     <div className="w-full rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border-2 border-[#0a1428]/30 bg-[#5ba8d4] flex flex-col relative min-h-[660px] h-[calc(100vh-140px)]">
       {/* Top title bar for narrow viewports */}
       <div className="flex-shrink-0 md:hidden flex items-center justify-center py-3 bg-[#0a1428]/60">
-        <p className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[22px]" style={{ textShadow: "0px 2px 0px black" }}>
+        <p
+          className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[22px]"
+          style={{ textShadow: "0px 2px 0px black" }}
+        >
           CRESCO ISLAND
         </p>
       </div>
@@ -382,7 +736,11 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
       {/* Map scroll area */}
       <div className="flex-1 map-scroll relative overflow-auto">
         {/* Fixed HUD overlay */}
-        <HUD />
+        <HUD
+          userXp={userXp}
+          completedCount={completedCount}
+          currentLevelNumber={currentLevelNumber}
+        />
 
         {/* Archipelago Adventures label */}
         <div className="absolute top-[60px] left-[20px] z-10 pointer-events-none">
@@ -598,17 +956,17 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
             </div>
           </div>
 
-          {/* All level nodes */}
-          {NODES.map((node) => (
+          {/* All 21 dynamically-connected level nodes */}
+          {nodes.map((node) => (
             <NodeDot key={node.id} node={node} onClick={setSelectedNode} />
           ))}
 
-          {/* START button */}
+          {/* START button - activates current or Level 1 node */}
           <div
             className="absolute bg-[#ffc229] border-3 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex flex-col items-start left-[40px] px-[16px] py-[8px] rounded-[12px] top-[540px] cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
             onClick={() => {
-              const startNode = NODES[0];
-              setSelectedNode(startNode);
+              const targetNode = nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0];
+              setSelectedNode(targetNode);
             }}
           >
             <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[12px] whitespace-nowrap leading-none">
@@ -690,13 +1048,19 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
           </div>
 
           {/* Current Location marker */}
-          <div className="absolute flex flex-col items-center" style={{ left: 630, top: 260 }}>
-            <div className="bg-white/90 border-2 border-[#0a1428] border-solid rounded-[6px] px-[8px] py-[2px] pointer-events-none">
+          <div
+            className="absolute flex flex-col items-center transition-all duration-700"
+            style={{
+              left: (nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0]).left - 20,
+              top: Math.max(10, (nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0]).top - 50),
+            }}
+          >
+            <div className="bg-white/95 border-2 border-[#0a1428] border-solid rounded-[6px] px-[8px] py-[2px] shadow-md pointer-events-none">
               <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[9px] uppercase leading-tight whitespace-nowrap">
                 CURRENT LOCATION
               </p>
             </div>
-            <div className="w-[2px] h-[44px] bg-[#0a1428]/40" />
+            <div className="w-[2px] h-[34px] bg-[#0a1428]/60" />
           </div>
 
           {/* Legend */}
@@ -725,9 +1089,6 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
           onPlay={handlePlay}
         />
       )}
-
-      {/* Toast */}
-      {toast && <ToastNotification message={toast} onClose={() => setToast(null)} />}
     </div>
   );
 };

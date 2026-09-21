@@ -2,6 +2,80 @@ import { LessonDefinition } from './lessonTypes';
 
 export const LESSONS_DATABASE: Record<string, LessonDefinition> = {
   // =========================================================================
+  // UNIT III · LESSON 1: NETWORK LAYER — NEED AND ISSUES
+  // =========================================================================
+  'u3_m01': {
+    id: 'u3_m01',
+    unitNumber: 3,
+    unitName: 'NETWORK LAYER',
+    lessonNumber: 1,
+    totalLessonsInUnit: 8,
+    topicTitle: 'Network Layer – Need and Issues',
+    subtitle: 'Store-and-forward packet switching, connection-oriented vs connectionless services.',
+    estimatedDuration: '4–5 min',
+    masteryRating: 85,
+    nextLessonId: 'u3_m02',
+    nextLessonTitle: 'Routing Algorithms (Distance Vector & Link State)',
+    phases: [
+      {
+        id: 'net-intro',
+        type: 'intro',
+        title: 'Network Layer — Need & Issues',
+        subtitle: 'Understand why networks require Layer 3 to route packets across multiple hops.',
+        byteQuote: 'Why does a letter sent across the world reach your doorstep, while Ethernet only talks to adjacent cables?',
+        bytePose: 'explaining',
+      },
+      {
+        id: 'net-concept',
+        type: 'explain',
+        title: 'WHAT IS THE NETWORK LAYER?',
+        subtitle: 'Host-to-Host Packet Delivery & Design Issues',
+        byteQuote: 'The Network Layer moves packets end-to-end across multiple interconnected networks.',
+        bytePose: 'thinking',
+        conceptHeading: 'CORE NETWORK LAYER ROLE',
+        conceptBody: 'The Network Layer oversees packet delivery from source host to destination host across intermediate routers using store-and-forward packet switching. Key issues include routing, congestion control, addressing, and quality of service.',
+        highlightWords: [
+          { word: 'HOST-TO-HOST', explanation: 'Unlike Link Layer which is hop-to-hop, Network Layer provides logical communication between end hosts.' },
+          { word: 'STORE-AND-FORWARD', explanation: 'Routers buffer the entire packet, verify the checksum, and inspect destination IP before forwarding.' },
+          { word: 'SERVICES', explanation: 'Can be Connectionless (datagrams routed independently like postal service) or Connection-Oriented (virtual circuits).' }
+        ]
+      },
+      {
+        id: 'net-scenario',
+        type: 'scenario',
+        title: 'SCENARIO QUESTION',
+        subtitle: 'Connectionless vs Connection-Oriented Services',
+        byteQuote: 'Compare how the Internet datagram model handles packet routing.',
+        bytePose: 'thinking',
+        questionText: 'In the Internet model (connectionless datagram service), how are individual packets handled by intermediate routers?',
+        mcqOptions: [
+          { id: 'A', text: 'All packets must follow a pre-established physical circuit', sublabel: 'Circuit switching' },
+          { id: 'B', text: 'Each packet is routed independently based on destination IP address', sublabel: 'Datagram packet switching', isCorrect: true },
+          { id: 'C', text: 'Packets are held until all packets of the message arrive at the first router', sublabel: 'Message switching' }
+        ],
+        explanation: 'In connectionless IP networking, each packet contains the full destination address and is forwarded independently by routers along potentially different paths.',
+        hint: 'Think of how letters in the mail are sent independently through sorting hubs!',
+        xpReward: 20
+      },
+      {
+        id: 'net-matching',
+        type: 'matching',
+        title: 'MATCHING QUESTION',
+        subtitle: 'Match Network Layer core concepts to their definitions',
+        byteQuote: 'Connect each networking term to its correct operational definition.',
+        bytePose: 'thinking',
+        matchingPairs: [
+          { id: 'm1', left: 'Routing', right: 'Global path determination across network' },
+          { id: 'm2', left: 'Forwarding', right: 'Local transfer of packet from input to output' },
+          { id: 'm3', left: 'Datagram', right: 'Independent connectionless packet' },
+          { id: 'm4', left: 'Virtual Circuit', right: 'Connection setup, transfer, and teardown' }
+        ],
+        xpReward: 20
+      }
+    ]
+  },
+
+  // =========================================================================
   // UNIT IV · LESSON 3: TCP (Transmission Control Protocol)
   // =========================================================================
   'u4_m05': {
@@ -464,6 +538,10 @@ export const LESSONS_DATABASE: Record<string, LessonDefinition> = {
 
 // Fallback generator for any syllabus module ID
 export const getLessonById = (lessonId: string): LessonDefinition => {
+  const normalizedId = lessonId === 'u3_m1' ? 'u3_m01' : lessonId === 'u4_m5' ? 'u4_m05' : lessonId === 'u5_m2' ? 'u5_m02' : lessonId;
+  if (LESSONS_DATABASE[normalizedId]) {
+    return LESSONS_DATABASE[normalizedId];
+  }
   if (LESSONS_DATABASE[lessonId]) {
     return LESSONS_DATABASE[lessonId];
   }

@@ -104,6 +104,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         } else {
           setTopStudents([]);
         }
+      }, (err) => {
+        console.warn("HomeView leaderboard onSnapshot handled error:", err);
       });
       return () => unsubscribe();
     } catch (e) {
@@ -196,11 +198,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <button
                     onClick={() => {
                       soundFx.playClick();
-                      onNavigate('lesson-player', nextModule.id, nextModule.unitId === 'unit_3' ? 0 : nextModule.unitId === 'unit_4' ? 1 : 2);
+                      onNavigate('learn-map');
                     }}
                     className="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl bg-surface-container-lowest text-primary font-headline-sm text-headline-sm shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_2px_0_0_#fed7aa,0_6px_12px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all cursor-pointer"
                   >
-                    <span>Continue Learning</span>
+                    <span>Continue on Island Map</span>
                     <ArrowRight size={18} strokeWidth={2.8} />
                   </button>
                 </div>
@@ -288,320 +290,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           </section>
 
-          {/* 3. THE INTERACTIVE LEARNING PATH (Game Progression World) */}
-          <section className="rounded-xl bg-surface-container-low p-6 md:p-8 shadow-[0_4px_24px_-4px_rgba(19,27,46,0.04)] relative">
-            
-            {/* Path Header & Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-8">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Compass size={22} className="text-primary-container" />
-                  <h2 className="font-headline-md text-headline-md text-on-surface">Curriculum Flight Path</h2>
-                </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">Traverse the network architecture layer by layer</p>
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-surface-container-lowest p-1 rounded-xl shadow-sm">
-                <button 
-                  onClick={() => { soundFx.playClick(); setActivePathFilter('roadmap'); }}
-                  className={`px-3 py-1 rounded-lg font-label-md text-label-md font-bold transition-all cursor-pointer ${
-                    activePathFilter === 'roadmap'
-                      ? 'bg-primary-container text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >Roadmap</button>
-                <button 
-                  onClick={() => { soundFx.playClick(); setActivePathFilter('labs'); onNavigate('practice'); }}
-                  className={`px-3 py-1 rounded-lg font-label-md text-label-md font-bold transition-all cursor-pointer ${
-                    activePathFilter === 'labs'
-                      ? 'bg-primary-container text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >Packet Labs</button>
-                <button 
-                  onClick={() => { soundFx.playClick(); setActivePathFilter('rfcs'); onNavigate('review'); }}
-                  className={`px-3 py-1 rounded-lg font-label-md text-label-md font-bold transition-all cursor-pointer ${
-                    activePathFilter === 'rfcs'
-                      ? 'bg-primary-container text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >RFC Library</button>
-              </div>
-            </div>
-
-            {/* The Serpentine Journey Canvas */}
-            <div className="relative flex flex-col items-center py-4 select-none">
-              
-              {/* Dynamic Connecting Conduit (SVG Underlay) */}
-              <svg 
-                className="absolute top-12 bottom-12 w-full h-[calc(100%-6rem)] pointer-events-none z-0 hidden md:block" 
-                preserveAspectRatio="none" 
-                viewBox="0 0 600 860"
-              >
-                <path 
-                  d="M 300 30 C 440 30, 440 160, 300 160 C 160 160, 160 300, 300 300 C 440 300, 440 440, 300 440 C 160 440, 160 580, 300 580 C 440 580, 440 720, 300 720 C 160 720, 160 840, 300 840" 
-                  fill="none" stroke="#fed7aa" strokeLinecap="round" strokeWidth="12"
-                />
-                <path 
-                  d="M 300 30 C 440 30, 440 160, 300 160 C 160 160, 160 300, 300 300 C 370 300, 410 350, 410 400" 
-                  fill="none" stroke="#ff6b00" strokeDasharray="12 4" strokeLinecap="round" strokeWidth="6"
-                />
-              </svg>
-
-              {/* DYNAMIC CURRICULUM FLIGHT PATH (Units 3, 4, 5) */}
-              {(() => {
-                const u3Modules = ALL_MODULES.filter((m) => m.unitId === 'unit_3');
-                const u4Modules = ALL_MODULES.filter((m) => m.unitId === 'unit_4');
-                const u5Modules = ALL_MODULES.filter((m) => m.unitId === 'unit_5');
-
-                const u3Done = u3Modules.filter((m) => completedIds.includes(m.id)).length;
-                const u4Done = u4Modules.filter((m) => completedIds.includes(m.id)).length;
-                const u5Done = u5Modules.filter((m) => completedIds.includes(m.id)).length;
-
-                const isU3AllDone = u3Done === u3Modules.length && u3Modules.length > 0;
-                const isU4AllDone = u4Done === u4Modules.length && u4Modules.length > 0;
-
-                const isU3Passed = (userProfile?.completedUnits || 0) >= 1 || (userProfile?.completedSteps || []).includes('quiz_unit_3');
-                const isU4Passed = (userProfile?.completedUnits || 0) >= 2 || (userProfile?.completedSteps || []).includes('quiz_unit_4');
-                const isU5Passed = (userProfile?.completedUnits || 0) >= 3 || (userProfile?.completedSteps || []).includes('quiz_unit_5');
-
-                const renderUnitModules = (unitMods: typeof u3Modules, isUnitUnlocked: boolean, unitIdx: number) => {
-                  return (
-                    <div className="relative z-10 w-full flex flex-col gap-8">
-                      {unitMods.map((mod, mIdx) => {
-                        const isCompleted = completedIds.includes(mod.id);
-                        const isCurrent = mod.id === nextModule.id;
-                        const prevMod = mIdx > 0 ? unitMods[mIdx - 1] : null;
-                        const isUnlocked = isUnitUnlocked && (mIdx === 0 || isCompleted || (prevMod && completedIds.includes(prevMod.id)));
-                        const isLeft = mIdx % 2 === 0;
-
-                        if (isCurrent) {
-                          return (
-                            <div key={mod.id} className="flex flex-col items-center justify-center relative my-2">
-                              <div className="mb-2 px-3 py-1 rounded-full bg-emerald-500 text-white font-label-md text-label-md font-bold shadow-[0_3px_0_0_#047857] flex items-center gap-1.5 animate-bounce">
-                                <Play size={14} fill="currentColor" />
-                                <span>CURRENT LESSON</span>
-                              </div>
-
-                              <div 
-                                onClick={() => { 
-                                  soundFx.playCorrect(); 
-                                  onNavigate('lesson-player', mod.id, unitIdx); 
-                                }}
-                                className="relative group cursor-pointer"
-                              >
-                                <div className="absolute -inset-3 rounded-full bg-primary-container/25 animate-ping" />
-                                <div className="absolute -inset-1 rounded-full bg-primary/20 blur-sm" />
-                                <div className="relative w-20 h-20 rounded-full bg-gradient-to-b from-primary-container to-primary flex flex-col items-center justify-center text-on-primary shadow-[0_8px_0_0_#047857,0_16px_24px_rgba(16,185,129,0.35)] group-hover:translate-y-1 group-active:translate-y-2 transition-all">
-                                  <Layers size={32} />
-                                </div>
-                              </div>
-
-                              <div className="mt-4 text-center bg-surface-container-lowest p-3 rounded-xl shadow-md max-w-xs border border-primary/20">
-                                <span className="font-label-md text-label-md text-primary font-bold block">
-                                  Module {mIdx + 1}
-                                </span>
-                                <h4 className="font-title-md text-title-md text-on-surface font-bold line-clamp-1">
-                                  {mod.title}
-                                </h4>
-                                <div className="flex items-center justify-center gap-2 pt-1 text-on-surface-variant font-body-sm text-[12px]">
-                                  <span className="flex items-center gap-0.5 text-primary-container font-semibold">
-                                    <Zap size={13} className="fill-current" />+50 XP
-                                  </span>
-                                  <span>•</span>
-                                  <span>{mod.readTimeMinutes || 7} Mins</span>
-                                  <span>•</span>
-                                  <span className="text-secondary font-medium">Ready</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div 
-                            key={mod.id} 
-                            className={`flex items-center justify-center ${
-                              isLeft ? 'md:justify-start md:pl-24' : 'md:justify-end md:pr-24'
-                            } group`}
-                          >
-                            <div 
-                              onClick={() => { 
-                                if (!isUnlocked) {
-                                  soundFx.playError();
-                                  return;
-                                }
-                                soundFx.playClick(); 
-                                onNavigate('lesson-player', mod.id, unitIdx); 
-                              }}
-                              className={`flex items-center gap-4 p-2.5 px-4 rounded-full transition-all border ${
-                                isCompleted
-                                  ? 'bg-surface-container-lowest border-emerald-200 dark:border-emerald-800/60 shadow-xs cursor-pointer hover:shadow-md'
-                                  : isUnlocked
-                                  ? 'bg-surface-container-lowest border-blue-200 dark:border-blue-800/60 shadow-xs cursor-pointer hover:shadow-md'
-                                  : 'bg-surface-container border-transparent opacity-60 cursor-not-allowed'
-                              }`}
-                            >
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform ${
-                                isCompleted
-                                  ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-[0_4px_0_0_#059669]'
-                                  : isUnlocked
-                                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_4px_0_0_#2563eb]'
-                                  : 'bg-surface-variant text-outline shadow-[0_4px_0_0_#c5c5d9]'
-                              }`}>
-                                {isCompleted ? (
-                                  <Check size={22} strokeWidth={3} />
-                                ) : isUnlocked ? (
-                                  <Play size={18} fill="currentColor" />
-                                ) : (
-                                  <Lock size={18} />
-                                )}
-                              </div>
-
-                              <div className="text-left max-w-[200px] sm:max-w-[240px]">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`font-label-md text-label-md font-bold block ${
-                                    isCompleted ? 'text-emerald-600 dark:text-emerald-400' : isUnlocked ? 'text-primary' : 'text-outline'
-                                  }`}>
-                                    Module {mIdx + 1}
-                                  </span>
-                                  {isCompleted && (
-                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                                      Done
-                                    </span>
-                                  )}
-                                </div>
-                                <span className={`font-title-md text-title-md block truncate ${
-                                  isUnlocked ? 'text-on-surface' : 'text-outline'
-                                }`}>
-                                  {mod.title}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                };
-
-                return (
-                  <div className="w-full space-y-12">
-                    
-                    {/* UNIT 3: NETWORK LAYER */}
-                    <div className="space-y-8">
-                      <div className="relative z-10 w-full max-w-md mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-surface-container-lowest text-primary font-label-lg text-label-lg shadow-[0_3px_0_0_#fed7aa] border border-blue-200/50">
-                          {isU3Passed ? (
-                            <CheckCircle2 size={18} className="text-emerald-600" />
-                          ) : (
-                            <Activity size={18} className="text-primary animate-pulse" />
-                          )}
-                          <span className="font-bold">UNIT 3: Network Layer</span>
-                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                            isU3Passed
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-primary-fixed text-primary-container'
-                          }`}>
-                            {isU3Passed ? 'Passed ✓' : `${u3Done} / ${u3Modules.length} Cleared`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {renderUnitModules(u3Modules, true, 0)}
-
-                      {/* Unit 3 Benchmark Assessment Milestone Node */}
-                      <div className="flex items-center justify-center my-4">
-                        <div 
-                          onClick={() => {
-                            if (!isU3AllDone && !isU3Passed) {
-                              soundFx.playError();
-                              return;
-                            }
-                            soundFx.playPacketPop();
-                            onNavigate('courses');
-                          }}
-                          className={`relative group text-center ${
-                            isU3AllDone || isU3Passed ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'
-                          }`}
-                        >
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-md transition-transform ${
-                            isU3Passed
-                              ? 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669]'
-                              : isU3AllDone
-                              ? 'bg-gradient-to-b from-amber-400 to-amber-500 text-amber-950 shadow-[0_6px_0_0_#b45309] group-hover:translate-y-0.5'
-                              : 'bg-surface-variant text-outline shadow-[0_5px_0_0_#c5c5d9]'
-                          }`}>
-                            {isU3Passed ? <Check size={28} strokeWidth={3} /> : isU3AllDone ? <Star size={28} className="fill-current" /> : <Lock size={26} />}
-                          </div>
-                          <span className="font-label-md text-label-md text-on-surface whitespace-nowrap bg-surface-container-lowest px-3 py-1 rounded-full shadow-sm mt-2 block font-bold border border-slate-200 dark:border-slate-800">
-                            {isU3Passed ? 'Unit 3 Challenge Passed ✓' : isU3AllDone ? 'Unit 3 Final Challenge' : 'Unit 3 Exam (Complete 12 Modules)'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* UNIT 4: TRANSPORT LAYER */}
-                    <div className="space-y-8 pt-8 border-t border-slate-200/60 dark:border-slate-800/60">
-                      <div className="relative z-10 w-full max-w-md mx-auto text-center">
-                        <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full font-label-lg text-label-lg shadow-sm border ${
-                          isU4Passed
-                            ? 'bg-surface-container-lowest text-emerald-600 border-emerald-200'
-                            : isU3Passed
-                            ? 'bg-surface-container-lowest text-primary border-blue-200'
-                            : 'bg-surface-container text-outline border-transparent opacity-75'
-                        }`}>
-                          {isU4Passed ? (
-                            <CheckCircle2 size={18} className="text-emerald-600" />
-                          ) : isU3Passed ? (
-                            <Activity size={18} className="text-primary animate-pulse" />
-                          ) : (
-                            <Lock size={16} />
-                          )}
-                          <span className="font-bold">UNIT 4: Transport Layer</span>
-                          <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-surface-container-highest text-on-surface-variant">
-                            {isU4Passed ? 'Passed ✓' : isU3Passed ? `${u4Done} / ${u4Modules.length} Cleared` : 'Locked (Pass Unit 3)'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {isU3Passed && renderUnitModules(u4Modules, isU3Passed, 1)}
-                    </div>
-
-                    {/* UNIT 5: APPLICATION LAYER */}
-                    <div className="space-y-8 pt-8 border-t border-slate-200/60 dark:border-slate-800/60">
-                      <div className="relative z-10 w-full max-w-md mx-auto text-center">
-                        <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full font-label-lg text-label-lg shadow-sm border ${
-                          isU5Passed
-                            ? 'bg-surface-container-lowest text-emerald-600 border-emerald-200'
-                            : isU4Passed
-                            ? 'bg-surface-container-lowest text-primary border-blue-200'
-                            : 'bg-surface-container text-outline border-transparent opacity-75'
-                        }`}>
-                          {isU5Passed ? (
-                            <CheckCircle2 size={18} className="text-emerald-600" />
-                          ) : isU4Passed ? (
-                            <Activity size={18} className="text-primary animate-pulse" />
-                          ) : (
-                            <Lock size={16} />
-                          )}
-                          <span className="font-bold">UNIT 5: Application Layer</span>
-                          <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-surface-container-highest text-on-surface-variant">
-                            {isU5Passed ? 'Passed ✓' : isU4Passed ? `${u5Done} / ${u5Modules.length} Cleared` : 'Locked (Pass Unit 4)'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {isU4Passed && renderUnitModules(u5Modules, isU4Passed, 2)}
-                    </div>
-
-                  </div>
-                );
-              })()}
-
-            </div>
-          </section>
-
           {/* 4. INTERACTIVE CURRENT LESSON HERO CARD */}
           <section className="rounded-xl bg-surface-container-lowest p-6 md:p-8 shadow-[0_8px_30px_rgba(19,27,46,0.06)]" id="interactive-lesson-card">
             <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
@@ -653,20 +341,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <button 
                   onClick={() => { 
                     soundFx.playClick(); 
-                    onNavigate('lesson-player', nextModule.id, nextModule.unitId === 'unit_3' ? 0 : nextModule.unitId === 'unit_4' ? 1 : 2); 
+                    onNavigate('learn-map'); 
                   }}
                   className="w-full py-4 px-6 rounded-xl bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-[0_5px_0_0_#047857,0_10px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_2px_0_0_#047857,0_6px_12px_rgba(16,185,129,0.2)] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer"
                 >
-                  <span>{completedIds.includes(nextModule.id) ? 'Review Lesson' : 'Start Lesson'}</span>
+                  <span>{completedIds.includes(nextModule.id) ? 'Island Learning Map' : 'Go to Island Map'}</span>
                   <ArrowRight size={20} />
                 </button>
 
                 <button 
-                  onClick={() => { soundFx.playClick(); onNavigate('courses'); }}
+                  onClick={() => { soundFx.playClick(); onNavigate('learn-map'); }}
                   className="w-full py-2.5 px-4 rounded-xl bg-surface-container text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Bookmark size={16} />
-                  <span>View All Units</span>
+                  <span>Open Full Learning Map</span>
                 </button>
               </div>
             </div>
