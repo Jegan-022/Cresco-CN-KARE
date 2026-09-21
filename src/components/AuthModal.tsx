@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, AlertCircle, RefreshCw, ArrowRight, GraduationCap, Eye, EyeOff } from 'lucide-react';
+import { X, AlertCircle, RefreshCw, ArrowRight, GraduationCap, Eye, EyeOff, ExternalLink, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Loader } from './ui/Loader';
 
@@ -104,9 +104,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </p>
 
           {displayError && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start space-x-2 leading-relaxed">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{displayError}</span>
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex flex-col space-y-2 leading-relaxed">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+                <span className="flex-1">{displayError}</span>
+              </div>
+              
+              {displayError.toLowerCase().includes('unauthorized') && (
+                <div className="pt-2 border-t border-red-200/80 flex flex-wrap items-center gap-2">
+                  {typeof window !== 'undefined' && window.location.hostname === '127.0.0.1' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.location.href = window.location.href.replace('127.0.0.1', 'localhost');
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                    >
+                      <Globe className="w-3 h-3" />
+                      <span>Switch to http://localhost:{window.location.port || '3000'}</span>
+                    </button>
+                  )}
+                  <a
+                    href="https://console.firebase.google.com/project/computernetworks-af026/authentication/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg transition-colors flex items-center space-x-1 inline-flex cursor-pointer"
+                  >
+                    <span>Firebase Console Authorized Domains</span>
+                    <ExternalLink className="w-3 h-3 text-slate-500" />
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

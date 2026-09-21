@@ -1,0 +1,10 @@
+{
+  "description": "Engages users with an interactive gamified frontend that enhances user experience through dynamic, real-time components and seamless gameplay.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

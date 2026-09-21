@@ -3,7 +3,9 @@ import {
   AlertCircle, 
   RefreshCw, 
   ArrowLeft,
-  Info
+  Info,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { LiquidLines } from '../ui/LiquidLines';
@@ -363,9 +365,37 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
 
               {displayError && (
-                <div className="mx-6 mb-2 p-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] flex items-start gap-1.5 leading-snug">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" />
-                  <span>{displayError}</span>
+                <div className="mx-6 mb-2 p-2.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] flex flex-col gap-2 leading-snug">
+                  <div className="flex items-start gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" />
+                    <span className="flex-1">{displayError}</span>
+                  </div>
+                  
+                  {displayError.toLowerCase().includes('unauthorized') && (
+                    <div className="pt-1.5 border-t border-red-500/20 flex flex-wrap items-center gap-2">
+                      {typeof window !== 'undefined' && window.location.hostname === '127.0.0.1' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.location.href = window.location.href.replace('127.0.0.1', 'localhost');
+                          }}
+                          className="px-2 py-0.5 text-[10px] font-semibold bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span>Switch to http://localhost:{window.location.port || '3000'}</span>
+                        </button>
+                      )}
+                      <a
+                        href="https://console.firebase.google.com/project/computernetworks-af026/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-0.5 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded transition-colors flex items-center gap-1 inline-flex cursor-pointer"
+                      >
+                        <span>Open Firebase Settings</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -1321,7 +1321,12 @@ function getHumanErrorMessage(codeOrMessage: string): string {
     return 'Sign-in was cancelled or another sign-in window was already open. Please try again.';
   }
   if (codeOrMessage.includes('auth/unauthorized-domain')) {
-    return 'Domain unauthorized in Firebase: Please add this domain to Firebase Console > Authentication > Settings > Authorized domains.';
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (host === '127.0.0.1') {
+      const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : '';
+      return `Domain unauthorized: You are accessing via "127.0.0.1", but Firebase only authorizes "localhost" by default. Please switch to http://localhost${port} or add "127.0.0.1" in Firebase Console > Authentication > Settings > Authorized domains.`;
+    }
+    return `Domain unauthorized in Firebase: The domain "${host || 'this site'}" is not authorized. Please add "${host}" to Firebase Console > Authentication > Settings > Authorized domains.`;
   }
   if (codeOrMessage.includes('auth/configuration-not-found')) {
     return 'Google Sign-In is not enabled yet in your Firebase Project. Please go to Firebase Console > Authentication > Sign-in method and enable Google.';

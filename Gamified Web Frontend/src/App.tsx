@@ -1,10 +1,4 @@
-import React, { useState, useCallback } from "react";
-import { NavTab } from "../../types";
-
-interface LearningMapViewProps {
-  onSelectLesson?: (lessonId: string, sectionId: number) => void;
-  onNavigate?: (tab: NavTab) => void;
-}
+import { useState, useCallback } from "react";
 
 const assetPathPrefix = "/assets";
 const imgMapCanvas = `${assetPathPrefix}/9b25e.png`;
@@ -72,8 +66,8 @@ const NODES: LevelNode[] = [
   { id: 21, label: "21", area: "Lighthouse Point", status: "locked", xp: 0, description: "Final challenge: TCP/IP mastery and network architecture design.", lessons: 12, completedLessons: 0, left: 1330, top: 150 },
 ];
 
-const totalXP = NODES.filter((n) => n.status === "completed").reduce((s, n) => s + n.xp, 0);
-const totalCompleted = NODES.filter((n) => n.status === "completed").length;
+const totalXP = NODES.filter(n => n.status === "completed").reduce((s, n) => s + n.xp, 0);
+const totalCompleted = NODES.filter(n => n.status === "completed").length;
 
 function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) => void }) {
   const isCompleted = node.status === "completed";
@@ -86,26 +80,13 @@ function NodeDot({ node, onClick }: { node: LevelNode; onClick: (n: LevelNode) =
   let textColor = "text-white";
   let shadow = "drop-shadow-[0px_4px_0px_rgba(0,0,0,0.25)]";
 
-  if (isCompleted) {
-    bg = "bg-[#4cd15b]";
-    border = "border-[#1e3a1e]";
-  } else if (isCurrent) {
-    bg = "bg-[#ffc229]";
-    border = "border-[#5c4600]";
-    textColor = "text-[#0a1428]";
-    shadow = "";
-  } else if (isInProgress) {
-    if (node.id === 10) {
-      bg = "bg-[#9d4edd]";
-      border = "border-[#4c1d95]";
-    } else {
-      bg = "bg-[#ff8e25]";
-      border = "border-[#7c2d12]";
-    }
-  } else {
-    bg = "bg-[#94a3b8]";
-    border = "border-[#475569]";
+  if (isCompleted) { bg = "bg-[#4cd15b]"; border = "border-[#1e3a1e]"; }
+  else if (isCurrent) { bg = "bg-[#ffc229]"; border = "border-[#5c4600]"; textColor = "text-[#0a1428]"; shadow = ""; }
+  else if (isInProgress) {
+    if (node.id === 10) { bg = "bg-[#9d4edd]"; border = "border-[#4c1d95]"; }
+    else { bg = "bg-[#ff8e25]"; border = "border-[#7c2d12]"; }
   }
+  else { bg = "bg-[#94a3b8]"; border = "border-[#475569]"; }
 
   return (
     <div
@@ -156,13 +137,7 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
     ? "text-[#ff8e25]"
     : "text-[#94a3b8]";
 
-  const statusLabel = isCompleted
-    ? "✓ Completed"
-    : node.status === "current"
-    ? "⚡ Current Level"
-    : node.status === "in-progress"
-    ? "▶ In Progress"
-    : "🔒 Locked";
+  const statusLabel = isCompleted ? "✓ Completed" : node.status === "current" ? "⚡ Current Level" : node.status === "in-progress" ? "▶ In Progress" : "🔒 Locked";
 
   return (
     <div
@@ -171,17 +146,7 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
     >
       <div className="modal-appear bg-[#fdf0d5] border-3 border-[#0a1428] border-solid rounded-[16px] w-[340px] shadow-[0px_8px_0px_rgba(0,0,0,0.3)] overflow-hidden">
         {/* Header */}
-        <div
-          className={`px-5 pt-5 pb-4 ${
-            isCompleted
-              ? "bg-[#4cd15b]/20"
-              : node.status === "current"
-              ? "bg-[#ffc229]/20"
-              : node.status === "in-progress"
-              ? "bg-[#ff8e25]/20"
-              : "bg-[#94a3b8]/20"
-          }`}
-        >
+        <div className={`px-5 pt-5 pb-4 ${isCompleted ? "bg-[#4cd15b]/20" : node.status === "current" ? "bg-[#ffc229]/20" : node.status === "in-progress" ? "bg-[#ff8e25]/20" : "bg-[#94a3b8]/20"}`}>
           <div className="flex items-start justify-between">
             <div>
               <p className="font-['Sora:ExtraBold'] font-extrabold text-[22px] text-[#0a1428] leading-tight">
@@ -213,25 +178,15 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
           {/* Progress bar */}
           <div>
             <div className="flex justify-between mb-1">
-              <span className="font-['Sora:ExtraBold'] font-extrabold text-[10px] text-[#0a1428]/60 uppercase tracking-wider">
-                Progress
-              </span>
-              <span className="font-['Sora:ExtraBold'] font-extrabold text-[10px] text-[#0a1428]">
-                {node.completedLessons}/{node.lessons} lessons
-              </span>
+              <span className="font-['Sora:ExtraBold'] font-extrabold text-[10px] text-[#0a1428]/60 uppercase tracking-wider">Progress</span>
+              <span className="font-['Sora:ExtraBold'] font-extrabold text-[10px] text-[#0a1428]">{node.completedLessons}/{node.lessons} lessons</span>
             </div>
             <div className="h-[10px] bg-[#0a1428]/10 rounded-full overflow-hidden border border-[#0a1428]/20">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{
                   width: `${progress}%`,
-                  background: isCompleted
-                    ? "#4cd15b"
-                    : node.status === "current"
-                    ? "#ffc229"
-                    : node.status === "in-progress"
-                    ? "#ff8e25"
-                    : "#94a3b8",
+                  background: isCompleted ? "#4cd15b" : node.status === "current" ? "#ffc229" : node.status === "in-progress" ? "#ff8e25" : "#94a3b8"
                 }}
               />
             </div>
@@ -240,18 +195,10 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
           {/* Stars */}
           {isCompleted && (
             <div className="flex gap-1 items-center">
-              {[1, 2, 3].map((i) => (
-                <img
-                  key={i}
-                  alt="star"
-                  className="size-[18px] star-spin"
-                  src={imgStar}
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                />
+              {[1, 2, 3].map(i => (
+                <img key={i} alt="star" className="size-[18px] star-spin" src={imgStar} style={{ animationDelay: `${i * 0.1}s` }} />
               ))}
-              <span className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-[#0a1428]/60 ml-1">
-                Perfect score!
-              </span>
+              <span className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-[#0a1428]/60 ml-1">Perfect score!</span>
             </div>
           )}
         </div>
@@ -268,12 +215,11 @@ function NodeModal({ node, onClose, onPlay }: { node: LevelNode; onClose: () => 
             <button
               onClick={() => onPlay(node)}
               className={`flex-[2] py-2 rounded-[10px] border-3 border-solid font-['Sora:ExtraBold'] font-extrabold text-[13px] cursor-pointer transition-all active:scale-95 shadow-[0px_4px_0px_rgba(0,0,0,0.2)] hover:shadow-[0px_2px_0px_rgba(0,0,0,0.2)] hover:translate-y-[2px]
-                ${
-                  isCompleted
-                    ? "bg-[#4cd15b] border-[#1e3a1e] text-white hover:bg-[#3cba4b]"
-                    : node.status === "current"
-                    ? "bg-[#ffc229] border-[#5c4600] text-[#0a1428] hover:bg-[#ffb800]"
-                    : "bg-[#ff8e25] border-[#7c2d12] text-white hover:bg-[#f07d14]"
+                ${isCompleted
+                  ? "bg-[#4cd15b] border-[#1e3a1e] text-white hover:bg-[#3cba4b]"
+                  : node.status === "current"
+                  ? "bg-[#ffc229] border-[#5c4600] text-[#0a1428] hover:bg-[#ffb800]"
+                  : "bg-[#ff8e25] border-[#7c2d12] text-white hover:bg-[#f07d14]"
                 }`}
             >
               {isCompleted ? "Play Again" : node.status === "current" ? "Continue →" : "Start →"}
@@ -294,20 +240,14 @@ function HUD() {
           <span className="font-['Sora:ExtraBold'] font-extrabold text-[12px] text-[#0a1428]">8</span>
         </div>
         <div>
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-white/60 uppercase tracking-wider leading-none">
-            Level
-          </p>
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[14px] text-white leading-tight">
-            Navigator
-          </p>
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-white/60 uppercase tracking-wider leading-none">Level</p>
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-[14px] text-white leading-tight">Navigator</p>
         </div>
       </div>
       <div>
         <div className="flex justify-between mb-1">
           <span className="font-['Inter:Bold'] font-bold text-[9px] text-white/50 uppercase">XP</span>
-          <span className="font-['Inter:Bold'] font-bold text-[9px] text-[#ffc229]">
-            {totalXP}/1500
-          </span>
+          <span className="font-['Inter:Bold'] font-bold text-[9px] text-[#ffc229]">{totalXP}/1500</span>
         </div>
         <div className="h-[6px] bg-white/10 rounded-full overflow-hidden">
           <div className="h-full bg-[#ffc229] rounded-full" style={{ width: `${levelProgress}%` }} />
@@ -315,21 +255,15 @@ function HUD() {
       </div>
       <div className="flex justify-between pt-1 border-t border-white/10">
         <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#4cd15b] leading-none">
-            {totalCompleted}
-          </p>
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#4cd15b] leading-none">{totalCompleted}</p>
           <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Done</p>
         </div>
         <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#ffc229] leading-none">
-            {21 - totalCompleted}
-          </p>
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#ffc229] leading-none">{21 - totalCompleted}</p>
           <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Left</p>
         </div>
         <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-white leading-none">
-            21
-          </p>
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-white leading-none">21</p>
           <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Total</p>
         </div>
       </div>
@@ -343,15 +277,13 @@ function ToastNotification({ message, onClose }: { message: string; onClose: () 
       <div className="bg-[#0a1428] border-2 border-[#ffc229] border-solid rounded-[12px] px-6 py-3 flex items-center gap-3 shadow-[0px_8px_24px_rgba(0,0,0,0.4)]">
         <img alt="star" className="size-[20px]" src={imgStar} />
         <p className="font-['Sora:ExtraBold'] font-extrabold text-white text-[14px]">{message}</p>
-        <button onClick={onClose} className="text-white/50 hover:text-white text-[16px] cursor-pointer ml-2">
-          ×
-        </button>
+        <button onClick={onClose} className="text-white/50 hover:text-white text-[16px] cursor-pointer ml-2">×</button>
       </div>
     </div>
   );
 }
 
-export const LearningMapView: React.FC<LearningMapViewProps> = () => {
+export default function App() {
   const [selectedNode, setSelectedNode] = useState<LevelNode | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -371,50 +303,35 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
   }, []);
 
   return (
-    <div className="w-full rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border-2 border-[#0a1428]/30 bg-[#5ba8d4] flex flex-col relative min-h-[660px] h-[calc(100vh-140px)]">
+    <div className="w-full min-h-[100dvh] bg-[#5ba8d4] flex flex-col">
       {/* Top title bar for narrow viewports */}
       <div className="flex-shrink-0 md:hidden flex items-center justify-center py-3 bg-[#0a1428]/60">
-        <p className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[22px]" style={{ textShadow: "0px 2px 0px black" }}>
+        <p className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[22px] text-shadow-[0px_2px_0px_black]">
           CRESCO ISLAND
         </p>
       </div>
 
       {/* Map scroll area */}
-      <div className="flex-1 map-scroll relative overflow-auto">
+      <div className="flex-1 map-scroll relative">
         {/* Fixed HUD overlay */}
         <HUD />
 
         {/* Archipelago Adventures label */}
         <div className="absolute top-[60px] left-[20px] z-10 pointer-events-none">
-          <p
-            className="font-['Sora:ExtraBold'] font-extrabold text-white text-[16px] leading-tight uppercase"
-            style={{ textShadow: "0px 2px 0px rgba(0,0,0,0.5)" }}
-          >
-            ARCHIPELAGO
-            <br />
-            ADVENTURES
+          <p className="font-['Sora:ExtraBold'] font-extrabold text-white text-[16px] leading-tight text-shadow-[0px_2px_0px_rgba(0,0,0,0.5)] uppercase">
+            ARCHIPELAGO<br />ADVENTURES
           </p>
         </div>
 
         {/* Map canvas - fixed 1440×620 coordinate space */}
         <div className="relative" style={{ width: 1440, height: 620, minHeight: 620 }}>
           {/* Background map image */}
-          <img
-            alt="Cresco Island map"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            src={imgMapCanvas}
-          />
+          <img alt="Cresco Island map" className="absolute inset-0 w-full h-full object-cover pointer-events-none" src={imgMapCanvas} />
 
           {/* Ambient clouds */}
           <div className="absolute bg-white blur-[4px] h-[40px] left-[80px] opacity-60 rounded-[999px] top-[40px] w-[180px] cloud-drift pointer-events-none" />
-          <div
-            className="absolute bg-white blur-[4px] h-[50px] left-[1100px] opacity-70 rounded-[999px] top-[80px] w-[220px] cloud-drift pointer-events-none"
-            style={{ animationDelay: "2s" }}
-          />
-          <div
-            className="absolute bg-white blur-[4px] h-[30px] left-[500px] opacity-50 rounded-[999px] top-[520px] w-[140px] cloud-drift pointer-events-none"
-            style={{ animationDelay: "4s" }}
-          />
+          <div className="absolute bg-white blur-[4px] h-[50px] left-[1100px] opacity-70 rounded-[999px] top-[80px] w-[220px] cloud-drift pointer-events-none" style={{ animationDelay: "2s" }} />
+          <div className="absolute bg-white blur-[4px] h-[30px] left-[500px] opacity-50 rounded-[999px] top-[520px] w-[140px] cloud-drift pointer-events-none" style={{ animationDelay: "4s" }} />
 
           {/* Path connectors */}
           <div className="absolute flex h-[20.005px] items-center justify-center left-[148px] top-[488px] w-[79.997px] pointer-events-none">
@@ -599,13 +516,12 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
           </div>
 
           {/* All level nodes */}
-          {NODES.map((node) => (
+          {NODES.map(node => (
             <NodeDot key={node.id} node={node} onClick={setSelectedNode} />
           ))}
 
           {/* START button */}
-          <div
-            className="absolute bg-[#ffc229] border-3 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex flex-col items-start left-[40px] px-[16px] py-[8px] rounded-[12px] top-[540px] cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
+          <div className="absolute bg-[#ffc229] border-3 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex flex-col items-start left-[40px] px-[16px] py-[8px] rounded-[12px] top-[540px] cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
             onClick={() => {
               const startNode = NODES[0];
               setSelectedNode(startNode);
@@ -625,42 +541,27 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
 
           {/* Area banners */}
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[150px] px-[12px] py-[4px] rounded-[8px] top-[270px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">
-              1. LAN Village
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">1. LAN Village</p>
           </div>
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[310px] px-[12px] py-[4px] rounded-[8px] top-[130px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">
-              2. Routing Mountains
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">2. Routing Mountains</p>
           </div>
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[510px] px-[12px] py-[4px] rounded-[8px] top-[220px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">
-              3. Security Fortress
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">3. Security Fortress</p>
           </div>
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[790px] px-[12px] py-[4px] rounded-[8px] top-[230px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">
-              4. Wireless Woods
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">4. Wireless Woods</p>
           </div>
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[1010px] px-[12px] py-[4px] rounded-[8px] top-[530px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">
-              5. Internet Ocean
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-nowrap leading-tight">5. Internet Ocean</p>
           </div>
           <div className="absolute bg-[#fdf0d5] border-2 border-[#0a1428] border-solid drop-shadow-[0px_4px_0px_rgba(0,0,0,0.2)] flex items-start left-[1260px] px-[12px] py-[4px] rounded-[8px] top-[110px]">
-            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-pre leading-tight">
-              {`6.TCP/IP  END`}
-            </p>
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[11px] uppercase whitespace-pre leading-tight">{`6.TCP/IP  END`}</p>
           </div>
 
           {/* Hero title */}
           <div className="absolute flex flex-col items-center left-1/2 -translate-x-1/2 top-[24px]">
-            <p
-              className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[36px] text-center leading-none whitespace-pre"
-              style={{ textShadow: "0px 3px 0px black" }}
-            >
+            <p className="font-['Sora:ExtraBold'] font-extrabold text-[#ffc229] text-[36px] text-center leading-none whitespace-pre" style={{ textShadow: "0px 3px 0px black" }}>
               {`CRESCO  ISLAND`}
             </p>
           </div>
@@ -670,9 +571,7 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
             <div className="relative shrink-0 size-[24px]">
               <img alt="radio tower" className="absolute block inset-0 max-w-none size-full" src={imgRadioTower} />
             </div>
-            <p className="font-['Inter:Bold'] font-bold text-[9px] text-white whitespace-nowrap leading-none">
-              GW-1
-            </p>
+            <p className="font-['Inter:Bold'] font-bold text-[9px] text-white whitespace-nowrap leading-none">GW-1</p>
           </div>
 
           {/* Shield check at Security Fortress */}
@@ -692,9 +591,7 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
           {/* Current Location marker */}
           <div className="absolute flex flex-col items-center" style={{ left: 630, top: 260 }}>
             <div className="bg-white/90 border-2 border-[#0a1428] border-solid rounded-[6px] px-[8px] py-[2px] pointer-events-none">
-              <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[9px] uppercase leading-tight whitespace-nowrap">
-                CURRENT LOCATION
-              </p>
+              <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[9px] uppercase leading-tight whitespace-nowrap">CURRENT LOCATION</p>
             </div>
             <div className="w-[2px] h-[44px] bg-[#0a1428]/40" />
           </div>
@@ -727,7 +624,9 @@ export const LearningMapView: React.FC<LearningMapViewProps> = () => {
       )}
 
       {/* Toast */}
-      {toast && <ToastNotification message={toast} onClose={() => setToast(null)} />}
+      {toast && (
+        <ToastNotification message={toast} onClose={() => setToast(null)} />
+      )}
     </div>
   );
-};
+}
