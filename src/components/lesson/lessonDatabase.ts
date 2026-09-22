@@ -1,4 +1,5 @@
 import { LessonDefinition } from './lessonTypes';
+import syllabusData from '../../data/syllabusUnits345.json';
 
 export const LESSONS_DATABASE: Record<string, LessonDefinition> = {
   // =========================================================================
@@ -536,7 +537,7 @@ export const LESSONS_DATABASE: Record<string, LessonDefinition> = {
   }
 };
 
-// Fallback generator for any syllabus module ID
+// Complete pedagogical generator for all 30 syllabus modules (Units 3, 4, 5)
 export const getLessonById = (lessonId: string): LessonDefinition => {
   const normalizedId = lessonId === 'u3_m1' ? 'u3_m01' : lessonId === 'u4_m5' ? 'u4_m05' : lessonId === 'u5_m2' ? 'u5_m02' : lessonId;
   if (LESSONS_DATABASE[normalizedId]) {
@@ -546,21 +547,120 @@ export const getLessonById = (lessonId: string): LessonDefinition => {
     return LESSONS_DATABASE[lessonId];
   }
 
-  // Smart fallback mapped by Unit
-  if (lessonId.startsWith('u3_')) {
-    return {
-      ...LESSONS_DATABASE['u3_m02'],
-      id: lessonId,
-      lessonNumber: parseInt(lessonId.replace(/\D/g, ''), 10) || 1,
-    };
+  // Parse Unit & Module number from lessonId, e.g. 'u3_m4', 'u3_m04', 'mod-3-4', '3-4'
+  const unitMatch = lessonId.match(/u([345])_m0?(\d+)/i) || lessonId.match(/mod-?([345])-?(\d+)/i);
+  let targetUnitNum = 3;
+  let targetModNum = 1;
+  if (unitMatch) {
+    targetUnitNum = parseInt(unitMatch[1], 10);
+    targetModNum = parseInt(unitMatch[2], 10);
+  } else if (lessonId.startsWith('u4_')) {
+    targetUnitNum = 4;
+    targetModNum = parseInt(lessonId.replace(/\D/g, ''), 10) || 1;
   } else if (lessonId.startsWith('u5_')) {
-    return {
-      ...LESSONS_DATABASE['u5_m02'],
-      id: lessonId,
-      lessonNumber: parseInt(lessonId.replace(/\D/g, ''), 10) || 1,
-    };
+    targetUnitNum = 5;
+    targetModNum = parseInt(lessonId.replace(/\D/g, ''), 10) || 1;
+  } else {
+    targetModNum = parseInt(lessonId.replace(/\D/g, ''), 10) || 1;
   }
 
-  // Default to TCP
+  const targetUnit = syllabusData.units.find(u => u.id === `unit_${targetUnitNum}`);
+  if (targetUnit) {
+    const mod = targetUnit.modules.find(m => m.id === `u${targetUnitNum}_m${targetModNum}`) || targetUnit.modules[targetModNum - 1] || targetUnit.modules[0];
+    if (mod) {
+      const nextMod = targetUnit.modules[targetModNum] || (targetUnitNum < 5 ? syllabusData.units.find(u => u.id === `unit_${targetUnitNum + 1}`)?.modules[0] : undefined);
+      
+      const quizQuestions = mod.quiz || [];
+      const primaryQ = quizQuestions[0] || {
+        question: `What is the core function of ${mod.title}?`,
+        options: ['Logical routing & delivery', 'Physical signal modulation', 'Application UI presentation', 'Error correction on wire'],
+        correctIndex: 0,
+        explanation: `${mod.title} provides critical end-to-end transport and routing guarantees across network topologies.`
+      };
+
+      const options = primaryQ.options.map((opt: string, i: number) => ({
+        id: String.fromCharCode(65 + i),
+        text: opt,
+        isCorrect: i === primaryQ.correctIndex,
+      }));
+
+      return {
+        id: lessonId,
+        unitNumber: targetUnitNum as 3 | 4 | 5,
+        unitName: targetUnit.title.toUpperCase(),
+        lessonNumber: targetModNum,
+        totalLessonsInUnit: targetUnit.modules.length,
+        topicTitle: mod.title,
+        subtitle: mod.pedagogy?.hook || mod.pedagogy?.analogy || 'Master critical network principles through guided interaction.',
+        estimatedDuration: `${mod.readTimeMinutes || 4}–5 min`,
+        masteryRating: 80 + (targetModNum * 2) % 18,
+        nextLessonId: nextMod ? nextMod.id : undefined,
+        nextLessonTitle: nextMod ? nextMod.title : undefined,
+        phases: [
+          {
+            id: `${lessonId}-intro`,
+            type: 'intro',
+            title: mod.title,
+            subtitle: mod.pedagogy?.hook || 'Understand the real-world design requirements.',
+            byteQuote: mod.pedagogy?.hook || `Ready to master ${mod.title}? Let's inspect the protocol mechanics!`,
+            bytePose: 'explaining',
+          },
+          {
+            id: `${lessonId}-explain`,
+            type: 'explain',
+            title: 'Concept & Real-World Analogy',
+            subtitle: 'Core theory explained with concrete networking models.',
+            byteQuote: mod.pedagogy?.analogy || 'Think of this mechanism like a global logistics dispatch hub.',
+            bytePose: 'thinking',
+            conceptHeading: 'Architectural Model & Invariants',
+            conceptBody: mod.pedagogy?.concept || 'Network protocols enforce deterministic state synchronization across untrusted links.',
+            highlightWords: (mod.keyTakeaways || []).map((t: string) => {
+              const parts = t.split(':');
+              return {
+                word: parts[0]?.trim() || 'Protocol Rule',
+                explanation: parts[1]?.trim() || t,
+              };
+            }),
+          },
+          {
+            id: `${lessonId}-visualize`,
+            type: 'visualize',
+            title: 'Interactive Protocol Topology',
+            subtitle: 'Inspect end-to-end packet transitions and frame flows.',
+            byteQuote: 'Observe how the network entities synchronize states and forward traffic.',
+            bytePose: 'boss-mode',
+            diagramType: targetUnitNum === 4 ? 'tcp-handshake' : targetUnitNum === 5 ? 'dns-pipeline' : 'routing-topology',
+          },
+          {
+            id: `${lessonId}-drill`,
+            type: 'question',
+            title: 'Knowledge Check',
+            subtitle: 'Test your grasp of this protocol concept.',
+            byteQuote: 'Analyze the packet parameters carefully before answering!',
+            bytePose: 'thinking',
+            questionText: primaryQ.question,
+            mcqOptions: options,
+            explanation: primaryQ.explanation,
+            xpReward: 30,
+          },
+          {
+            id: `${lessonId}-fillin`,
+            type: 'fill-in',
+            title: 'Protocol Parameter Check',
+            subtitle: 'Complete the core protocol rule.',
+            byteQuote: 'Fill in the key technical term or protocol acronym.',
+            bytePose: 'explaining',
+            questionText: `Complete the sentence: In ${mod.title}, logical addressing and data exchange are governed by standard _____ specifications.`,
+            fillInCorrectAnswer: 'RFC',
+            fillInHint: 'Three-letter acronym for Request for Comments standard specifications',
+            explanation: 'Internet protocols are formalized as RFC (Request for Comments) RFC documents published by the IETF.',
+            xpReward: 20,
+          }
+        ]
+      };
+    }
+  }
+
+  // Final fallback to TCP
   return LESSONS_DATABASE['u4_m05'];
 };

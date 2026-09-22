@@ -19,6 +19,7 @@ class CharacterVoiceService {
   private currentSpeechSynthesis: SpeechSynthesisUtterance | null = null;
   private isSpeakingState: boolean = false;
   private isPausedState: boolean = false;
+  private heartbeatInterval: any = null;
   private animationFrameId: number | null = null;
   private activeCallbacks: VoicePlaybackCallbacks | null = null;
 
@@ -101,6 +102,7 @@ class CharacterVoiceService {
 
       this.currentSpeechSynthesis = utterance;
       this.startSimulatedWaveform(callbacks?.onWaveform);
+      this.startHeartbeat();
 
       utterance.onend = () => {
         this.cleanupPlayback();
@@ -139,7 +141,25 @@ class CharacterVoiceService {
     this.animationFrameId = requestAnimationFrame(loop);
   }
 
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (typeof window !== 'undefined' && window.speechSynthesis && this.isSpeakingState && !this.isPausedState) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 9000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
   private cleanupPlayback(): void {
+    this.stopHeartbeat();
     this.isSpeakingState = false;
     this.isPausedState = false;
     if (this.animationFrameId !== null) {

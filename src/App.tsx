@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NavTab, UserRole, CourseSection, PracticeCategory } from './types';
 import { 
   PRIMARY_COURSE, 
@@ -20,6 +20,7 @@ import { BottomNav } from './components/BottomNav';
 import { OfflinePersistenceBanner } from './components/OfflinePersistenceBanner';
 import { SectionCompletionToast } from './components/SectionCompletionToast';
 import { triggerSubtleSectionConfetti } from './utils/confetti';
+import { soundFx } from './utils/audio';
 import { SearchModal } from './components/SearchModal';
 import { QuizModal } from './components/QuizModal';
 import { PracticeDrillModal } from './components/PracticeDrillModal';
@@ -74,6 +75,7 @@ function MainApp() {
 
   // Navigation State - defaults to 'home'
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['home']);
   const [userRole, setUserRole] = useState<UserRole>('student');
   const [authPortalMode, setAuthPortalMode] = useState<'prelaunch' | 'login' | 'landing'>('prelaunch');
   const [selectedPortal, setSelectedPortal] = useState<'student' | 'developer' | 'teacher'>('student');
@@ -177,14 +179,18 @@ function MainApp() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  const handleNavigate = (tab: NavTab, lessonId?: string, sectionId?: number) => {
+  const handleNavigate = useCallback((tab: NavTab, lessonId?: string, sectionId?: number) => {
     if (tab === 'guidemaster-select' || tab === 'companion-select') {
-      setCurrentTab('home');
-      return;
+      tab = 'home';
+    }
+    if (tab === 'achievements') {
+      tab = 'leaderboard';
+    }
+    if (tab === 'challenges' || tab === 'boss-challenge' || tab === 'daily-challenge' || tab === 'exam') {
+      tab = 'practice';
     }
     if (tab === 'developer-dashboard' && userProfile?.role !== 'developer') {
-      setCurrentTab('home');
-      return;
+      tab = 'home';
     }
     if (lessonId !== undefined) {
       setActiveLessonId(lessonId);
@@ -200,10 +206,51 @@ function MainApp() {
       setIsLevelModalOpen(true);
       return;
     }
+
+    if (tab !== currentTab) {
+      setTabHistory(prev => [...prev, tab]);
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ tab }, '', window.location.pathname);
+      }
+    }
+
     setCurrentTab(tab);
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'instant' });
     window.scrollTo({ top: 0, behavior: 'instant' });
-  };
+  }, [currentTab, userProfile?.role]);
+
+  const handleGoBack = useCallback(() => {
+    soundFx.playClick();
+    if (tabHistory.length > 1) {
+      const updated = [...tabHistory];
+      updated.pop(); // remove current tab
+      const prevTab = updated[updated.length - 1];
+      setTabHistory(updated);
+      setCurrentTab(prevTab);
+    } else {
+      setCurrentTab('home');
+    }
+  }, [tabHistory]);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.tab) {
+        setCurrentTab(e.state.tab);
+        setTabHistory(prev => {
+          if (prev.length > 1) {
+            const next = [...prev];
+            next.pop();
+            return next;
+          }
+          return prev;
+        });
+      } else {
+        handleGoBack();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleGoBack]);
 
   // Loading State while Firebase resolves
   if (loading) {
@@ -281,8 +328,9 @@ function MainApp() {
   if (currentTab === 'lesson-player') {
     return (
       <GamifiedLessonView
+        key={activeLessonId}
         lessonId={activeLessonId}
-        onClose={() => setCurrentTab('learn-map')}
+        onClose={() => handleNavigate('learn-map')}
         onCompleteLesson={(earnedXp) => {
           setUserStats((prev) => ({ ...prev, xp: prev.xp + earnedXp }));
           if (recordModuleCompletion) {
@@ -327,16 +375,20 @@ function MainApp() {
         {/* Subtle Network Topology Background Mesh (Sections 10 & 11) */}
         <NetworkBackground mode={currentTab === 'exam' ? 'exam' : 'static'} />
 
-        {/* 1. Global Header Bar (Cresco CN platform header) */}
-        <Header
-          currentTab={currentTab}
-          onNavigate={handleNavigate}
-          userStats={userStats}
-          onOpenStreak={() => setIsStreakModalOpen(true)}
-          onOpenLevel={() => setIsLevelModalOpen(true)}
-          onSearch={() => setIsSearchOpen(true)}
-          onTriggerPreloader={() => setIsPostLoginLoading(true)}
-        />
+        {/* 1. Global Header Bar (Hidden above Dashboard for clean hero experience) */}
+        {currentTab !== 'home' && (
+          <Header
+            currentTab={currentTab}
+            onNavigate={handleNavigate}
+            userStats={userStats}
+            onOpenStreak={() => setIsStreakModalOpen(true)}
+            onOpenLevel={() => setIsLevelModalOpen(true)}
+            onSearch={() => setIsSearchOpen(true)}
+            onTriggerPreloader={() => setIsPostLoginLoading(true)}
+            canGoBack={tabHistory.length > 1}
+            onGoBack={handleGoBack}
+          />
+        )}
 
       {/* 2. Main Body: Left Sidebar + Independent Scrollable Content */}
       <div className="flex-1 flex flex-row min-w-0 min-h-0 overflow-hidden">
@@ -387,52 +439,23 @@ function MainApp() {
               />
             )}
 
-            {/* Challenges & Simulators */}
-            {(currentTab === 'boss-challenge' || currentTab === 'challenges') && (
-              <NetworkChallengesView
-                onRewardXp={(xp) => {
-                  setUserStats((prev) => ({ ...prev, xp: prev.xp + xp }));
-                }}
-                onNavigateToBoss={() => handleNavigate('boss-challenge')}
-              />
-            )}
-
-            {/* Screen 09: Daily Challenge */}
-            {currentTab === 'daily-challenge' && (
-              <DailyChallengeView
-                onComplete={(xp) => {
-                  setUserStats((prev) => ({ ...prev, xp: prev.xp + xp }));
-                }}
-                onBack={() => handleNavigate('home')}
-              />
-            )}
-
-            {/* Exam Mode (Sections 27, 28, 29) */}
-            {currentTab === 'exam' && (
-              <ExamModeView onNavigate={handleNavigate} />
-            )}
-
             {/* Screen 10: Practice */}
-            {(currentTab === 'practice' || currentTab === 'quiz-and-practice' || currentTab === 'quiz') && (
+            {(currentTab === 'practice' || currentTab === 'quiz-and-practice' || currentTab === 'quiz' || currentTab === 'exam' || currentTab === 'challenges' || currentTab === 'boss-challenge' || currentTab === 'daily-challenge') && (
               <PracticeView onNavigate={handleNavigate} initialTab="flashcards" />
             )}
 
-            {/* Screen 11: Smart Review */}
+            {/* Screen 11: Notes & Study Material */}
             {currentTab === 'review' && (
               <SmartReviewView
-                onBack={() => handleNavigate('home')}
+                onBack={handleGoBack}
                 onSelectTopic={() => handleNavigate('practice')}
+                onNavigate={handleNavigate}
               />
             )}
 
-            {/* Settings (Section 33) */}
+            {/* Settings */}
             {currentTab === 'settings' && (
               <SettingsView onNavigate={handleNavigate} />
-            )}
-
-            {/* Screen 14: Achievements */}
-            {currentTab === 'achievements' && (
-              <AchievementsView onNavigate={handleNavigate} />
             )}
 
             {/* Screen 15: Leaderboard / Network League */}

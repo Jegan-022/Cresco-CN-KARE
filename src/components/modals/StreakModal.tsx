@@ -3,6 +3,7 @@ import { CrescoMascot } from '../brand/CrescoMascot';
 import { soundFx } from '../../utils/soundEffects';
 import { Flame, Check, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { StreakHeatmap } from '../StreakHeatmap';
 
 interface StreakModalProps {
   isOpen: boolean;
@@ -54,8 +55,8 @@ export const StreakModal: React.FC<StreakModalProps> = ({
       : 'Your network has stayed consistently connected!';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn select-none">
-      <div className="w-full max-w-md bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative animate-scaleUp">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn select-none overflow-y-auto">
+      <div className="w-full max-w-lg bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative animate-scaleUp my-8">
         
         {/* Close Button */}
         <button
@@ -142,6 +143,15 @@ export const StreakModal: React.FC<StreakModalProps> = ({
         <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-[11px] font-bold text-[#3157D5] dark:text-blue-300">
           <ShieldCheck size={14} className="shrink-0" />
           <span>Streak Shield active: Missed days auto-protected when enrolled.</span>
+        </div>
+
+        {/* Activity Heatmap Grid */}
+        <div className="mt-5 pt-4 border-t border-[#EFECE6] dark:border-slate-800">
+          <StreakHeatmap
+            activityDates={userProfile?.activityDates || []}
+            currentStreak={actualStreak}
+            weeksToShow={12}
+          />
         </div>
 
         {/* Action Button */}

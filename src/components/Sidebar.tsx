@@ -36,12 +36,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'home', label: 'Dashboard', icon: LayoutDashboard, index: '01' },
     { id: 'learn-map', label: 'Learn', icon: Map, badge: 'Flight', index: '02' },
     { id: 'practice', label: 'Practice', icon: Terminal, index: '03' },
-    { id: 'boss-challenge', label: 'Challenges', icon: Flag, index: '04' },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Award, index: '05' },
-    { id: 'achievements', label: 'Achievements', icon: Trophy, index: '06' },
-    { id: 'review', label: 'Notes', icon: BookOpen, index: '07' },
-    { id: 'exam', label: 'Progress', icon: LineChart, index: '08' },
-    { id: 'profile', label: 'Profile', icon: User, index: '09' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Award, index: '04' },
+    { id: 'review', label: 'Notes', icon: BookOpen, index: '05' },
+    { id: 'profile', label: 'Profile', icon: User, index: '06' },
   ];
 
   const bottomItems: {
@@ -55,14 +52,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Resolve normalized active tab
   const normalizedActiveTab: NavTab = (() => {
     if (activeTab === 'courses' || activeTab === 'learn') return 'learn-map';
-    if (
-      activeTab === 'challenges' || 
-      activeTab === 'daily-challenge' || 
-      activeTab === 'simulator' || 
-      activeTab === 'drag-drop'
-    ) {
-      return 'boss-challenge';
-    }
     return activeTab;
   })();
 

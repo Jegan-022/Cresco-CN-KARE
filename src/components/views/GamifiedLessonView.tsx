@@ -62,6 +62,23 @@ export const GamifiedLessonView: React.FC<GamifiedLessonViewProps> = ({
   const [phaseIndex, setPhaseIndex] = useState<number>(0);
   const currentPhase: LessonPhase = lessonData.phases[phaseIndex] || lessonData.phases[0];
 
+  // Reset all interactive states whenever advancing or changing lessons
+  useEffect(() => {
+    setPhaseIndex(0);
+    setQuestionsAnswered(0);
+    setCorrectAnswersCount(0);
+    setSelectedMcqOption(null);
+    setMcqState('unanswered');
+    setActiveHint(null);
+    setFillInValue('');
+    setFillInState('unanswered');
+    setOrderingSolved(false);
+    setMatchedPairs({});
+    setSelectedMatchLeft(null);
+    setInspectedKeyword(null);
+    setElapsedSeconds(0);
+  }, [lessonId]);
+
   const { userProfile } = useAuth();
 
   // Global Lesson Stats & Gamification

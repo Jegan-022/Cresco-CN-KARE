@@ -9,13 +9,79 @@ import {
   Clock, 
   Zap, 
   CheckCheck,
-  Flag
+  Flag,
+  Award,
+  Sparkles,
+  ShieldCheck,
+  Flame,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth, GLOBAL_RESET_EPOCH } from '../../context/AuthContext';
 import { TOTAL_MODULES_COUNT } from '../../data/courseContent';
 import { STUDENT_CREDENTIALS } from '../../data/studentCredentials';
 import { isAuthorizedDeveloper } from '../../config/developers';
 import { LeaderboardStudent } from '../../types';
+import { CertificateModal } from '../modals/CertificateModal';
+
+export interface LeaderboardBadge {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  badgeClass: string;
+  isUnlocked: (s: { totalXP?: number; xp?: number; modulesCompleted?: number; completedModules?: string[]; streak?: number; overallProgress?: number; finisherRank?: number }) => boolean;
+}
+
+export const LEADERBOARD_BADGES: LeaderboardBadge[] = [
+  {
+    id: 'pioneer',
+    name: 'Course Finisher',
+    icon: '👑',
+    desc: 'Completed all 30 Computer Networks modules',
+    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    isUnlocked: (s) => (s.modulesCompleted ?? (s.completedModules || []).length) >= (TOTAL_MODULES_COUNT || 30) || (s.overallProgress ?? 0) >= 100 || !!s.finisherRank
+  },
+  {
+    id: 'speed_demon',
+    name: 'Speed Demon',
+    icon: '⚡',
+    desc: 'Top 3 Finisher or fast learning velocity',
+    badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+    isUnlocked: (s) => (s.finisherRank !== undefined && s.finisherRank <= 3) || (s.totalXP ?? s.xp ?? 0) >= 2000
+  },
+  {
+    id: 'streak_titan',
+    name: 'Streak Titan',
+    icon: '🔥',
+    desc: 'Maintained 3+ days continuous study streak',
+    badgeClass: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+    isUnlocked: (s) => (s.streak ?? 0) >= 3
+  },
+  {
+    id: 'rfc_scholar',
+    name: 'RFC Scholar',
+    icon: '📜',
+    desc: 'Completed 15+ curriculum modules',
+    badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    isUnlocked: (s) => (s.modulesCompleted ?? (s.completedModules || []).length) >= 15
+  },
+  {
+    id: 'centurion',
+    name: 'XP Centurion',
+    icon: '💎',
+    desc: 'Earned 1,000+ Total XP',
+    badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    isUnlocked: (s) => (s.totalXP ?? s.xp ?? 0) >= 1000
+  },
+  {
+    id: 'network_scout',
+    name: 'Network Scout',
+    icon: '🛡',
+    desc: 'Completed first 5 foundational modules',
+    badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    isUnlocked: (s) => (s.modulesCompleted ?? (s.completedModules || []).length) >= 5
+  }
+];
 
 export interface FirestoreStudentEntry {
   uid: string;
@@ -182,6 +248,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
   const [sortBy, setSortBy] = useState<'completion' | 'xp'>('completion');
   // Filter tabs: 'all' | 'completed' | 'in-progress'
   const [filterTab, setFilterTab] = useState<'all' | 'completed' | 'in-progress'>('all');
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
   // Merge official KLU student roster, Firestore cloud entries, local storage, and current user
   const getMergedStudents = useCallback((firestoreStudents: FirestoreStudentEntry[]): FirestoreStudentEntry[] => {
@@ -570,6 +637,24 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
     });
   }, [rankedStudents, filterTab, searchQuery]);
 
+  // User requirement: "In leaderboard show only top 15 not all students and for each login have to show their position in the leaderboard in total students"
+  const displayedStudents = useMemo(() => {
+    if (searchQuery.trim()) return filteredStudents;
+    return filteredStudents.slice(0, 15);
+  }, [filteredStudents, searchQuery]);
+
+  // User unlocked badges computation
+  const userUnlockedBadges = useMemo(() => {
+    if (!userProfile) return [];
+    return LEADERBOARD_BADGES.filter(b => b.isUnlocked({
+      totalXP: userProfile.totalXP || userProfile.xp || 0,
+      modulesCompleted: userProfile.modulesCompleted || (userProfile.completedModules || []).length,
+      streak: userProfile.streak || 0,
+      overallProgress: userProfile.overallProgress || 0,
+      finisherRank: currentUserFinisherRank
+    }));
+  }, [userProfile, currentUserFinisherRank]);
+
   return (
     <div className="w-full space-y-6 pb-20 max-w-7xl mx-auto animate-in fade-in duration-200">
 
@@ -779,75 +864,143 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
         )}
       </div>
 
-      {/* HIGHLIGHT CURRENT STUDENT SUMMARY CARD */}
+      {/* ========================================================================= */}
+      {/* 🎖 YOUR OFFICIAL POSITION IN THE COHORT & EARNED BADGES                   */}
+      {/* ========================================================================= */}
       {currentUser && userProfile && (
-        <div className={`border rounded-2xl p-4 sm:p-5 shadow-xs relative overflow-hidden ${
-          currentUserFinisherRank
-            ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-[#11241C] dark:via-[#131C24] dark:to-[#11141B] border-emerald-300 dark:border-emerald-500/30'
-            : 'bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white dark:from-[#1E2538] dark:via-[#171C2B] dark:to-[#11141B] border-blue-200 dark:border-[#5B7CFF]/30'
+        <div className={`border-2 rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden ${
+          currentUserFinisherRank || (userProfile.completedModules || []).length >= (TOTAL_MODULES_COUNT || 30)
+            ? 'bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 border-emerald-500/40'
+            : 'bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border-indigo-500/40'
         }`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className={`w-11 h-11 sm:w-13 sm:h-13 rounded-xl flex items-center justify-center font-extrabold text-base sm:text-lg shadow-xs shrink-0 ${
-                currentUserFinisherRank
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-blue-600 text-white'
-              }`}>
-                {currentUserFinisherRank ? `#${currentUserFinisherRank}` : currentUserRank ? `#${currentUserRank}` : '—'}
+          {/* Subtle background glow */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+            {/* Left: Rank Badge & Profile Details */}
+            <div className="flex items-start sm:items-center space-x-4">
+              <div className="relative shrink-0">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center font-black shadow-lg ${
+                  currentUserFinisherRank
+                    ? 'bg-gradient-to-tr from-amber-500 to-emerald-500 text-white shadow-emerald-500/20'
+                    : 'bg-gradient-to-tr from-indigo-600 to-blue-500 text-white shadow-indigo-500/20'
+                }`}>
+                  <span className="text-[10px] uppercase tracking-wider opacity-80">Rank</span>
+                  <span className="text-lg sm:text-xl font-mono leading-none">
+                    {currentUserRank ? `#${currentUserRank}` : '—'}
+                  </span>
+                </div>
+                {currentUserFinisherRank && (
+                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-md text-xs">
+                    👑
+                  </div>
+                )}
               </div>
+
               <div className="min-w-0">
                 <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
-                    {userProfile.displayName || userProfile.name || 'You'}
-                  </h3>
-                  <span className={`px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold tracking-wide uppercase ${
-                    currentUserFinisherRank
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-blue-600 text-white'
-                  }`}>
-                    YOU
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400">
+                    YOUR POSITION IN COHORT
                   </span>
-                  {currentUserFinisherRank && (
-                    <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300/60 dark:border-amber-500/30 text-[9px] sm:text-[10px] font-black uppercase flex items-center gap-1">
-                      <Crown className="w-3 h-3 text-amber-600" />
-                      COURSE FINISHER #{currentUserFinisherRank}
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold font-mono">
+                    #{currentUserRank || '—'} of {rankedStudents.length} Students
+                  </span>
+                  {currentUserRank && rankedStudents.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold font-mono">
+                      Top {Math.max(1, Math.round((currentUserRank / rankedStudents.length) * 100))}%
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] sm:text-xs text-slate-500 dark:text-[#94A3B8] flex items-center space-x-2 mt-0.5 flex-wrap">
-                  <span>Student ID: <span className="font-mono text-slate-900 dark:text-white font-medium">{userProfile.studentId || '—'}</span></span>
+
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
+                  <span>{userProfile.displayName || userProfile.name || 'You'}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-extrabold uppercase">
+                    ACTIVE
+                  </span>
+                </h3>
+
+                <div className="text-xs text-slate-400 flex items-center space-x-2 mt-1 flex-wrap">
+                  <span>Roll No: <span className="font-mono text-slate-200 font-semibold">{userProfile.studentId || '—'}</span></span>
                   <span>•</span>
-                  <span>Cohort: <span className="text-slate-900 dark:text-white">CS-4200 Computer Networks</span></span>
+                  <span>KLU CS-4200 Computer Networks</span>
                   {currentUserFinisherRank && currentStudentEntry?.courseCompletedAt && (
                     <>
                       <span>•</span>
-                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">Completed: {formatCompletionDate(currentStudentEntry.courseCompletedAt)}</span>
+                      <span className="text-emerald-400 font-medium">Completed: {formatCompletionDate(currentStudentEntry.courseCompletedAt)}</span>
                     </>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-[#252B36] pt-3 sm:pt-0 sm:pl-6 text-center">
-              <div className="p-1">
-                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-[#94A3B8]">Total XP</div>
-                <div className="text-sm sm:text-base font-extrabold text-blue-600 dark:text-[#5B7CFF] font-mono">
-                  {userProfile.totalXP || userProfile.xp || 0} <span className="text-[10px] font-normal">XP</span>
+            {/* Right: Metrics + Certificate Trigger Button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-center shrink-0">
+                <div className="px-2">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Total XP</div>
+                  <div className="text-sm sm:text-base font-extrabold text-blue-400 font-mono">
+                    {(userProfile.totalXP || userProfile.xp || 0).toLocaleString()}
+                  </div>
+                </div>
+                <div className="px-2 border-x border-slate-800">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Progress</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
+                    {userProfile.overallProgress || 0}%
+                  </div>
+                </div>
+                <div className="px-2">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Modules</div>
+                  <div className="text-sm sm:text-base font-extrabold text-white font-mono">
+                    {(userProfile.completedModules || []).length}/{TOTAL_MODULES_COUNT || 30}
+                  </div>
                 </div>
               </div>
-              <div className="p-1">
-                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-[#94A3B8]">Progress</div>
-                <div className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-[#22C55E] font-mono">
-                  {userProfile.overallProgress || 0}%
-                </div>
-              </div>
-              <div className="p-1">
-                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-[#94A3B8]">Completed</div>
-                <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                  {(userProfile.completedModules || []).length} / {TOTAL_MODULES_COUNT || 30}
-                </div>
-              </div>
+
+              {/* Certificate Trigger Button */}
+              <button
+                onClick={() => setIsCertModalOpen(true)}
+                className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl text-xs font-bold transition-all shadow-lg cursor-pointer ${
+                  currentUserFinisherRank || (userProfile.completedModules || []).length >= (TOTAL_MODULES_COUNT || 30) || (userProfile.overallProgress || 0) >= 100
+                    ? 'bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black shadow-emerald-500/20 hover:scale-102 active:scale-98'
+                    : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700'
+                }`}
+              >
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>
+                  {currentUserFinisherRank || (userProfile.completedModules || []).length >= (TOTAL_MODULES_COUNT || 30)
+                    ? 'View Completion Certificate'
+                    : 'Certificate Preview'}
+                </span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* User's Badges Showcase */}
+          <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Your Earned Badges ({userUnlockedBadges.length}/{LEADERBOARD_BADGES.length}):</span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {LEADERBOARD_BADGES.map((badge) => {
+                const unlocked = userUnlockedBadges.some(b => b.id === badge.id);
+                return (
+                  <div
+                    key={badge.id}
+                    title={`${badge.name}: ${badge.desc} (${unlocked ? 'Unlocked' : 'Locked'})`}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all ${
+                      unlocked
+                        ? `${badge.badgeClass} shadow-sm`
+                        : 'bg-slate-950/40 text-slate-600 border-slate-800/60 opacity-50 grayscale'
+                    }`}
+                  >
+                    <span>{badge.icon}</span>
+                    <span>{badge.name}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -939,9 +1092,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
               />
             </div>
 
-            <div className="text-xs text-slate-500 dark:text-[#94A3B8] flex items-center space-x-2">
+            <div className="text-xs text-slate-500 dark:text-[#94A3B8] flex items-center space-x-2 flex-wrap">
               <span>Showing:</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{filteredStudents.length} Students</span>
+              <span className="font-semibold text-slate-900 dark:text-white">
+                {searchQuery ? `${displayedStudents.length} Matching Students` : `Top ${displayedStudents.length} of ${rankedStudents.length} Enrolled Students`}
+              </span>
+              {!searchQuery && (
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold">
+                  Top 15 Display
+                </span>
+              )}
               {sortBy === 'completion' && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   • Ranked by Course Completion Order
@@ -956,7 +1116,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
             <div className="inline-block w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-xs">Synchronizing real-time cohort standings...</p>
           </div>
-        ) : filteredStudents.length === 0 ? (
+        ) : displayedStudents.length === 0 ? (
           <div className="py-20 px-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
               <Trophy className="w-8 h-8" />
@@ -974,7 +1134,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
           <>
             {/* 1. MOBILE RESPONSIVE CARD LIST (Visible on small screens < md) */}
             <div className="md:hidden divide-y divide-slate-100 dark:divide-[#1C2230]">
-              {filteredStudents.map((student, idx) => {
+              {displayedStudents.map((student, idx) => {
                 const rank = idx + 1;
                 const isCurrent = currentUser && (student.uid === currentUser.uid || (userProfile?.studentId && student.studentId === userProfile.studentId));
                 const studentDisplayName = student.displayName || student.name || `KLU Student (${student.studentId || idx + 1})`;
@@ -983,6 +1143,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                 const currentProgress = student.overallProgress ?? Math.min(100, Math.round((currentMods / (TOTAL_MODULES_COUNT || 30)) * 100));
                 const isCompleted = checkStudentCourseCompleted(student);
                 const completionTimestamp = getStudentCompletionTimestamp(student);
+                const studentBadges = LEADERBOARD_BADGES.filter(b => b.isUnlocked(student));
 
                 return (
                   <div
@@ -1064,6 +1225,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                                 {student.finisherRank ? `Finisher #${student.finisherRank}` : 'Completed'}
                               </span>
                             )}
+                            {studentBadges.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                {studentBadges.slice(0, 3).map(b => (
+                                  <span key={b.id} title={`${b.name}: ${b.desc}`} className="text-xs">
+                                    {b.icon}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1110,6 +1280,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                   <tr>
                     <th className="py-3.5 px-4 text-center w-16">Rank</th>
                     <th className="py-3.5 px-4">Student & Roll No.</th>
+                    <th className="py-3.5 px-4 text-center">Badges</th>
                     <th className="py-3.5 px-4 text-center">Course Status & Finish Order</th>
                     <th className="py-3.5 px-4 text-right">XP</th>
                     <th className="py-3.5 px-4 text-center w-44">Syllabus Progress</th>
@@ -1117,7 +1288,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-[#252B36]">
-                  {filteredStudents.map((student, idx) => {
+                  {displayedStudents.map((student, idx) => {
                     const rank = idx + 1;
                     const isCurrent = currentUser && (student.uid === currentUser.uid || (userProfile?.studentId && student.studentId === userProfile.studentId));
                     const studentDisplayName = student.displayName || student.name || `KLU Student (${student.studentId || idx + 1})`;
@@ -1126,6 +1297,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                     const currentProgress = student.overallProgress ?? Math.min(100, Math.round((currentMods / (TOTAL_MODULES_COUNT || 30)) * 100));
                     const isCompleted = checkStudentCourseCompleted(student);
                     const completionTimestamp = getStudentCompletionTimestamp(student);
+                    const studentBadges = LEADERBOARD_BADGES.filter(b => b.isUnlocked(student));
 
                     return (
                       <tr
@@ -1209,6 +1381,24 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
                           </div>
                         </td>
 
+                        {/* Badges Column */}
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {studentBadges.slice(0, 4).map(b => (
+                              <span 
+                                key={b.id} 
+                                title={`${b.name}: ${b.desc}`} 
+                                className="text-base cursor-help hover:scale-125 transition-transform"
+                              >
+                                {b.icon}
+                              </span>
+                            ))}
+                            {studentBadges.length === 0 && (
+                              <span className="text-[10px] text-slate-500 font-mono">—</span>
+                            )}
+                          </div>
+                        </td>
+
                         {/* Course Status & Finish Order */}
                         <td className="py-4 px-4 text-center">
                           {isCompleted ? (
@@ -1273,6 +1463,19 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
         )}
 
       </div>
+
+      {/* Official Certificate Modal */}
+      {currentUser && userProfile && (
+        <CertificateModal
+          isOpen={isCertModalOpen}
+          onClose={() => setIsCertModalOpen(false)}
+          studentName={userProfile.displayName || userProfile.name || 'KLU Student'}
+          studentId={userProfile.studentId || ''}
+          college={userProfile.college || 'Kalasalingam Academy of Research and Education (KARE)'}
+          completedDate={currentStudentEntry?.courseCompletedAt || userProfile.courseCompletedAt}
+          totalXP={userProfile.totalXP || userProfile.xp || 0}
+        />
+      )}
 
     </div>
   );

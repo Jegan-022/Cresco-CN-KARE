@@ -56,6 +56,8 @@ export interface UserProfileData {
   quizAverage: number;
   practiceScores?: Record<string, number>;
   streak: number;
+  lastActiveDate?: string;
+  activityDates?: string[];
   currentUnit: number; // 3
   currentModule: string; // 'module-3-1'
   lastLesson: string | null;
@@ -66,6 +68,36 @@ export interface UserProfileData {
   resetEpoch?: string;
   updatedAt?: string;
 }
+
+export const computeUpdatedStreak = (
+  prevStreak: number = 0,
+  prevLastActiveDate?: string,
+  prevActivityDates: string[] = []
+): { streak: number; lastActiveDate: string; activityDates: string[] } => {
+  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const newActivityDates = Array.from(new Set([...prevActivityDates, today])).sort();
+
+  if (!prevLastActiveDate) {
+    return { streak: Math.max(1, prevStreak || 1), lastActiveDate: today, activityDates: newActivityDates };
+  }
+
+  if (prevLastActiveDate === today) {
+    return { streak: Math.max(1, prevStreak || 1), lastActiveDate: today, activityDates: newActivityDates };
+  }
+
+  // Calculate day difference
+  const prevDate = new Date(prevLastActiveDate + 'T00:00:00Z');
+  const currDate = new Date(today + 'T00:00:00Z');
+  const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) {
+    return { streak: (prevStreak || 0) + 1, lastActiveDate: today, activityDates: newActivityDates };
+  } else if (diffDays > 1) {
+    return { streak: 1, lastActiveDate: today, activityDates: newActivityDates };
+  }
+
+  return { streak: Math.max(1, prevStreak || 1), lastActiveDate: today, activityDates: newActivityDates };
+};
 
 export const GLOBAL_RESET_EPOCH = '2026_09_RESET_SCRATCH_V1';
 
@@ -1072,7 +1104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unit5Progress = Math.min(100, Math.round((u5Count / 9) * 100));
     
     const isCourseComplete = newCompletedList.length >= (ALL_MODULES.length || 30) || newOverallProgress >= 100;
-    const courseCompletedAt = userProfile?.courseCompletedAt || (isCourseComplete ? new Date().toISOString() : undefined);
+    const courseCompletedAt = isCourseComplete
+      ? (userProfile?.courseCompletedAt || new Date().toISOString())
+      : userProfile?.courseCompletedAt;
+    const streakResult = computeUpdatedStreak(
+      userProfile?.streak || 0,
+      userProfile?.lastActiveDate,
+      userProfile?.activityDates || []
+    );
 
     const updatedProfile: UserProfileData = {
       ...(userProfile || createZeroStudentState(currentUser.uid, currentUser.email || '', currentUser.displayName || 'Student')),
@@ -1086,6 +1125,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unit5Progress,
       modulesCompleted: newCompletedList.length,
       lastLesson: moduleId,
+      streak: streakResult.streak,
+      lastActiveDate: streakResult.lastActiveDate,
+      activityDates: streakResult.activityDates,
       ...(courseCompletedAt ? { courseCompletedAt } : {}),
       updatedAt: new Date().toISOString()
     };
@@ -1120,6 +1162,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unit4Progress,
         unit5Progress,
         lastLesson: moduleId,
+        streak: streakResult.streak,
+        lastActiveDate: streakResult.lastActiveDate,
+        activityDates: streakResult.activityDates,
         ...(courseCompletedAt ? { courseCompletedAt } : {}),
         updatedAt: serverTimestamp()
       }, { merge: true });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavTab } from '../types';
 import { soundFx } from '../utils/soundEffects';
-import { Home, Compass, Target, Swords, User } from 'lucide-react';
+import { Home, Compass, Target, Award, User } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -13,7 +13,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onNavigate }) =
     { id: 'home' as NavTab, label: 'Home', icon: Home },
     { id: 'learn-map' as NavTab, label: 'Learn', icon: Compass },
     { id: 'practice' as NavTab, label: 'Practice', icon: Target },
-    { id: 'boss-challenge' as NavTab, label: 'Challenges', icon: Swords },
+    { id: 'leaderboard' as NavTab, label: 'Rankings', icon: Award },
     { id: 'profile' as NavTab, label: 'Profile', icon: User },
   ];
 

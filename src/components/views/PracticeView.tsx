@@ -6,6 +6,9 @@ import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { soundFx } from '../../utils/audio';
 import { SplitMcqPlayer, SplitMcqQuestionData } from '../quiz/SplitMcqPlayer';
 import { CrescoMascot } from '../brand/CrescoMascot';
+import { PptDeckViewer } from '../practice/PptDeckViewer';
+import { MaterialsViewer } from '../practice/MaterialsViewer';
+import { VideoOverviewsViewer } from '../practice/VideoOverviewsViewer';
 import { 
   Activity, 
   RefreshCw, 
@@ -27,12 +30,17 @@ import {
   Sliders, 
   Trophy,
   Check,
-  Target
+  Target,
+  Presentation,
+  FileText,
+  Video
 } from 'lucide-react';
+
+export type PracticeTab = 'flashcards' | 'ppt' | 'materials' | 'videos' | 'quiz';
 
 interface PracticeViewProps {
   onNavigate: (tab: NavTab) => void;
-  initialTab?: 'flashcards' | 'subnet' | 'quiz';
+  initialTab?: PracticeTab;
 }
 
 export interface QuizQuestionItem {
@@ -115,7 +123,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
   initialTab = 'flashcards'
 }) => {
   const { recordQuizAttempt } = useAuth();
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'subnet' | 'quiz'>(initialTab);
+  const [activeTab, setActiveTab] = useState<PracticeTab>(initialTab);
 
   // Sync initialTab when prop updates
   useEffect(() => {
@@ -156,41 +164,6 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
       setCurrentCardIndex((prev) => (prev - 1 + flashcards.length) % flashcards.length);
     }, 150);
   };
-
-  // Subnet Tester State
-  const [ipInput, setIpInput] = useState('192.168.10.0');
-  const [cidrInput, setCidrInput] = useState('26');
-  
-  const calculateSubnet = (ip: string, cidr: string) => {
-    try {
-      const cidrNum = parseInt(cidr);
-      if (isNaN(cidrNum) || cidrNum < 0 || cidrNum > 32) return null;
-      
-      const parts = ip.split('.').map(Number);
-      if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return null;
-
-      const mask = ~(Math.pow(2, 32 - cidrNum) - 1);
-      const maskParts = [
-        (mask >>> 24) & 255,
-        (mask >>> 16) & 255,
-        (mask >>> 8) & 255,
-        mask & 255
-      ];
-      
-      const totalHosts = Math.pow(2, 32 - cidrNum);
-      const usableHosts = cidrNum >= 31 ? 0 : totalHosts - 2;
-
-      return {
-        subnetMask: maskParts.join('.'),
-        totalHosts,
-        usableHosts
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  const subnetResult = calculateSubnet(ipInput, cidrInput);
 
   // ==========================================
   // QUIZ SECTION STATE & CONFIGURATION OPTIONS
@@ -489,11 +462,11 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           </div>
         </div>
 
-        {/* Section Tab Switchers */}
+        {/* Section Tab Switchers - 5 Core Practice Modes */}
         <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 inline-flex shadow-xs">
           <button
             onClick={() => { soundFx.playClick(); setActiveTab('flashcards'); }}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === 'flashcards' 
                 ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -504,21 +477,45 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           </button>
 
           <button
-            onClick={() => { soundFx.playClick(); setActiveTab('subnet'); }}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'subnet' 
+            onClick={() => { soundFx.playClick(); setActiveTab('ppt'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'ppt' 
                 ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Calculator className="w-4 h-4" /> 
-            <span>Subnet Tester</span>
+            <Presentation className="w-4 h-4" /> 
+            <span>PPT Slides</span>
           </button>
 
-          {/* New Section: Quiz with Options */}
+          <button
+            onClick={() => { soundFx.playClick(); setActiveTab('materials'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'materials' 
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <FileText className="w-4 h-4" /> 
+            <span>Materials</span>
+          </button>
+
+          <button
+            onClick={() => { soundFx.playClick(); setActiveTab('videos'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'videos' 
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Video className="w-4 h-4" /> 
+            <span>Video Overviews</span>
+          </button>
+
+          {/* Adaptive Quiz */}
           <button
             onClick={() => { soundFx.playClick(); setActiveTab('quiz'); }}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
               activeTab === 'quiz' 
                 ? 'bg-blue-600 text-white shadow-xs' 
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -632,81 +629,31 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             </div>
           </div>
         )}
+
         {/* ==================================================== */}
-        {/* SECTION 2: SUBNET TESTER                             */}
+        {/* SECTION 2: PPT PRESENTATIONS DECK                    */}
         {/* ==================================================== */}
-        {activeTab === 'subnet' && (
+        {activeTab === 'ppt' && (
           <div className="animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-[#172033] rounded-3xl border border-slate-200 dark:border-slate-800 p-6 md:p-8 shadow-sm">
-              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <Calculator className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                Interactive IPv4 Subnet Analyzer
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Inputs */}
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">IP Address</label>
-                    <div className="relative">
-                      <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input 
-                        type="text" 
-                        value={ipInput}
-                        onChange={(e) => setIpInput(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-12 pr-4 text-base font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
-                        placeholder="192.168.1.1"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">CIDR Prefix</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono">/</span>
-                      <input 
-                        type="number" 
-                        value={cidrInput}
-                        onChange={(e) => setCidrInput(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-4 text-base font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
-                        placeholder="24"
-                        min="0" max="32"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Visualizer output */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 flex flex-col justify-center">
-                  {subnetResult ? (
-                    <div className="space-y-4">
-                      <div>
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">Subnet Mask</span>
-                        <div className="text-xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">{subnetResult.subnetMask}</div>
-                      </div>
-                      
-                      <div className="h-px w-full bg-slate-200 dark:bg-slate-700"></div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">Total IPs</span>
-                          <div className="text-lg font-mono text-slate-900 dark:text-slate-100 font-bold">{subnetResult.totalHosts.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">Usable Hosts</span>
-                          <div className="text-lg font-mono text-blue-600 dark:text-blue-400 font-bold">{subnetResult.usableHosts.toLocaleString()}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center text-slate-400 py-10">
-                      <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-50 text-slate-400" />
-                      <p className="text-xs">Enter a valid IP and CIDR to inspect subnet allocation.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PptDeckViewer />
+          </div>
+        )}
+
+        {/* ==================================================== */}
+        {/* SECTION 3: STUDY MATERIALS & REFERENCE SHEETS        */}
+        {/* ==================================================== */}
+        {activeTab === 'materials' && (
+          <div className="animate-in fade-in duration-300">
+            <MaterialsViewer />
+          </div>
+        )}
+
+        {/* ==================================================== */}
+        {/* SECTION 4: CURATED VIDEO LESSON OVERVIEWS            */}
+        {/* ==================================================== */}
+        {activeTab === 'videos' && (
+          <div className="animate-in fade-in duration-300">
+            <VideoOverviewsViewer />
           </div>
         )}
 

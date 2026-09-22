@@ -18,6 +18,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { StreakHeatmap } from '../StreakHeatmap';
 
 interface ProfileViewProps {
   primaryCourse?: Course;
@@ -209,6 +210,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate }) => {
         </div>
       </div>
 
+      {/* 2.5 Study Streak Heatmap */}
+      <StreakHeatmap
+        activityDates={userProfile?.activityDates || []}
+        currentStreak={userProfile?.streak || 0}
+        weeksToShow={16}
+      />
+
       {/* 3. Collected Badges Showcase */}
       <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
@@ -220,11 +228,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate }) => {
           <button
             onClick={() => {
               soundFx.playClick();
-              onNavigate('achievements');
+              onNavigate('leaderboard');
             }}
             className="text-xs font-bold text-[#3157D5] dark:text-[#6D8CFF] hover:underline cursor-pointer"
           >
-            View All Badges →
+            View Leaderboard Standings →
           </button>
         </div>
 

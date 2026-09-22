@@ -16,7 +16,8 @@ import {
   Target,
   Swords,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 
@@ -32,6 +33,8 @@ interface HeaderProps {
   onOpenLevel?: () => void;
   onSearch?: () => void;
   onTriggerPreloader?: () => void;
+  canGoBack?: boolean;
+  onGoBack?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -42,6 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLevel,
   onSearch,
   onTriggerPreloader,
+  canGoBack = false,
+  onGoBack,
 }) => {
   const { userProfile, currentUser, logout, resetStudentCourse } = useAuth();
   const { activeCharacter, openCharacterHub, isSpeaking, audioAmplitude } = useCharacter();
@@ -89,8 +94,19 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/90 dark:bg-[#111827]/90 backdrop-blur-xl border-b border-[#E5E0D8] dark:border-slate-800 shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-colors">
       <div className="max-w-[1440px] mx-auto h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
         
-        {/* Left: Brand Logo + Course Pill */}
-        <div className="flex items-center gap-3 md:gap-4">
+        {/* Left: Optional In-App Back Button + Brand Logo + Course Pill */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {onGoBack && (
+            <button
+              type="button"
+              onClick={onGoBack}
+              className="p-2 rounded-xl bg-surface-container/80 hover:bg-surface-container-high border border-outline-variant/40 text-slate-700 dark:text-slate-200 transition-all cursor-pointer flex items-center justify-center shadow-2xs active:scale-95"
+              title="Go Back to Previous Page"
+            >
+              <ArrowLeft size={18} strokeWidth={2.5} />
+            </button>
+          )}
+
           <button
             onClick={() => {
               soundFx.playClick();
