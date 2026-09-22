@@ -1047,21 +1047,52 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
             </div>
           </div>
 
-          {/* Current Location marker */}
-          <div
-            className="absolute flex flex-col items-center transition-all duration-700"
-            style={{
-              left: (nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0]).left - 20,
-              top: Math.max(10, (nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0]).top - 50),
-            }}
-          >
-            <div className="bg-white/95 border-2 border-[#0a1428] border-solid rounded-[6px] px-[8px] py-[2px] shadow-md pointer-events-none">
-              <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[9px] uppercase leading-tight whitespace-nowrap">
-                CURRENT LOCATION
-              </p>
-            </div>
-            <div className="w-[2px] h-[34px] bg-[#0a1428]/60" />
-          </div>
+          {/* Animated Dynamic Mascot on Current Level */}
+          {(() => {
+            const currentNode = nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0];
+            const isBoss = currentNode.id === 10 || currentNode.id === 21;
+            const mascotSrc = isBoss 
+              ? "/assets/mascot/mascot-challenge.png" 
+              : completedCount > 0 
+              ? "/assets/mascot/mascot-levelup.png" 
+              : "/assets/mascot/cresco-mascot.png";
+
+            return (
+              <div
+                className="absolute z-20 flex flex-col items-center select-none cursor-pointer group"
+                style={{
+                  left: currentNode.left - 18,
+                  top: Math.max(10, currentNode.top - 76),
+                  transition: "all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+                onClick={() => {
+                  soundFx.playPacketPop();
+                  setSelectedNode(currentNode);
+                }}
+                title={`Level ${currentNode.id}: ${currentNode.title}`}
+              >
+                {/* Speech / Level Indicator Bubble */}
+                <div className="bg-[#ffc229] border-2 border-[#0a1428] border-solid rounded-full px-2.5 py-0.5 shadow-[0_3px_0_0_#0a1428] mb-1 flex items-center gap-1 animate-bounce-up">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
+                  <p className="font-['Sora:ExtraBold'] font-extrabold text-[#0a1428] text-[9px] uppercase tracking-wider whitespace-nowrap">
+                    Lvl {currentNode.id} • Next
+                  </p>
+                </div>
+
+                {/* Floating Mascot Character */}
+                <div className="relative size-[54px] flex items-center justify-center animate-octo-float group-hover:scale-115 transition-transform duration-300">
+                  <img
+                    src={mascotSrc}
+                    alt="Cresco CN Guide Mascot"
+                    className="size-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]"
+                  />
+                </div>
+
+                {/* Ground Beacon Shadow */}
+                <div className="w-[32px] h-[8px] bg-black/30 rounded-full blur-[2px] mt-0.5 animate-beacon-pulse pointer-events-none" />
+              </div>
+            );
+          })()}
 
           {/* Legend */}
           <div className="absolute bottom-[14px] right-[14px] bg-[#0a1428]/80 backdrop-blur-sm border border-white/10 rounded-[10px] px-3 py-2 flex flex-col gap-1">

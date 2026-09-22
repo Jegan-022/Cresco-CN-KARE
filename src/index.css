@@ -640,5 +640,195 @@ h1, h2, h3, h4, h5, h6 {
   animation: star-spin 1s ease-out;
 }
 
+/* Animated Mascot Float for Learn Island Map */
+@keyframes octo-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
 
+@keyframes beacon-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
 
+.animate-octo-float {
+  animation: octo-float 3.5s ease-in-out infinite;
+}
+
+.animate-beacon-pulse {
+  animation: beacon-pulse 2s ease-in-out infinite;
+}
+
+/* UNO Horizontal Flashcard System */
+.uno-card-container {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  justify-content: center;
+}
+
+.uno-card {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  min-height: 330px;
+  background: #fffffd;
+  border-radius: 1.5em;
+  box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.28), 0 0 12px -2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  user-select: none;
+  cursor: pointer;
+}
+
+.uno-card::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  width: 90%;
+  height: 110px;
+  transform: translate(0em, 65%) rotateX(90deg) scale(0.9);
+  border-radius: 100%;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: -10;
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+.uno-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.uno-back {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  inset: 0.8em;
+  border-radius: 1.25em;
+  background: #191f1f;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  padding: 1.5rem;
+}
+
+.uno-back .uno-oval {
+  position: absolute;
+  background: #cb0323;
+  inset: -20% 8%;
+  border-radius: 100%;
+  transform-origin: center;
+  transform: scale(0.94, 0.86) skewX(-22.5deg);
+}
+
+.uno-back .uno-logo-text {
+  position: relative;
+  z-index: 10;
+  font-family: 'Sora', sans-serif;
+  font-size: 4.5rem;
+  font-weight: 900;
+  color: #e4c713;
+  letter-spacing: -2px;
+  transform-origin: center;
+  transform: rotate(-12deg) translateX(4px);
+  text-shadow:
+    2px 2px #f1e8ad, 2px 1px #f1e8ad, 2px 0px #f1e8ad, 2px -1px #f1e8ad, 2px -2px #f1e8ad,
+    1px -2px #f1e8ad, 0px -2px #f1e8ad, -1px -2px #f1e8ad, -2px -2px #f1e8ad, -2px -1px #f1e8ad,
+    -2px 0px #f1e8ad, -2px 1px #f1e8ad, -2px 2px #f1e8ad, -12px 10px #191f1f, -10px 10px #191f1f,
+    -9px 9.4px #191f1f, -8px 8.8px #191f1f, -7px 8.2px #191f1f, -6px 7.7px #191f1f,
+    -5px 7.1px #191f1f, -4px 6.5px #191f1f, -3px 6px #191f1f, -2px 5.4px #191f1f,
+    -1px 4.8px #191f1f, 0px 4.2px #191f1f, 1px 3.7px #191f1f, 2px 3.1px #191f1f,
+    3px 2.5px #191f1f, 4px 2px #191f1f, 4px -4px #191f1f, -4px -4px #191f1f,
+    -5px -3px #191f1f, -6px -2px #191f1f, -7px -1px #191f1f, -8px 0px #191f1f,
+    -9px 1px #191f1f, -10px 2px #191f1f, -11px 3px #191f1f, -12px 4px #191f1f,
+    -14px 4px #fffffd, -13px 3px #fffffd, -12px 2px #fffffd, -11px 1px #fffffd,
+    -10px 0px #fffffd, -9px -1px #fffffd, -8px -2px #fffffd, -7px -3px #fffffd,
+    -6px -4px #fffffd, -5px -5px #fffffd, -4px -6px #fffffd, -3px -6px #fffffd,
+    0px -6px #fffffd, 3px -6px #fffffd, 6px -6px #fffffd, -14px 12px #fffffd,
+    -8px 12px #fffffd, -7px 11.5px #fffffd, -6px 11px #fffffd, -5px 10.5px #fffffd,
+    -4px 10px #fffffd, -3px 9.5px #fffffd, -2px 9px #fffffd, -1px 8.5px #fffffd,
+    0px 8px #fffffd, 1px 7.5px #fffffd, 2px 7px #fffffd, 3px 6.5px #fffffd,
+    4px 6px #fffffd, 5px 5.5px #fffffd, 6px 4px #fffffd;
+}
+
+.uno-front {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  inset: 0.8em;
+  border-radius: 1.25em;
+  background: #cb0323;
+  overflow: hidden;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  padding: 2rem 3rem;
+}
+
+.uno-front .uno-front-oval {
+  position: absolute;
+  inset: -15% 6%;
+  border-radius: 100%;
+  border: 0.6em solid #fffffd;
+  transform-origin: center;
+  transform: scale(0.95, 0.88) skewX(-22.5deg);
+  pointer-events: none;
+}
+
+.uno-front .uno-text-top {
+  position: absolute;
+  top: 0.5em;
+  left: 0.8em;
+  color: white;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  line-height: 1;
+  text-shadow: -1px -1px 0 #000, 1px 1px 0 #000;
+  z-index: 10;
+}
+
+.uno-front .uno-text-bottom {
+  position: absolute;
+  bottom: 0.5em;
+  right: 0.8em;
+  color: white;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  line-height: 1;
+  transform: rotate(180deg);
+  text-shadow: -1px -1px 0 #000, 1px 1px 0 #000;
+  z-index: 10;
+}
+
+.uno-front .uno-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  color: white;
+}

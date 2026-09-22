@@ -23,62 +23,22 @@ export const NetQuestLogo: React.FC<NetQuestLogoProps> = ({
   const { box, text, sub } = sizeMap[size];
   const isMonochrome = variant === 'monochrome';
 
-  // Network Topology Symbol Combined with an Open Book Mark:
-  // - Open book base pages forming a welcoming foundation
-  // - Interconnected glowing network nodes and routing arcs rising from the pages
+  // Modern Cresco Octopus Mascot Brand Mark
   const markSvg = (
-    <svg
-      width={box}
-      height={box}
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="shrink-0 transition-transform duration-200 hover:scale-105"
-      aria-label="Cresco CN Network & Book Brand Mark"
+    <div 
+      className="relative shrink-0 flex items-center justify-center rounded-2xl overflow-hidden shadow-xs hover:scale-105 transition-transform duration-200"
+      style={{ width: box, height: box }}
     >
-      {/* Outer rounded app icon tile */}
-      <rect
-        x="2"
-        y="2"
-        width="44"
-        height="44"
-        rx="12"
-        fill={isMonochrome ? '#172033' : '#3157D5'}
+      <div 
+        className="absolute inset-0 rounded-2xl opacity-15"
+        style={{ background: 'linear-gradient(135deg, #10B981 0%, #06B6D4 100%)' }}
       />
-
-      {/* Open Book Base Wings */}
-      {/* Left Page */}
-      <path
-        d="M 12 33 C 18 31 23 32 24 35 L 24 24 C 23 21 18 20 12 22 Z"
-        fill="#FFFFFF"
-        opacity="0.92"
+      <img
+        src="/assets/mascot/cresco-mascot.png"
+        alt="Cresco CN Mascot Logo"
+        className="w-full h-full object-contain relative z-10 p-0.5 filter drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
       />
-      {/* Right Page */}
-      <path
-        d="M 36 33 C 30 31 25 32 24 35 L 24 24 C 25 21 30 20 36 22 Z"
-        fill="#FFFFFF"
-        opacity="0.92"
-      />
-      {/* Book Spine Center line */}
-      <line x1="24" y1="23" x2="24" y2="35" stroke="#3157D5" strokeWidth="1.5" strokeLinecap="round" />
-
-      {/* Network Topology Nodes Rising from Knowledge */}
-      {/* Left Node */}
-      <circle cx="16" cy="15" r="3.5" fill="#5B7CFA" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Center Top Apex Node */}
-      <circle cx="24" cy="10" r="4" fill="#35A86B" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Right Node */}
-      <circle cx="32" cy="15" r="3.5" fill="#5B7CFA" stroke="#FFFFFF" strokeWidth="1.5" />
-
-      {/* Interconnecting Network Topology Links */}
-      <line x1="16" y1="15" x2="24" y2="10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-      <line x1="24" y1="10" x2="32" y2="15" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-      <line x1="16" y1="15" x2="24" y2="23" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="2 2" strokeLinecap="round" />
-      <line x1="32" y1="15" x2="24" y2="23" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="2 2" strokeLinecap="round" />
-
-      {/* Center Packet Signal Blip */}
-      <circle cx="20" cy="12.5" r="1.5" fill="#FFFFFF" />
-    </svg>
+    </div>
   );
 
   if (variant === 'mark-only') {
