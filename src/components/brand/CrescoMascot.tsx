@@ -125,6 +125,12 @@ export const CrescoMascot: React.FC<CrescoMascotProps> = ({
           {speechPosition === 'top' && (
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white dark:bg-[#1f2937] border-r border-b border-cyan-500/30 transform rotate-45" />
           )}
+          {speechPosition === 'left' && (
+            <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-white dark:bg-[#1f2937] border-r border-t border-cyan-500/30 transform rotate-45" />
+          )}
+          {speechPosition === 'right' && (
+            <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-white dark:bg-[#1f2937] border-l border-b border-cyan-500/30 transform rotate-45" />
+          )}
         </div>
       )}
 

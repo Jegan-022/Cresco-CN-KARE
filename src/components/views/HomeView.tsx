@@ -216,8 +216,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   size="hero"
                   animation="float"
                   withGlow
-                  speechText={`Let's conquer ${nextModule.title?.split('—')[0]?.trim() || 'the next module'}!`}
-                  speechPosition="left"
+                  speechText={`Let's conquer ${nextModule.title?.split(':')[0]?.split('—')[0]?.trim() || 'Network Layer'}!`}
+                  speechPosition="top"
                 />
               </div>
             </div>
