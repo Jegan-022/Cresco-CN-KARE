@@ -533,114 +533,85 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
         </div>
 
         {/* ==================================================== */}
-        {/* SECTION 1: FLASHCARDS                                */}
-        {/* ==================================================== */}
-        {/* ==================================================== */}
-        {/* SECTION 1: FLASHCARDS (HORIZONTAL UNO STYLE)         */}
+        {/* SECTION 1: FLASHCARDS (CLEAN 3D FLIP)               */}
         {/* ==================================================== */}
         {activeTab === 'flashcards' && flashcards.length > 0 && (
           <div className="animate-in fade-in duration-300 flex flex-col items-center py-4">
-            <div className="w-full max-w-xl flex items-center justify-between mb-4 text-slate-500 dark:text-slate-400 font-mono text-xs px-2">
-              <span className="font-bold text-[#cb0323] dark:text-[#ff6b81] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-[#cb0323] animate-ping" />
-                UNO Master Flashcards
+            <div className="w-full max-w-xl flex items-center justify-between mb-6 px-2">
+              <span className="text-xs font-mono font-bold text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-wider flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                Quick Reference Cards
               </span>
-              <span>Card {currentCardIndex + 1} of {flashcards.length}</span>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                {currentCardIndex + 1} / {flashcards.length}
+              </span>
             </div>
             
-            {/* Horizontal UNO 3D Card Container */}
-            <div className="uno-card-container">
+            {/* 3D Flip Card Container */}
+            <div className="flashcard-container">
               <div 
                 onClick={() => {
                   soundFx.playPacketPop();
                   setIsFlipped(!isFlipped);
                 }}
-                className={`uno-card ${isFlipped ? 'is-flipped' : ''}`}
-                title="Click to Flip Card"
+                className={`flashcard ${isFlipped ? 'is-flipped' : ''}`}
+                title="Click to flip"
               >
-                {/* CARD BACK: Question Side with Dark UNO Styling & Red Skewed Oval */}
-                <div className="uno-back">
-                  <div className="uno-oval" />
-                  
-                  {/* Top-Left Corner Number */}
-                  <div className="absolute top-4 left-5 text-white/90 font-['Sora'] font-black text-xl z-20 flex flex-col items-center leading-none">
-                    <span>{currentCardIndex + 1}</span>
-                    <span className="text-[9px] uppercase tracking-widest text-[#e4c713] font-bold mt-0.5">Q</span>
-                  </div>
+                {/* FRONT: Question Side */}
+                <div className="flashcard-front">
+                  {/* Topic Badge */}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-4 border border-slate-200 dark:border-slate-700">
+                    <Layers className="w-3 h-3" />
+                    {flashcards[currentCardIndex].domain || 'Quick Reference'}
+                  </span>
 
-                  {/* Bottom-Right Inverted Corner Number */}
-                  <div className="absolute bottom-4 right-5 text-white/90 font-['Sora'] font-black text-xl z-20 flex flex-col items-center leading-none rotate-180">
-                    <span>{currentCardIndex + 1}</span>
-                    <span className="text-[9px] uppercase tracking-widest text-[#e4c713] font-bold mt-0.5">Q</span>
-                  </div>
+                  {/* Question */}
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white leading-relaxed text-center max-w-md line-clamp-5">
+                    {flashcards[currentCardIndex].q}
+                  </h2>
 
-                  {/* Top Brand Watermark */}
-                  <div className="absolute top-4 z-10">
-                    <span className="font-['Sora'] font-black text-sm tracking-widest text-[#e4c713] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-                      CRESCO • UNO
-                    </span>
-                  </div>
-
-                  {/* Center Question Content */}
-                  <div className="relative z-20 max-w-[440px] text-center px-4 py-2">
-                    <span className="inline-block px-3 py-1 rounded-full bg-black/40 text-[#f1e8ad] font-mono text-[10px] font-bold tracking-wider uppercase mb-3 border border-[#f1e8ad]/30">
-                      Question #{currentCardIndex + 1}
-                    </span>
-                    <h2 className="text-base sm:text-xl font-extrabold font-['Sora'] text-white leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-4">
-                      {flashcards[currentCardIndex].q}
-                    </h2>
-                    <p className="text-[11px] text-amber-200/80 font-mono mt-4 flex items-center justify-center gap-1">
-                      <RefreshCw className="w-3 h-3 animate-spin" style={{ animationDuration: '4s' }} />
-                      Click card or press flip to reveal answer
-                    </p>
-                  </div>
+                  {/* Flip Hint */}
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-6 flex items-center gap-1.5">
+                    <RefreshCw className="w-3 h-3" />
+                    Tap to reveal answer
+                  </p>
                 </div>
 
-                {/* CARD FRONT: Answer Side with Vibrant Red & White Rim Double Oval */}
-                <div className="uno-front">
-                  <div className="uno-front-oval" />
-                  
-                  {/* Top-Left Corner Number */}
-                  <div className="uno-text-top flex flex-col items-center">
-                    <span>{currentCardIndex + 1}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-emerald-300 font-bold">A</span>
-                  </div>
+                {/* BACK: Answer Side */}
+                <div className="flashcard-back">
+                  {/* Verified Badge */}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-4 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Answer
+                  </span>
 
-                  {/* Bottom-Right Inverted Corner Number */}
-                  <div className="uno-text-bottom flex flex-col items-center">
-                    <span>{currentCardIndex + 1}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-emerald-300 font-bold">A</span>
-                  </div>
+                  {/* Answer */}
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white leading-relaxed text-center max-w-md line-clamp-5">
+                    {flashcards[currentCardIndex].a}
+                  </h2>
 
-                  {/* Center Answer Content */}
-                  <div className="uno-content">
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-white font-mono text-[10px] font-bold tracking-wider uppercase mb-3 border border-white/40 shadow-xs">
-                      Answer Verified ✓
-                    </span>
-                    <h2 className="text-base sm:text-xl font-extrabold font-['Sora'] text-white leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] line-clamp-4">
-                      {flashcards[currentCardIndex].a}
-                    </h2>
-                    <p className="text-[11px] text-white/80 font-mono mt-4 flex items-center justify-center gap-1">
-                      Click to flip back to question
-                    </p>
-                  </div>
+                  {/* Flip Back Hint */}
+                  <p className="text-[11px] text-emerald-600/60 dark:text-emerald-500/60 font-medium mt-6 flex items-center gap-1.5">
+                    <RefreshCw className="w-3 h-3" />
+                    Tap to see question
+                  </p>
                 </div>
               </div>
             </div>
             
-            {/* Nav & Flip Controls */}
+            {/* Navigation & Flip Controls */}
             <div className="flex items-center gap-4 mt-8">
               <button 
                 onClick={() => { soundFx.playClick(); prevCard(); }}
-                className="w-12 h-12 rounded-full bg-white dark:bg-[#172033] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-md active:scale-90 cursor-pointer"
+                className="w-11 h-11 rounded-full bg-white dark:bg-[#172033] border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm active:scale-90 cursor-pointer"
                 title="Previous Card"
               >
-                <ArrowRight className="w-5 h-5 rotate-180 text-slate-700 dark:text-slate-300" />
+                <ArrowRight className="w-4.5 h-4.5 rotate-180 text-slate-600 dark:text-slate-300" />
               </button>
               
               <button 
                 onClick={() => { soundFx.playPacketPop(); setIsFlipped(!isFlipped); }}
-                className="px-6 py-3.5 rounded-2xl font-['Sora'] font-extrabold text-xs bg-[#cb0323] hover:bg-[#b0021e] text-white shadow-[0_5px_0_0_#7a0115,0_8px_16px_rgba(203,3,35,0.35)] hover:shadow-[0_2px_0_0_#7a0115] hover:translate-y-0.5 active:translate-y-1 transition-all flex items-center gap-2 cursor-pointer select-none"
+                className="px-6 py-3 rounded-2xl font-bold text-xs bg-[#3157D5] hover:bg-[#2847B5] text-white shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer select-none"
               >
                 <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
                 <span>{isFlipped ? 'Show Question' : 'Flip to Answer'}</span>
@@ -648,11 +619,16 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
               
               <button 
                 onClick={() => { soundFx.playClick(); nextCard(); }}
-                className="w-12 h-12 rounded-full bg-white dark:bg-[#172033] border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-md active:scale-90 cursor-pointer"
+                className="w-11 h-11 rounded-full bg-white dark:bg-[#172033] border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm active:scale-90 cursor-pointer"
                 title="Next Card"
               >
-                <ArrowRight className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <ArrowRight className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
               </button>
+            </div>
+
+            {/* Card type indicator */}
+            <div className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider">
+              {flashcards[currentCardIndex].type || 'Key Fact'} • {flashcards[currentCardIndex].domain || 'Quick Reference'}
             </div>
           </div>
         )}

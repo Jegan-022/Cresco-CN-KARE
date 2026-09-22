@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { NavTab } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { soundFx } from "../../utils/soundEffects";
+import { CrescoMascot } from "../brand/CrescoMascot";
 
 interface LearningMapViewProps {
   onSelectLesson?: (lessonId: string, sectionId: number) => void;
@@ -1051,11 +1052,11 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
           {(() => {
             const currentNode = nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0];
             const isBoss = currentNode.id === 10 || currentNode.id === 21;
-            const mascotSrc = isBoss 
-              ? "/assets/mascot/mascot-challenge.png" 
+            const mascotPose = isBoss 
+              ? "challenge" as const
               : completedCount > 0 
-              ? "/assets/mascot/mascot-levelup.png" 
-              : "/assets/mascot/cresco-mascot.png";
+              ? "levelup" as const
+              : "front" as const;
 
             return (
               <div
@@ -1079,14 +1080,14 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
                   </p>
                 </div>
 
-                {/* Floating Mascot Character */}
-                <div className="relative size-[54px] flex items-center justify-center animate-octo-float group-hover:scale-115 transition-transform duration-300">
-                  <img
-                    src={mascotSrc}
-                    alt="Cresco CN Guide Mascot"
-                    className="size-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]"
-                  />
-                </div>
+                {/* Floating Animated SVG Mascot Character */}
+                <CrescoMascot
+                  pose={mascotPose}
+                  size="sm"
+                  animation="float"
+                  withGlow
+                  interactive={false}
+                />
 
                 {/* Ground Beacon Shadow */}
                 <div className="w-[32px] h-[8px] bg-black/30 rounded-full blur-[2px] mt-0.5 animate-beacon-pulse pointer-events-none" />
