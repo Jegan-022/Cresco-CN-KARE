@@ -1,111 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && (request.auth.uid == userId || request.auth.token.email.matches('.*' + userId + '.*'));
-    }
-
-    // ==============================================================
-    // 1. CURRICULUM, LEARNING CONTENT & GAMIFICATION (READ PUBLIC / AUTH)
-    // ==============================================================
-    // courses, units, levels, lessons, concepts, questions, flashcards, 
-    // activities, missions, bosses, achievements
-    match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /units/{unitId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /levels/{levelId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /lessons/{lessonId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /concepts/{conceptId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /questions/{questionId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /flashcards/{flashcardId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /activities/{activityId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /missions/{missionId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /bosses/{bossId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /achievements/{achievementId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    // ==============================================================
-    // 2. USER PROFILE, PROGRESS, MASTERY & QUIZ ATTEMPTS
-    // ==============================================================
-    match /users/{userId} {
-      allow read: if true; // Cohort members can view classmate profiles / ranks
-      allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
-    }
-
-    match /userProgress/{progressId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    match /userMastery/{masteryId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    match /quizAttempts/{attemptId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
-      allow delete: if false; // Audit trail preservation
-    }
-
-    // ==============================================================
-    // 3. BACKWARD COMPATIBILITY & LEADERBOARD (STUDENTS COLLECTION)
-    // ==============================================================
+    // Real-time student leaderboard collection
     match /students/{studentId} {
+      // Allow public read so all enrolled cohort members and friends see live standings
       allow read: if true;
-      allow write: if isAuthenticated() || (studentId is string && studentId.size() > 0);
+      // Allow students to save and update their progress & XP
+      allow write: if request.auth != null || (studentId is string && studentId.size() > 0);
     }
 
-    // Fallback safe rule
+    // Unique student username registry for open registration
+    match /usernames/{username} {
+      allow read: if true;
+      allow write: if request.auth != null || (username is string && username.size() > 0);
+    }
+
+    // Default authenticated access for user documents and quiz records
     match /{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if request.auth != null;
     }
   }
 }
+

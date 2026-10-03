@@ -157,11 +157,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           >
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                KLU Student ID / Roll No.
+                Username / Student ID / Roll No.
               </label>
               <input
                 type="text"
-                placeholder="e.g. 99240040116 or 40116"
+                placeholder="e.g. rahul_klu or 99240040116"
                 value={studentIdInput}
                 onChange={(e) => setStudentIdInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-colors"
@@ -175,7 +175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter password (e.g. Klu@40116)"
+                  placeholder="Enter your password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-colors"

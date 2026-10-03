@@ -1,541 +1,834 @@
-import React, { useState } from 'react';
-import { NavTab } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  PlayCircle, 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  SkipForward, 
+  SkipBack, 
+  Layers, 
+  Radio, 
+  Sliders, 
+  ShieldCheck, 
+  Cpu, 
+  ArrowRight, 
+  Globe, 
+  Server, 
+  Laptop, 
   Zap, 
-  Network,
-  Radio,
-  Layers,
-  ArrowRight,
-  Lock,
-  Star,
-  Clock,
-  ChevronRight,
+  FileCode, 
   Sparkles,
-  TrendingUp,
-  Activity,
-  Wifi,
-  Shield,
-  Box
+  CheckCircle2,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { soundFx } from '../../utils/soundEffects';
-import { useAuth } from '../../context/AuthContext';
+import { CrescoMascot } from '../brand/CrescoMascot';
 
 interface AnimatedLearningViewProps {
-  onNavigate?: (tab: NavTab) => void;
-  onSelectLesson?: (lessonId: string, sectionId: number) => void;
+  onNavigateHome?: () => void;
 }
 
-interface AnimationTopic {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
-  color: string;
-  gradient: string;
-  border: string;
-  duration: string;
-  xp: number;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  tags: string[];
-  locked?: boolean;
-  lessonId?: string;
-  sectionId?: number;
-  frames: { label: string; icon: string; description: string }[];
-}
+type SimulationTopic = 'tcp-handshake' | 'osi-encapsulation' | 'csmacd-collision' | 'sliding-window' | 'dns-resolution';
 
-const ANIMATION_TOPICS: AnimationTopic[] = [
-  {
-    id: 'osi-model',
-    title: 'OSI Model Deep Dive',
-    subtitle: '7 Layers Animated',
-    description: 'Watch each layer come alive — from physical bits to application data, visualised frame-by-frame.',
-    icon: Layers,
-    color: 'text-violet-600 dark:text-violet-400',
-    gradient: 'from-violet-500/10 via-purple-500/8 to-violet-500/5',
-    border: 'border-violet-500/30 hover:border-violet-500/60',
-    duration: '8 min',
-    xp: 50,
-    difficulty: 'Beginner',
-    tags: ['OSI', 'Layers', 'Foundation'],
-    lessonId: 'u3_m01',
-    sectionId: 3,
-    frames: [
-      { label: 'Physical', icon: '⚡', description: 'Bits travel as electrical/optical signals' },
-      { label: 'Data Link', icon: '🔗', description: 'Frames with MAC addressing' },
-      { label: 'Network', icon: '🌐', description: 'IP routing across networks' },
-      { label: 'Transport', icon: '🚚', description: 'TCP/UDP reliable delivery' },
-      { label: 'Session', icon: '🤝', description: 'Connection management' },
-      { label: 'Presentation', icon: '🎨', description: 'Data encoding & encryption' },
-      { label: 'Application', icon: '💻', description: 'HTTP, FTP, SMTP' },
-    ],
-  },
-  {
-    id: 'tcp-handshake',
-    title: 'TCP 3-Way Handshake',
-    subtitle: 'Connection Lifecycle',
-    description: 'See SYN, SYN-ACK, ACK animated in real time. Understand how reliable connections are born.',
-    icon: Network,
-    color: 'text-cyan-600 dark:text-cyan-400',
-    gradient: 'from-cyan-500/10 via-sky-500/8 to-cyan-500/5',
-    border: 'border-cyan-500/30 hover:border-cyan-500/60',
-    duration: '6 min',
-    xp: 60,
-    difficulty: 'Intermediate',
-    tags: ['TCP', 'Handshake', 'Transport'],
-    lessonId: 'u3_m04',
-    sectionId: 3,
-    frames: [
-      { label: 'SYN', icon: '📡', description: 'Client sends synchronise request' },
-      { label: 'SYN-ACK', icon: '📶', description: 'Server acknowledges and responds' },
-      { label: 'ACK', icon: '✅', description: 'Connection established!' },
-    ],
-  },
-  {
-    id: 'packet-routing',
-    title: 'Packet Routing Journey',
-    subtitle: 'Hop-by-Hop Animation',
-    description: 'Follow a packet from source to destination, watching routers make forwarding decisions at each hop.',
-    icon: Radio,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    gradient: 'from-emerald-500/10 via-teal-500/8 to-emerald-500/5',
-    border: 'border-emerald-500/30 hover:border-emerald-500/60',
-    duration: '7 min',
-    xp: 70,
-    difficulty: 'Intermediate',
-    tags: ['Routing', 'IP', 'Forwarding'],
-    lessonId: 'u3_m06',
-    sectionId: 3,
-    frames: [
-      { label: 'Source', icon: '🖥️', description: 'Application generates data' },
-      { label: 'Encapsulation', icon: '📦', description: 'Packet headers added' },
-      { label: 'Router Hop 1', icon: '🔀', description: 'Routing table lookup' },
-      { label: 'Router Hop 2', icon: '🔀', description: 'Next-hop forwarding' },
-      { label: 'Destination', icon: '🎯', description: 'Packet delivered!' },
-    ],
-  },
-  {
-    id: 'dns-resolution',
-    title: 'DNS Resolution Flow',
-    subtitle: 'Name → IP Address',
-    description: 'Trace how a domain name resolves through recursive and authoritative DNS servers step-by-step.',
-    icon: Wifi,
-    color: 'text-orange-600 dark:text-orange-400',
-    gradient: 'from-orange-500/10 via-amber-500/8 to-orange-500/5',
-    border: 'border-orange-500/30 hover:border-orange-500/60',
-    duration: '5 min',
-    xp: 55,
-    difficulty: 'Beginner',
-    tags: ['DNS', 'Application', 'Resolution'],
-    lessonId: 'u4_m01',
-    sectionId: 4,
-    frames: [
-      { label: 'Query', icon: '❓', description: 'Browser asks: What is google.com?' },
-      { label: 'Resolver', icon: '🔍', description: 'Recursive resolver checks cache' },
-      { label: 'Root DNS', icon: '🌍', description: 'Directs to .com TLD servers' },
-      { label: 'TLD DNS', icon: '🌐', description: 'Directs to google.com nameserver' },
-      { label: 'Answer', icon: '✅', description: '142.250.80.46 returned!' },
-    ],
-  },
-  {
-    id: 'error-detection',
-    title: 'Error Detection & Correction',
-    subtitle: 'CRC, Checksum, Hamming',
-    description: 'Visualise how CRC checksums catch bit errors and Hamming codes correct them automatically.',
-    icon: Shield,
-    color: 'text-rose-600 dark:text-rose-400',
-    gradient: 'from-rose-500/10 via-red-500/8 to-rose-500/5',
-    border: 'border-rose-500/30 hover:border-rose-500/60',
-    duration: '9 min',
-    xp: 80,
-    difficulty: 'Advanced',
-    tags: ['CRC', 'Hamming', 'Error Control'],
-    locked: true,
-    frames: [
-      { label: 'Data', icon: '💾', description: 'Original data bits' },
-      { label: 'CRC Calc', icon: '🔢', description: 'Generator polynomial division' },
-      { label: 'Transmission', icon: '📡', description: 'Data + CRC sent' },
-      { label: 'Check', icon: '✔️', description: 'Receiver verifies CRC' },
-    ],
-  },
-  {
-    id: 'sliding-window',
-    title: 'Sliding Window Protocol',
-    subtitle: 'Flow & Congestion Control',
-    description: 'Animate sender/receiver window movement to understand throughput optimization in TCP.',
-    icon: Activity,
-    color: 'text-indigo-600 dark:text-indigo-400',
-    gradient: 'from-indigo-500/10 via-blue-500/8 to-indigo-500/5',
-    border: 'border-indigo-500/30 hover:border-indigo-500/60',
-    duration: '10 min',
-    xp: 90,
-    difficulty: 'Advanced',
-    tags: ['TCP', 'Flow Control', 'Window'],
-    locked: true,
-    frames: [
-      { label: 'Send Window', icon: '📤', description: 'Frames awaiting ACK' },
-      { label: 'In Transit', icon: '✈️', description: 'Frames on the wire' },
-      { label: 'ACK', icon: '✅', description: 'Window slides forward' },
-    ],
-  },
-  {
-    id: 'subnetting',
-    title: 'Subnetting Visualized',
-    subtitle: 'CIDR & Address Blocks',
-    description: 'Break IP address space into subnets visually. Understand network masks, broadcast, and host ranges.',
-    icon: Box,
-    color: 'text-teal-600 dark:text-teal-400',
-    gradient: 'from-teal-500/10 via-cyan-500/8 to-teal-500/5',
-    border: 'border-teal-500/30 hover:border-teal-500/60',
-    duration: '8 min',
-    xp: 75,
-    difficulty: 'Intermediate',
-    tags: ['IP', 'Subnetting', 'CIDR'],
-    locked: true,
-    frames: [
-      { label: 'IP Address', icon: '📌', description: '192.168.1.0/24 breakdown' },
-      { label: 'Network Bits', icon: '🔵', description: 'First 24 bits fixed' },
-      { label: 'Host Bits', icon: '🟢', description: 'Last 8 bits variable' },
-      { label: 'Ranges', icon: '📊', description: '254 usable host addresses' },
-    ],
-  },
-  {
-    id: 'congestion-control',
-    title: 'TCP Congestion Control',
-    subtitle: 'Slow Start → AIMD',
-    description: 'Watch the congestion window grow and collapse in real time through slow-start and AIMD phases.',
-    icon: TrendingUp,
-    color: 'text-amber-600 dark:text-amber-400',
-    gradient: 'from-amber-500/10 via-yellow-500/8 to-amber-500/5',
-    border: 'border-amber-500/30 hover:border-amber-500/60',
-    duration: '11 min',
-    xp: 100,
-    difficulty: 'Advanced',
-    tags: ['TCP', 'Congestion', 'AIMD'],
-    locked: true,
-    frames: [
-      { label: 'Slow Start', icon: '🐢', description: 'cwnd grows exponentially' },
-      { label: 'Threshold', icon: '📈', description: 'ssthresh reached' },
-      { label: 'AIMD', icon: '📊', description: 'Linear increase' },
-      { label: 'Loss', icon: '💥', description: 'cwnd halved on loss' },
-    ],
-  },
-];
+export const AnimatedLearningView: React.FC<AnimatedLearningViewProps> = ({ onNavigateHome }) => {
+  const [activeTopic, setActiveTopic] = useState<SimulationTopic>('tcp-handshake');
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
+  const [showPacketDetails, setShowPacketDetails] = useState<boolean>(true);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-const DIFFICULTY_COLORS = {
-  Beginner: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-  Intermediate: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  Advanced: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
-};
+  // Topics Metadata
+  const topics = [
+    {
+      id: 'tcp-handshake' as SimulationTopic,
+      title: 'TCP 3-Way Handshake & Teardown',
+      category: 'Transport Layer',
+      rfc: 'RFC 793',
+      description: 'Interactive visualization of SYN, SYN-ACK, ACK connection establishment and graceful 4-way FIN termination.',
+      totalSteps: 6,
+    },
+    {
+      id: 'osi-encapsulation' as SimulationTopic,
+      title: '7-Layer Protocol Encapsulation',
+      category: 'OSI & TCP/IP Model',
+      rfc: 'ISO/IEC 7498-1',
+      description: 'Watch raw Application data get encapsulated layer-by-layer with L4, L3, and L2 headers, then decapsulated on arrival.',
+      totalSteps: 7,
+    },
+    {
+      id: 'csmacd-collision' as SimulationTopic,
+      title: 'CSMA/CD & Collision Backoff',
+      category: 'Data Link Layer',
+      rfc: 'IEEE 802.3',
+      description: 'Carrier sense multi-access with collision detection, jamming signal broadcast, and binary exponential backoff timer.',
+      totalSteps: 5,
+    },
+    {
+      id: 'sliding-window' as SimulationTopic,
+      title: 'Sliding Window (Go-Back-N)',
+      category: 'Flow & Error Control',
+      rfc: 'ARQ Protocols',
+      description: 'Dynamic pipelined transmission window sliding forward as cumulative ACKs arrive, handling packet loss and timeouts.',
+      totalSteps: 6,
+    },
+    {
+      id: 'dns-resolution' as SimulationTopic,
+      title: 'DNS Resolution Journey',
+      category: 'Application Layer',
+      rfc: 'RFC 1034 / 1035',
+      description: 'Step through recursive and iterative DNS queries from Client Browser to Root (.), TLD (.in), and Authoritative Servers.',
+      totalSteps: 5,
+    },
+  ];
 
-interface FramePlayerProps {
-  frames: AnimationTopic['frames'];
-  color: string;
-}
+  const currentTopicData = topics.find((t) => t.id === activeTopic) || topics[0];
 
-const FramePlayer: React.FC<FramePlayerProps> = ({ frames, color }) => {
-  const [activeFrame, setActiveFrame] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Stop playback when changing topics
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentStep(0);
+    if (animationTimerRef.current) {
+      clearInterval(animationTimerRef.current);
+    }
+  }, [activeTopic]);
 
-  React.useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setActiveFrame((prev) => {
-        if (prev >= frames.length - 1) {
-          setIsPlaying(false);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 1200);
-    return () => clearInterval(interval);
-  }, [isPlaying, frames.length]);
+  // Handle Play/Pause Auto-Play
+  useEffect(() => {
+    if (isPlaying) {
+      const stepDuration = 2200 / speedMultiplier;
+      animationTimerRef.current = setInterval(() => {
+        setCurrentStep((prev) => {
+          if (prev >= currentTopicData.totalSteps - 1) {
+            setIsPlaying(false);
+            return prev;
+          }
+          try {
+            soundFx.playClick();
+          } catch {}
+          return prev + 1;
+        });
+      }, stepDuration);
+    } else {
+      if (animationTimerRef.current) {
+        clearInterval(animationTimerRef.current);
+      }
+    }
+    return () => {
+      if (animationTimerRef.current) {
+        clearInterval(animationTimerRef.current);
+      }
+    };
+  }, [isPlaying, speedMultiplier, currentTopicData.totalSteps]);
 
-  const handlePlay = () => {
-    if (activeFrame >= frames.length - 1) setActiveFrame(0);
-    setIsPlaying(true);
+  const handleStepForward = () => {
+    try {
+      soundFx.playClick();
+    } catch {}
+    setIsPlaying(false);
+    setCurrentStep((prev) => Math.min(currentTopicData.totalSteps - 1, prev + 1));
   };
 
-  return (
-    <div className="mt-4 p-3 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/50 dark:border-white/10 space-y-3">
-      {/* Playback controls */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handlePlay}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-colors cursor-pointer active:scale-95"
-        >
-          <PlayCircle size={13} />
-          {isPlaying ? 'Playing...' : 'Play Animation'}
-        </button>
-        <div className="flex gap-1 flex-1">
-          {frames.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => { setIsPlaying(false); setActiveFrame(idx); }}
-              className={`flex-1 h-1.5 rounded-full transition-all cursor-pointer ${
-                idx <= activeFrame ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-      {/* Active frame display */}
-      <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 min-h-[56px] transition-all duration-300">
-        <span className="text-2xl leading-none mt-0.5 shrink-0">{frames[activeFrame].icon}</span>
-        <div>
-          <span className="text-xs font-black text-slate-800 dark:text-white block">{frames[activeFrame].label}</span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">{frames[activeFrame].description}</span>
-        </div>
-        <span className="ml-auto text-[10px] font-mono text-slate-400 shrink-0">{activeFrame + 1}/{frames.length}</span>
-      </div>
-      {/* Step dots */}
-      <div className="flex justify-center gap-1.5">
-        {frames.map((f, idx) => (
-          <button
-            key={idx}
-            onClick={() => { setIsPlaying(false); setActiveFrame(idx); }}
-            title={f.label}
-            className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-              idx === activeFrame ? 'bg-emerald-500 scale-125' : 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const AnimatedLearningView: React.FC<AnimatedLearningViewProps> = ({
-  onNavigate,
-  onSelectLesson,
-}) => {
-  const { userProfile } = useAuth();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [filterDifficulty, setFilterDifficulty] = useState<'All' | 'Beginner' | 'Intermediate' | 'Advanced'>('All');
-
-  const xp = userProfile?.totalXP ?? userProfile?.xp ?? 0;
-  const unlockedCount = ANIMATION_TOPICS.filter((t) => !t.locked).length;
-
-  const filteredTopics = filterDifficulty === 'All'
-    ? ANIMATION_TOPICS
-    : ANIMATION_TOPICS.filter((t) => t.difficulty === filterDifficulty);
-
-  const handleTopicClick = (topic: AnimationTopic) => {
-    if (topic.locked) return;
-    try { soundFx.playClick(); } catch {}
-    setExpandedId((prev) => prev === topic.id ? null : topic.id);
+  const handleStepBackward = () => {
+    try {
+      soundFx.playClick();
+    } catch {}
+    setIsPlaying(false);
+    setCurrentStep((prev) => Math.max(0, prev - 1));
   };
 
-  const handleGoToLesson = (topic: AnimationTopic) => {
-    if (topic.locked) return;
-    try { soundFx.playClick(); } catch {}
-    if (onSelectLesson && topic.lessonId && topic.sectionId !== undefined) {
-      onSelectLesson(topic.lessonId, topic.sectionId);
-    } else if (onNavigate) {
-      onNavigate('learn-map');
+  const handleReset = () => {
+    try {
+      soundFx.playClick();
+    } catch {}
+    setIsPlaying(false);
+    setCurrentStep(0);
+  };
+
+  const handleTogglePlay = () => {
+    try {
+      soundFx.playClick();
+    } catch {}
+    if (currentStep >= currentTopicData.totalSteps - 1) {
+      setCurrentStep(0);
+    }
+    setIsPlaying((prev) => !prev);
+  };
+
+  // Specific simulation step details
+  const renderSimulationCanvas = () => {
+    switch (activeTopic) {
+      case 'tcp-handshake':
+        return renderTcpSimulation();
+      case 'osi-encapsulation':
+        return renderOsiSimulation();
+      case 'csmacd-collision':
+        return renderCsmaSimulation();
+      case 'sliding-window':
+        return renderSlidingWindowSimulation();
+      case 'dns-resolution':
+        return renderDnsSimulation();
+      default:
+        return renderTcpSimulation();
     }
   };
 
-  return (
-    <div className="min-h-screen w-full py-4 sm:py-6">
-      {/* Hero Header */}
-      <div className="relative mb-8 p-6 sm:p-8 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-500/10 via-cyan-500/8 to-violet-500/10 border border-emerald-500/20 dark:border-emerald-500/15 shadow-lg">
-        {/* Background glow orbs */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
-        
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-black font-mono uppercase tracking-wider">
-              <Sparkles size={12} className="animate-pulse" />
-              INTERACTIVE LABS
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-600 dark:text-violet-400 text-xs font-bold font-mono uppercase">
-              NEW
-            </div>
-          </div>
+  // 1. TCP 3-Way Handshake Simulation
+  const renderTcpSimulation = () => {
+    const stepsInfo = [
+      {
+        phase: 'Step 1: SYN Packet',
+        sender: 'Client (192.168.1.10:49152)',
+        receiver: 'Web Server (142.250.190.46:80)',
+        flags: 'SYN = 1, ACK = 0',
+        seq: '1000',
+        ack: '0',
+        packetPos: 15,
+        stateClient: 'SYN_SENT',
+        stateServer: 'LISTEN',
+        description: 'Client generates initial sequence number ISN=1000 and sends SYN to request synchronized connection establishment.',
+      },
+      {
+        phase: 'Step 2: SYN-ACK Response',
+        sender: 'Web Server (142.250.190.46:80)',
+        receiver: 'Client (192.168.1.10:49152)',
+        flags: 'SYN = 1, ACK = 1',
+        seq: '5000',
+        ack: '1001',
+        packetPos: 85,
+        stateClient: 'SYN_SENT',
+        stateServer: 'SYN_RCVD',
+        description: 'Server allocates buffer space, generates its own ISN=5000, and acknowledges Client sequence number (Ack = 1000 + 1 = 1001).',
+      },
+      {
+        phase: 'Step 3: ACK Confirmation',
+        sender: 'Client (192.168.1.10:49152)',
+        receiver: 'Web Server (142.250.190.46:80)',
+        flags: 'SYN = 0, ACK = 1',
+        seq: '1001',
+        ack: '5001',
+        packetPos: 35,
+        stateClient: 'ESTABLISHED',
+        stateServer: 'ESTABLISHED',
+        description: 'Client acknowledges Server sequence number (Ack = 5000 + 1 = 5001). The bidirectional reliable TCP socket is now ESTABLISHED!',
+      },
+      {
+        phase: 'Step 4: Application HTTP Data Transfer',
+        sender: 'Client (192.168.1.10:49152)',
+        receiver: 'Web Server (142.250.190.46:80)',
+        flags: 'PSH = 1, ACK = 1',
+        seq: '1001',
+        ack: '5001',
+        payload: 'GET /index.html (384 Bytes)',
+        packetPos: 65,
+        stateClient: 'ESTABLISHED',
+        stateServer: 'ESTABLISHED',
+        description: 'Client transmits HTTP GET request payload. Sequence numbers track every single transmitted byte reliably.',
+      },
+      {
+        phase: 'Step 5: Connection Teardown (FIN)',
+        sender: 'Client (192.168.1.10:49152)',
+        receiver: 'Web Server (142.250.190.46:80)',
+        flags: 'FIN = 1, ACK = 1',
+        seq: '1385',
+        ack: '5001',
+        packetPos: 25,
+        stateClient: 'FIN_WAIT_1',
+        stateServer: 'CLOSE_WAIT',
+        description: 'Client finishes transmission and initiates graceful active close with FIN flag.',
+      },
+      {
+        phase: 'Step 6: Final Termination ACK',
+        sender: 'Web Server (142.250.190.46:80)',
+        receiver: 'Client (192.168.1.10:49152)',
+        flags: 'ACK = 1',
+        seq: '5001',
+        ack: '1386',
+        packetPos: 90,
+        stateClient: 'TIME_WAIT',
+        stateServer: 'CLOSED',
+        description: 'Server acknowledges FIN. Both endpoints cleanly flush buffers and terminate socket allocations.',
+      },
+    ];
+
+    const activeInfo = stepsInfo[currentStep] || stepsInfo[0];
+
+    return (
+      <div className="space-y-6">
+        {/* Node Wire Representation */}
+        <div className="relative py-8 px-4 sm:px-12 bg-slate-900/80 rounded-2xl border border-cyan-500/25 overflow-hidden shadow-inner">
           
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-2">
-            Animated <span className="text-emerald-500">Learning</span>
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed">
-            Watch Computer Networks concepts come alive through step-by-step interactive animations. 
-            See protocols, algorithms, and architectures visualized in real time.
-          </p>
+          {/* Background Grid Accent */}
+          <div className="absolute inset-0 bg-[radial-gradient(#06B6D4_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
 
-          {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-3 mt-5">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-white/10 border border-white/50 dark:border-white/15 text-xs font-bold text-slate-700 dark:text-slate-300">
-              <PlayCircle size={13} className="text-emerald-500" />
-              {unlockedCount} Topics Unlocked
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-white/10 border border-white/50 dark:border-white/15 text-xs font-bold text-slate-700 dark:text-slate-300">
-              <Zap size={13} className="text-amber-500" />
-              {ANIMATION_TOPICS.reduce((a, t) => a + t.xp, 0)} Total XP
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-white/10 border border-white/50 dark:border-white/15 text-xs font-bold text-slate-700 dark:text-slate-300">
-              <Clock size={13} className="text-cyan-500" />
-              {ANIMATION_TOPICS.length} Animations
-            </div>
+          {/* Connected Medium Wire */}
+          <div className="absolute top-1/2 left-24 right-24 h-1 bg-gradient-to-r from-cyan-500/40 via-teal-400 to-cyan-500/40 -translate-y-1/2 z-0">
+            <div className="absolute inset-0 bg-cyan-400/30 blur-xs" />
           </div>
-        </div>
-      </div>
 
-      {/* Filter Bar */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">Filter:</span>
-        {(['All', 'Beginner', 'Intermediate', 'Advanced'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => { setFilterDifficulty(f); try { soundFx.playClick(); } catch {} }}
-            className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-              filterDifficulty === f
-                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
-                : 'bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500/50'
-            }`}
+          {/* Interactive Traveling Packet */}
+          <div 
+            className="absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-700 ease-out"
+            style={{ left: `${Math.max(12, Math.min(84, (currentStep / (stepsInfo.length - 1)) * 72 + 12))}%` }}
           >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {/* Topic Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredTopics.map((topic) => {
-          const Icon = topic.icon;
-          const isExpanded = expandedId === topic.id;
-          const isLocked = topic.locked;
-
-          return (
-            <div
-              key={topic.id}
-              className={`group relative rounded-3xl border transition-all duration-300 overflow-hidden bg-gradient-to-br ${topic.gradient} ${
-                isLocked
-                  ? 'opacity-60 cursor-not-allowed border-slate-200/60 dark:border-slate-700/40'
-                  : `cursor-pointer ${topic.border}`
-              } ${isExpanded ? 'md:col-span-2 ring-2 ring-emerald-500/20' : ''}`}
-              onClick={() => handleTopicClick(topic)}
-            >
-              {/* Card Content */}
-              <div className="p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-3">
-                  {/* Left: Icon + Info */}
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/70 dark:bg-black/20 border border-white/60 dark:border-white/10 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
-                      {isLocked ? (
-                        <Lock size={20} className="text-slate-400 dark:text-slate-500" />
-                      ) : (
-                        <Icon size={22} className={topic.color} strokeWidth={2} />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${DIFFICULTY_COLORS[topic.difficulty]}`}>
-                          {topic.difficulty.toUpperCase()}
-                        </span>
-                        {topic.tags.slice(0, 2).map((tag) => (
-                          <span key={tag} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/50 dark:bg-white/10 text-slate-500 dark:text-slate-400">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-tight">
-                        {topic.title}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{topic.subtitle}</p>
-                    </div>
-                  </div>
-
-                  {/* Right: Meta */}
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <div className="flex items-center gap-1 text-amber-500 text-xs font-black">
-                      <Zap size={11} className="fill-amber-500" />
-                      +{topic.xp}
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-400 font-mono">
-                      <Clock size={10} />
-                      {topic.duration}
-                    </div>
-                    {!isLocked && (
-                      <ChevronRight
-                        size={16}
-                        className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
-                  {topic.description}
-                </p>
-
-                {/* Frame count badge */}
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex gap-1">
-                    {topic.frames.slice(0, 5).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="w-5 h-1.5 rounded-full bg-white/60 dark:bg-white/15 border border-white/30 dark:border-white/10"
-                      />
-                    ))}
-                    {topic.frames.length > 5 && (
-                      <span className="text-[9px] text-slate-400 font-mono ml-1">+{topic.frames.length - 5}</span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">{topic.frames.length} animation frames</span>
-                </div>
-
-                {/* Locked overlay message */}
-                {isLocked && (
-                  <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400">
-                    <Lock size={12} />
-                    <span>Complete earlier topics to unlock</span>
-                  </div>
-                )}
-
-                {/* Expanded: Inline Frame Player */}
-                {isExpanded && !isLocked && (
-                  <div className="mt-4 border-t border-white/30 dark:border-white/10 pt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <PlayCircle size={15} className="text-emerald-500" />
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wide">Interactive Preview</span>
-                    </div>
-                    <FramePlayer frames={topic.frames} color={topic.color} />
-
-                    {/* CTA Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGoToLesson(topic);
-                      }}
-                      className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black tracking-wide shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer"
-                    >
-                      <Star size={13} />
-                      Go to Full Lesson (+{topic.xp} XP)
-                      <ArrowRight size={13} />
-                    </button>
-                  </div>
-                )}
+            <div className="relative group cursor-pointer animate-pulse">
+              <div className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-mono font-black text-xs shadow-[0_0_20px_rgba(6,182,212,0.8)] border border-white/60 flex items-center gap-1.5 whitespace-nowrap">
+                <Zap size={13} className="fill-slate-950" />
+                <span>{activeInfo.flags}</span>
+              </div>
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-cyan-300 font-bold whitespace-nowrap">
+                Seq={activeInfo.seq} Ack={activeInfo.ack}
               </div>
             </div>
-          );
-        })}
+          </div>
+
+          {/* Hosts Row */}
+          <div className="relative z-10 flex items-center justify-between">
+            {/* Client Node */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-cyan-500/50 flex items-center justify-center p-3 text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)]">
+                <Laptop size={32} />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-xs text-white">Client Host</div>
+                <div className="text-[10px] font-mono text-slate-400">192.168.1.10</div>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                  {activeInfo.stateClient}
+                </span>
+              </div>
+            </div>
+
+            {/* Middle Packet Flight Indicator */}
+            <div className="hidden md:flex flex-col items-center gap-1">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                Full-Duplex Wire Transmission
+              </span>
+              <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold">
+                <span>RTT ~12ms</span>
+                <span>•</span>
+                <span>Window=65535</span>
+              </div>
+            </div>
+
+            {/* Server Node */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-teal-500/50 flex items-center justify-center p-3 text-teal-400 shadow-[0_0_25px_rgba(20,184,166,0.25)]">
+                <Server size={32} />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-xs text-white">Web Server</div>
+                <div className="text-[10px] font-mono text-slate-400">142.250.190.46:80</div>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-teal-500/15 text-teal-400 border border-teal-500/30">
+                  {activeInfo.stateServer}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Real-Time Packet Inspector & Educational Explainer */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="font-headline font-bold text-xs text-cyan-400 uppercase tracking-wider">
+                {activeInfo.phase}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/40">
+                Step {currentStep + 1} of {stepsInfo.length}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {activeInfo.description}
+            </p>
+            <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-mono">
+              <span className="text-slate-400">Source: <strong className="text-slate-200">{activeInfo.sender}</strong></span>
+              <span className="text-slate-500">→</span>
+              <span className="text-slate-400">Dest: <strong className="text-slate-200">{activeInfo.receiver}</strong></span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+            <span className="font-headline font-bold text-xs text-teal-400 uppercase tracking-wider block">
+              Packet Header Inspector
+            </span>
+            <div className="space-y-1.5 text-[11px] font-mono">
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Control Flags:</span>
+                <span className="text-cyan-300 font-bold">{activeInfo.flags}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Sequence No:</span>
+                <span className="text-white font-bold">{activeInfo.seq}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Acknowledgment:</span>
+                <span className="text-teal-300 font-bold">{activeInfo.ack}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Checksum Status:</span>
+                <span className="text-emerald-400 font-bold">Valid (0x7A4C)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 2. OSI 7-Layer Encapsulation Simulation
+  const renderOsiSimulation = () => {
+    const layers = [
+      { num: 7, name: 'Application', unit: 'Data', header: 'HTTP GET /index.html', color: 'from-purple-500 to-indigo-500' },
+      { num: 6, name: 'Presentation', unit: 'Data', header: 'TLS / Encryption / UTF-8', color: 'from-indigo-500 to-blue-500' },
+      { num: 5, name: 'Session', unit: 'Data', header: 'RPC / Socket Session Token', color: 'from-blue-500 to-cyan-500' },
+      { num: 4, name: 'Transport', unit: 'Segment', header: 'TCP [Src:49152, Dst:80, Seq:100]', color: 'from-cyan-500 to-teal-500' },
+      { num: 3, name: 'Network', unit: 'Packet', header: 'IP [Src:192.168.1.10, Dst:142.250.190.46, TTL:64]', color: 'from-teal-500 to-emerald-500' },
+      { num: 2, name: 'Data Link', unit: 'Frame', header: 'Ethernet [MAC 00:1A:2B → 50:C7:BF, FCS: CRC32]', color: 'from-emerald-500 to-amber-500' },
+      { num: 1, name: 'Physical', unit: 'Bits', header: '01001000 01110100 01110100 01110000 (NRZ Signal)', color: 'from-amber-500 to-rose-500' },
+    ];
+
+    const activeLayer = layers[Math.min(currentStep, layers.length - 1)];
+
+    return (
+      <div className="space-y-6">
+        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
+          <div className="text-center mb-6">
+            <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">
+              Encapsulation Stage {currentStep + 1} of 7: Layer {activeLayer.num} ({activeLayer.name})
+            </span>
+            <h3 className="text-lg font-bold text-white mt-1">
+              Adding Layer {activeLayer.num} Protocol Header to Protocol Data Unit (PDU)
+            </h3>
+          </div>
+
+          {/* Visual Stack Accumulation */}
+          <div className="max-w-xl mx-auto space-y-2">
+            {layers.slice(0, currentStep + 1).map((l) => (
+              <div 
+                key={l.num}
+                className={`p-3 rounded-xl bg-gradient-to-r ${l.color} text-white font-mono text-xs flex items-center justify-between shadow-md transition-all duration-300 animate-scaleUp`}
+              >
+                <div className="flex items-center gap-2 font-bold">
+                  <span className="w-6 h-6 rounded-lg bg-black/30 flex items-center justify-center text-[11px]">
+                    L{l.num}
+                  </span>
+                  <span>{l.name} Layer Header</span>
+                </div>
+                <span className="text-[11px] bg-black/25 px-2 py-0.5 rounded font-mono truncate max-w-[260px]">
+                  {l.header}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Explainer card */}
+        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400 shrink-0">
+            <Layers size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-white">How PDU Encapsulation Works</h4>
+            <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+              As user data travels down the stack, each layer prepends its own control metadata header (and Layer 2 adds an FCS error-checking trailer). When received by the destination node, the reverse process (decapsulation) strips headers layer-by-layer up to the Application layer.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 3. CSMA/CD Ethernet Collision Simulation
+  const renderCsmaSimulation = () => {
+    const states = [
+      { title: '1. Channel Sensing (Listening)', desc: 'Node A and Node C both check if the shared coax cable is idle. Neither detects carrier signals.', status: 'Sensing Carrier' },
+      { title: '2. Simultaneous Transmission', desc: 'Both nodes transmit frames simultaneously. Electromagnetic waves travel toward each other across the medium.', status: 'Transmitting' },
+      { title: '3. Mid-Wire Collision Event', desc: 'Voltages superimpose in the center of the bus wire, creating an abnormal signal energy surge exceeding the collision threshold!', status: 'COLLISION DETECTED!' },
+      { title: '4. Jamming Signal Broadcast', desc: 'Transmitting nodes detect collision, halt payload transmission, and emit a 32-bit jam sequence so all stations know the wire is corrupt.', status: 'Jam Signal Broadcasted' },
+      { title: '5. Binary Exponential Backoff', desc: 'Node A selects random slot R=1 (51.2μs), Node C selects R=2 (102.4μs). Node A retransmits first without collision!', status: 'Backoff Resolved & Successful' },
+    ];
+
+    const currentCsmaState = states[currentStep] || states[0];
+
+    return (
+      <div className="space-y-6">
+        <div className="p-8 bg-slate-900/80 rounded-2xl border border-cyan-500/25 relative overflow-hidden">
+          
+          {/* Main Bus Line */}
+          <div className="relative py-12">
+            <div className="h-2 w-full bg-slate-700 rounded-full relative">
+              
+              {/* Collision Wave Indicator */}
+              {currentStep === 2 && (
+                <div className="absolute left-1/2 -top-4 -translate-x-1/2 flex items-center justify-center animate-ping">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/80 blur-xs" />
+                </div>
+              )}
+              {currentStep === 2 && (
+                <div className="absolute left-1/2 -top-2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-mono font-black text-[10px] animate-bounce z-20">
+                  💥 COLLISION!
+                </div>
+              )}
+            </div>
+
+            {/* Connected Stations along bus */}
+            <div className="flex justify-between items-start mt-6">
+              {['Node A (Transmitter)', 'Node B (Idle)', 'Node C (Transmitter)', 'Node D (Idle)'].map((name, i) => (
+                <div key={name} className="flex flex-col items-center gap-1.5">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all ${
+                    (i === 0 || i === 2) && currentStep > 0
+                      ? currentStep === 2 ? 'bg-rose-950 border-rose-500 text-rose-400' : 'bg-cyan-950 border-cyan-500 text-cyan-400'
+                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                  }`}>
+                    <Laptop size={22} />
+                  </div>
+                  <span className="text-[11px] font-bold text-white">{name.split(' ')[0]} {name.split(' ')[1]}</span>
+                  <span className="text-[9px] font-mono text-slate-400">{name.split(' ')[2]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
+            <span className="font-bold text-cyan-300">{currentCsmaState.title}</span>
+            <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
+              currentStep === 2 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+            }`}>
+              {currentCsmaState.status}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          {currentCsmaState.desc}
+        </div>
+      </div>
+    );
+  };
+
+  // 4. Sliding Window Simulation
+  const renderSlidingWindowSimulation = () => {
+    const frames = [0, 1, 2, 3, 4, 5, 6, 7];
+    const windowStart = Math.min(4, Math.floor(currentStep / 1.5));
+    const windowSize = 4;
+
+    return (
+      <div className="space-y-6">
+        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
+              Go-Back-N Protocol (Window Size N = 4)
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              Active Sender Window: [{windowStart} ... {windowStart + windowSize - 1}]
+            </span>
+          </div>
+
+          {/* Sequence Buffers */}
+          <div className="grid grid-cols-8 gap-2 py-4">
+            {frames.map((f) => {
+              const inWindow = f >= windowStart && f < windowStart + windowSize;
+              const isAcked = f < windowStart;
+
+              return (
+                <div 
+                  key={f}
+                  className={`p-3 rounded-xl border text-center transition-all ${
+                    inWindow 
+                      ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] ring-2 ring-cyan-400/50'
+                      : isAcked
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                      : 'bg-slate-800/50 border-slate-700 text-slate-500'
+                  }`}
+                >
+                  <div className="text-[10px] font-mono opacity-60">FRAME</div>
+                  <div className="text-lg font-black font-mono">{f}</div>
+                  <div className="text-[9px] font-mono font-bold mt-1">
+                    {isAcked ? 'ACKED' : inWindow ? 'IN FLIGHT' : 'QUEUED'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          Sliding window protocols achieve high network efficiency by allowing multiple frames to be in flight without waiting for individual ACKs. As cumulative acknowledgments return from the receiver, the transmission window slides forward across sequence numbers.
+        </div>
+      </div>
+    );
+  };
+
+  // 5. DNS Resolution Journey Simulation
+  const renderDnsSimulation = () => {
+    const dnsSteps = [
+      { query: '1. Client queries Local Resolver for klu.ac.in', target: 'Local DNS Resolver (Cache Miss)', response: 'Recursion requested' },
+      { query: '2. Resolver queries Root Server (.)', target: 'Root Nameserver (a.root-servers.net)', response: 'Referral to .in TLD Nameserver' },
+      { query: '3. Resolver queries .in TLD Server', target: '.in TLD Registry Server', response: 'Referral to ns1.klu.ac.in Authoritative Server' },
+      { query: '4. Resolver queries Authoritative Server', target: 'Authoritative Nameserver (ns1.klu.ac.in)', response: 'A-Record: 104.21.32.18 (TTL 300)' },
+      { query: '5. Final IP returned to Client Browser', target: 'Client Browser (192.168.1.10)', response: 'Connection ready! Browser connects via IP' },
+    ];
+
+    const currentDns = dnsSteps[currentStep] || dnsSteps[0];
+
+    return (
+      <div className="space-y-6">
+        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
+              DNS Resolution Flow: "klu.ac.in"
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              Query Hop {currentStep + 1} of 5
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {dnsSteps.map((d, idx) => (
+              <div 
+                key={idx}
+                className={`p-3 rounded-xl border text-xs flex items-center justify-between transition-all ${
+                  idx === currentStep
+                    ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md'
+                    : idx < currentStep
+                    ? 'bg-slate-900 border-emerald-500/30 text-emerald-300 opacity-80'
+                    : 'bg-slate-900/40 border-slate-800 text-slate-500'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 font-mono">
+                  <span className="w-5 h-5 rounded-md bg-slate-800 flex items-center justify-center font-bold text-[10px]">
+                    {idx + 1}
+                  </span>
+                  <span>{d.query}</span>
+                </div>
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 font-bold">
+                  {d.response}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          The Domain Name System (DNS) translates human-readable hostnames into IP addresses using a globally distributed hierarchical database architecture.
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-surface-container-lowest dark:bg-[#070D18] text-on-surface dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors">
+      
+      {/* View Header */}
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-outline-variant/30 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+              <Sparkles size={12} />
+              VISUAL PROTOCOL SIMULATION
+            </span>
+            <span className="text-xs font-mono text-outline dark:text-slate-400">
+              Interactive Labs
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-headline font-black text-slate-900 dark:text-white mt-1 tracking-tight">
+            Animated Learning
+          </h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            Step-by-step visual protocol state-machines, packet travel simulations, and RFC mechanics.
+          </p>
+        </div>
+
+        {/* Mascot Tip */}
+        <div className="hidden sm:flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-surface-container dark:bg-slate-900 border border-outline-variant/30 dark:border-slate-800 shadow-xs">
+          <div className="w-8 h-8 relative shrink-0">
+            <img
+              src="/assets/mascot/cresco-mascot.png"
+              alt="Cresco"
+              className="w-full h-full object-contain filter drop-shadow-xs"
+            />
+          </div>
+          <div className="text-left">
+            <div className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase leading-none">CRESCO TIP</div>
+            <div className="text-[11px] font-medium text-slate-700 dark:text-slate-300 leading-tight mt-0.5">
+              Press Play or step forward to inspect packet fields!
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Coming Soon Footer */}
-      <div className="mt-8 p-5 rounded-3xl bg-gradient-to-r from-slate-100/80 to-slate-50/80 dark:from-slate-800/60 dark:to-slate-900/60 border border-slate-200/60 dark:border-slate-700/40 text-center space-y-2">
-        <div className="flex items-center justify-center gap-2">
-          <Sparkles size={16} className="text-emerald-500 animate-pulse" />
-          <span className="text-sm font-black text-slate-700 dark:text-slate-200">More animations arriving soon</span>
+      {/* Topic Switcher Ribbon */}
+      <div className="max-w-7xl mx-auto overflow-x-auto pb-2">
+        <div className="flex items-center gap-2 min-w-max">
+          {topics.map((t) => {
+            const isSelected = activeTopic === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  try {
+                    soundFx.playClick();
+                  } catch {}
+                  setActiveTopic(t.id);
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-headline font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
+                    : 'bg-surface-container dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-outline-variant/30 dark:border-slate-800'
+                }`}
+              >
+                <span>{t.title}</span>
+                <span className="text-[10px] font-mono opacity-80 px-1.5 py-0.2 rounded bg-black/20">
+                  {t.rfc}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          BGP routing, OSPF convergence, TLS handshake, HTTP/2 multiplexing & more in the next update.
-        </p>
       </div>
+
+      {/* Main Interactive Stage */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        {/* Left: Active Simulation Canvas & Controls (3 cols) */}
+        <div className="lg:col-span-3 space-y-4">
+          
+          {/* Active Simulation View */}
+          <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 shadow-xl">
+            {renderSimulationCanvas()}
+          </div>
+
+          {/* Universal Playback Control Bar */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            
+            {/* Play / Pause / Step Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                title="Reset Simulation"
+              >
+                <RotateCcw size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStepBackward}
+                disabled={currentStep === 0}
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
+                title="Step Backward"
+              >
+                <SkipBack size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTogglePlay}
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/30 active:scale-95 transition-all cursor-pointer"
+              >
+                {isPlaying ? <Pause size={15} /> : <Play size={15} className="fill-white" />}
+                <span>{isPlaying ? 'Pause' : 'Play Simulation'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStepForward}
+                disabled={currentStep >= currentTopicData.totalSteps - 1}
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
+                title="Step Forward"
+              >
+                <SkipForward size={16} />
+              </button>
+            </div>
+
+            {/* Timeline Progress Bar */}
+            <div className="flex items-center gap-3 flex-1 max-w-xs">
+              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-bold">
+                {currentStep + 1}/{currentTopicData.totalSteps}
+              </span>
+              <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-cyan-500 transition-all duration-300 rounded-full"
+                  style={{ width: `${((currentStep + 1) / currentTopicData.totalSteps) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Speed Toggle */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              {[0.5, 1, 2].map((spd) => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => setSpeedMultiplier(spd)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    speedMultiplier === spd
+                      ? 'bg-cyan-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {spd}x
+                </button>
+              ))}
+            </div>
+
+          </div>
+        </div>
+
+        {/* Right: Academic Context & RFC Guide (1 col) */}
+        <div className="space-y-4">
+          
+          <div className="p-5 rounded-3xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 shadow-lg space-y-4">
+            <div>
+              <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest block">
+                {currentTopicData.category}
+              </span>
+              <h3 className="font-headline font-black text-base text-slate-900 dark:text-white mt-0.5">
+                {currentTopicData.title}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                {currentTopicData.description}
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block">
+                CORE PROTOCOL INVARIANTS
+              </span>
+              
+              <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Sequence numbers byte-orient reliability without overhead.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <span>State machines prevent half-open and zombie socket leaks.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Full-duplex channels manage independent stream counters.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/40 text-[11px] text-cyan-900 dark:text-cyan-200 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <Info size={13} className="text-cyan-600 dark:text-cyan-400" />
+                <span>KLU University Curriculum</span>
+              </div>
+              <p className="text-[10px] leading-relaxed">
+                Matches syllabus unit requirements for Transport layer handshakes, framing, and CSMA/CD mechanisms.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
   );
 };
-
-export default AnimatedLearningView;

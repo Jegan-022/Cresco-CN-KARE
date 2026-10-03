@@ -12,7 +12,7 @@ import {
   Sparkles,
   X,
   Cpu,
-  Clapperboard
+  Film
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 
@@ -89,11 +89,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     id: NavTab;
     label: string;
     icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
-    badge?: string;
     index: string;
   }[] = [
     { id: 'simulator', label: 'Packet Lab', icon: Cpu, index: '07' },
-    { id: 'animated-learning', label: 'Animated Learning', icon: Clapperboard, badge: 'New', index: '08' },
+  ];
+
+  const animatedLearningItems: {
+    id: NavTab;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+    badge?: string;
+    index: string;
+  }[] = [
+    { id: 'animated-learning', label: 'Animated Learning', icon: Film, badge: 'New', index: '08' },
   ];
 
   const bottomItems: {
@@ -331,14 +339,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span className="flex-1 truncate">
                       {item.label}
                     </span>
-                    {'badge' in item && item.badge && (
-                      <span
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
-                          isCurrent
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                        }`}
-                      >
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Dedicated Animated Learning Section (Separate Section) */}
+          <div className="space-y-1 pt-1">
+            <div className="px-3 pb-1 text-[10px] font-headline font-bold text-outline dark:text-emerald-400/70 uppercase tracking-wider flex items-center justify-between">
+              <span>ANIMATED LEARNING</span>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">NEW</span>
+            </div>
+
+            <nav className="space-y-1">
+              {animatedLearningItems.map((item) => {
+                const isCurrent = normalizedActiveTab === item.id;
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleItemClick(item.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl font-headline font-bold text-[13px] tracking-tight transition-all duration-200 cursor-pointer select-none text-left relative ${
+                      isCurrent
+                        ? 'bg-gradient-to-r from-emerald-500/18 to-teal-500/10 text-emerald-950 dark:text-emerald-200 border-l-[3px] border-emerald-500 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-emerald-500/8 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="font-mono text-[10px] opacity-60 w-4 shrink-0 text-slate-400 dark:text-emerald-400/60">
+                      {item.index}
+                    </span>
+                    <Icon
+                      size={17}
+                      strokeWidth={isCurrent ? 2.5 : 2}
+                      className={`shrink-0 ${isCurrent ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
+                    />
+                    <span className="flex-1 truncate">
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
+                        isCurrent
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      }`}>
                         {item.badge}
                       </span>
                     )}

@@ -22,21 +22,12 @@ import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } f
 import { findStudentCredential, verifyStudentCredential } from '../data/studentCredentials';
 import { ALL_MODULES } from '../data/courseContent';
 
-// KLU email validation regex strictly mandated by requirements (@klu.ac.in or @kluniversity.in)
+// KLU email validation regex strictly mandated by requirements (accepts both @klu.ac.in and @kluniversity.in)
 export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@(klu\.ac\.in|kluniversity\.in)$/i;
 
 export const extractStudentId = (email: string): string => {
   const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@(klu\.ac\.in|kluniversity\.in)$/i);
   return match ? match[1] : email.split('@')[0];
-};
-
-export const isAllowedAuthEmail = (email: string): boolean => {
-  if (!email) return false;
-  const clean = email.toLowerCase().trim();
-  if (KLU_EMAIL_REGEX.test(clean)) return true;
-  const studentId = extractStudentId(clean);
-  if (isAuthorizedDeveloper(clean) || isAuthorizedDeveloper(studentId)) return true;
-  return false;
 };
 
 export interface UserProfileData {
@@ -45,6 +36,10 @@ export interface UserProfileData {
   displayName: string;
   email: string;
   studentId: string;
+  username?: string;
+  department?: string;
+  profileCompleted?: boolean;
+  portalPassword?: string;
   college: string;
   course: string;
   year?: string;
@@ -131,6 +126,17 @@ interface AuthContextType {
   recordPracticeAttempt: (categoryId: string, scorePercent: number, xp?: number) => Promise<void>;
   loginWithDeveloperId: (developerId: string, password?: string) => Promise<void>;
   resetStudentCourse: (studentUidOrId: string, options?: { resetXP?: boolean }) => Promise<{ success: boolean; message: string }>;
+  pendingRegistration: { uid: string; email: string; name: string; photoURL?: string } | null;
+  checkUsernameAvailable: (username: string) => Promise<boolean>;
+  completeStudentRegistration: (params: {
+    username: string;
+    password: string;
+    name: string;
+    studentId: string;
+    department: string;
+    year: string;
+  }) => Promise<UserProfileData>;
+  cancelRegistration: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -189,6 +195,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showDomainError, setShowDomainError] = useState(false);
+  const [pendingRegistration, setPendingRegistration] = useState<{
+    uid: string;
+    email: string;
+    name: string;
+    photoURL?: string;
+  } | null>(null);
   const userDocUnsubRef = useRef<(() => void) | null>(null);
   const clearAuthError = () => setAuthError(null);
 
@@ -476,13 +488,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(async (result) => {
         if (result?.user) {
           const email = (result.user.email || '').toLowerCase().trim();
-          if (!isAllowedAuthEmail(email)) {
+          if (!KLU_EMAIL_REGEX.test(email)) {
             await signOut(auth);
             setShowDomainError(true);
-            setAuthError(`Access restricted: "${email}" is not an official KLU student email (@klu.ac.in or @kluniversity.in).`);
+            setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
             return;
           }
-          setCurrentUser(result.user);
           await syncAndFetchProfile(result.user);
         }
       })
@@ -494,12 +505,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         const email = (user.email || '').toLowerCase().trim();
         const isGoogle = user.providerData?.some((p) => p.providerId === 'google.com');
-        if (isGoogle && !isAllowedAuthEmail(email)) {
+        if (isGoogle && !KLU_EMAIL_REGEX.test(email)) {
           await signOut(auth);
           setShowDomainError(true);
-          setAuthError(`Access restricted: "${email}" is not an official KLU student email (@klu.ac.in or @kluniversity.in).`);
+          setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
           return;
         }
+        try {
+          const userRef = doc(db, 'students', user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data && (data.profileCompleted === true || data.username)) {
+              setCurrentUser(user);
+              syncAndFetchProfile(user);
+              return;
+            }
+          }
+          if (isGoogle) {
+            setPendingRegistration({
+              uid: user.uid,
+              email: user.email || '',
+              name: user.displayName || '',
+              photoURL: user.photoURL || undefined,
+            });
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('Auth state check warning:', e);
+        }
+
         setCurrentUser(user);
         syncAndFetchProfile(user);
       } else {
@@ -523,6 +559,155 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubscribeAuth();
     };
   }, []);
+
+  const cancelRegistration = () => {
+    setPendingRegistration(null);
+    if (auth.currentUser) {
+      signOut(auth).catch(() => {});
+    }
+    setCurrentUser(null);
+    setUserProfile(null);
+  };
+
+  const checkUsernameAvailable = async (username: string): Promise<boolean> => {
+    const clean = username.trim().toLowerCase();
+    if (!clean || clean.length < 3 || clean.length > 20) return false;
+    if (!/^[a-z0-9_]+$/.test(clean)) return false;
+    const reserved = ['admin', 'root', 'developer', 'teacher', 'cresco', 'support', 'test', 'guest'];
+    if (reserved.includes(clean)) return false;
+
+    try {
+      const usernameDocRef = doc(db, 'usernames', clean);
+      const snap = await getDoc(usernameDocRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (pendingRegistration && data?.uid === pendingRegistration.uid) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('Firestore username check error:', err);
+      const local = typeof window !== 'undefined' ? localStorage.getItem(`klu_user_claim_${clean}`) : null;
+      return !local;
+    }
+  };
+
+  const completeStudentRegistration = async ({
+    username,
+    password,
+    name,
+    studentId,
+    department,
+    year,
+  }: {
+    username: string;
+    password: string;
+    name: string;
+    studentId: string;
+    department: string;
+    year: string;
+  }): Promise<UserProfileData> => {
+    if (!pendingRegistration) {
+      throw new Error('No pending registration session found.');
+    }
+
+    const cleanUser = username.trim().toLowerCase();
+    if (!cleanUser || cleanUser.length < 3) {
+      throw new Error('Username must be at least 3 characters.');
+    }
+    if (!/^[a-z0-9_]+$/.test(cleanUser)) {
+      throw new Error('Username can only contain letters, numbers, and underscores.');
+    }
+    const cleanPass = password.trim();
+    if (!cleanPass || cleanPass.length < 6) {
+      throw new Error('Password must be at least 6 characters.');
+    }
+    const cleanName = name.trim() || pendingRegistration.name || 'Student';
+    const cleanId = studentId.trim() || extractStudentId(pendingRegistration.email);
+
+    // Verify username availability again
+    const usernameDocRef = doc(db, 'usernames', cleanUser);
+    try {
+      const userSnap = await getDoc(usernameDocRef);
+      if (userSnap.exists() && userSnap.data()?.uid !== pendingRegistration.uid) {
+        throw new Error('This username is already taken. Please choose another username.');
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('already taken')) throw err;
+    }
+
+    const uid = pendingRegistration.uid;
+    const email = pendingRegistration.email;
+    const now = new Date().toISOString();
+
+    const zeroState = createZeroStudentState(uid, email, cleanName, 'student');
+    const profile: UserProfileData = {
+      ...zeroState,
+      username: cleanUser,
+      name: cleanName,
+      displayName: cleanName,
+      studentId: cleanId,
+      department: department || 'CSE',
+      year: year || '3rd Year',
+      profileCompleted: true,
+      portalPassword: cleanPass,
+      updatedAt: now,
+    };
+
+    // 1. Write username reservation in Firestore
+    try {
+      await setDoc(usernameDocRef, {
+        uid,
+        username: cleanUser,
+        email,
+        studentId: cleanId,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      console.warn('Firestore username claim write warning:', e);
+    }
+
+    // 2. Write student profile in Firestore
+    try {
+      const studentDocRef = doc(db, 'students', uid);
+      await setDoc(studentDocRef, {
+        ...profile,
+        lastLogin: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore student profile write warning:', e);
+    }
+
+    // 3. Cache locally
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`klu_profile_${cleanId}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${cleanUser}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_pwd_${cleanId}`, cleanPass);
+      localStorage.setItem(`klu_pwd_${cleanUser}`, cleanPass);
+      localStorage.setItem(`klu_user_claim_${cleanUser}`, uid);
+      localStorage.setItem('klu_active_student_id', cleanId);
+    }
+
+    // 4. Finalize login
+    const syntheticUser: any = auth.currentUser || {
+      uid,
+      email,
+      displayName: cleanName,
+      emailVerified: true,
+      getIdToken: async () => `token_${uid}`,
+    };
+
+    setCurrentUser(syntheticUser);
+    setUserProfile(profile);
+    setPendingRegistration(null);
+    setLoading(false);
+
+    return profile;
+  };
 
   const resetStudentPassword = async (idOrEmail: string, newPassword: string) => {
     setAuthError(null);
@@ -561,58 +746,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthError(null);
     const cleanInput = idOrEmail.trim();
     if (!cleanInput) {
-      const msg = 'Please enter your Student ID (format: 992400xxxxx).';
+      const msg = 'Please enter your Username, Student ID, or KLU Email.';
       setAuthError(msg);
       throw new Error(msg);
     }
 
-    // Match against enrolled student roster or 992400xxxxx format
-    const rosterStudent = findStudentCredential(cleanInput);
-    const isFormat = /^992400\d{5}(@klu\.ac\.in)?$/i.test(cleanInput);
-
-    if (!rosterStudent && !isFormat) {
-      const msg = 'Invalid Student ID. Student ID must be an 11-digit number in the format 992400xxxxx (e.g. 99240040116).';
-      setAuthError(msg);
-      throw new Error(msg);
-    }
-
-    const email = rosterStudent ? rosterStudent.email : (cleanInput.includes('@') ? cleanInput : `${cleanInput}@klu.ac.in`);
-    const studentId = rosterStudent ? rosterStudent.studentId : extractStudentId(email);
-
-    // Password verification: strictly sid@ + last 5 digits of Student ID
-    const last5 = studentId.slice(-5);
-    const expectedPassword = `sid@${last5}`;
     const cleanPassword = (password || '').trim();
-
     if (!cleanPassword) {
-      const msg = `Please enter your password (format: sid@${last5}).`;
+      const msg = 'Please enter your password.';
       setAuthError(msg);
       throw new Error(msg);
     }
 
-    const isMatch = cleanPassword.toLowerCase() === expectedPassword.toLowerCase() ||
-                    (rosterStudent && rosterStudent.password.toLowerCase() === cleanPassword.toLowerCase());
-
-    if (!isMatch) {
-      const msg = `Invalid password. Your password is sid@ followed by the last 5 digits of your Student ID (e.g. sid@${last5}).`;
-      setAuthError(msg);
-      throw new Error(msg);
-    }
-
-    // If ID belongs to an authorized developer, route through developer login automatically!
-    if (isAuthorizedDeveloper(studentId) || isAuthorizedDeveloper(email)) {
-      await loginWithDeveloperId(studentId, password);
+    // Developer login check
+    if (isAuthorizedDeveloper(cleanInput)) {
+      await loginWithDeveloperId(cleanInput, password);
       return;
     }
 
-    // Password persistence with new password
-    const pwdStorageKey = `klu_pwd_${studentId}`;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(pwdStorageKey, expectedPassword);
+    // 1. Check if user claim exists for this username in Firestore
+    let matchedUid: string | null = null;
+    let matchedStudentId: string | null = null;
+    let matchedEmail: string | null = null;
+    let matchedName: string | null = null;
+    let matchedPassword: string | null = null;
+    let matchedData: any = null;
+
+    try {
+      const usernameSnap = await getDoc(doc(db, 'usernames', cleanInput.toLowerCase()));
+      if (usernameSnap.exists()) {
+        const uData = usernameSnap.data();
+        matchedUid = uData.uid;
+        matchedStudentId = uData.studentId || cleanInput;
+        matchedEmail = uData.email;
+      }
+    } catch (e) {
+      console.warn('Firestore username lookup fallback:', e);
     }
 
-    const name = studentName || (rosterStudent ? rosterStudent.name : `Student (${studentId})`);
-    const uid = `klu_${studentId}`;
+    // 2. If not found by username, check students collection by direct UID or cleanInput
+    if (!matchedUid) {
+      const candidateUids = [`klu_${cleanInput}`, cleanInput];
+      for (const cUid of candidateUids) {
+        try {
+          const sSnap = await getDoc(doc(db, 'students', cUid));
+          if (sSnap.exists()) {
+            matchedUid = cUid;
+            matchedData = sSnap.data();
+            matchedStudentId = matchedData.studentId || cleanInput;
+            matchedEmail = matchedData.email;
+            matchedName = matchedData.name || matchedData.displayName;
+            matchedPassword = matchedData.portalPassword;
+            break;
+          }
+        } catch {}
+      }
+    } else {
+      try {
+        const sSnap = await getDoc(doc(db, 'students', matchedUid));
+        if (sSnap.exists()) {
+          matchedData = sSnap.data();
+          matchedName = matchedData.name || matchedData.displayName;
+          matchedPassword = matchedData.portalPassword;
+        }
+      } catch {}
+    }
+
+    // 3. Fallback: check local storage cache
+    if (!matchedPassword && typeof window !== 'undefined') {
+      const localPwd = localStorage.getItem(`klu_pwd_${cleanInput}`) || 
+                       (matchedStudentId ? localStorage.getItem(`klu_pwd_${matchedStudentId}`) : null);
+      if (localPwd) {
+        matchedPassword = localPwd;
+      }
+    }
+
+    // 4. Fallback: check legacy student credentials CSV/roster
+    const rosterStudent = findStudentCredential(cleanInput);
+    if (rosterStudent) {
+      matchedStudentId = rosterStudent.studentId;
+      matchedEmail = rosterStudent.email;
+      matchedName = rosterStudent.name;
+      if (!matchedPassword) {
+        matchedPassword = rosterStudent.password;
+      }
+    }
+
+    // 5. Default 992400xxxxx pattern fallback for unmigrated roster accounts
+    const isFormat = /^992400\d{5}(@klu\.ac\.in)?$/i.test(cleanInput);
+    if (isFormat && !matchedPassword) {
+      const cleanId = cleanInput.split('@')[0];
+      const last5 = cleanId.slice(-5);
+      matchedPassword = `sid@${last5}`;
+      matchedStudentId = cleanId;
+      matchedEmail = `${cleanId}@klu.ac.in`;
+    }
+
+    // If still no student identified
+    if (!matchedUid && !rosterStudent && !isFormat && !matchedData && !matchedPassword) {
+      const msg = 'Account not found. Please sign in with Google to create your student profile.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+
+    // 6. Verify password
+    const studentId = matchedStudentId || cleanInput;
+    const last5 = studentId.slice(-5);
+    const expectedLegacyPassword = `sid@${last5}`;
+
+    const isMatch = (matchedPassword && cleanPassword === matchedPassword) ||
+                    (cleanPassword.toLowerCase() === expectedLegacyPassword.toLowerCase()) ||
+                    (rosterStudent && rosterStudent.password.toLowerCase() === cleanPassword.toLowerCase());
+
+    if (!isMatch) {
+      const msg = 'Invalid password. Please verify your credentials.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+
+    // Setup session
+    const email = matchedEmail || (cleanInput.includes('@') ? cleanInput : `${studentId}@klu.ac.in`);
+    const name = studentName || matchedName || (rosterStudent ? rosterStudent.name : `Student (${studentId})`);
+    const uid = matchedUid || `klu_${studentId}`;
 
     const syntheticUser: any = {
       uid,
@@ -624,126 +879,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const storageKey = `klu_profile_${studentId}`;
     const zeroState = createZeroStudentState(uid, email, name, 'student');
-    let profile: UserProfileData = zeroState;
-
-    // Sanitize any stale local storage key
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.resetEpoch === GLOBAL_RESET_EPOCH && parsed.role !== 'developer' && (parsed.totalXP || 0) < 9000) {
-          profile = { ...zeroState, ...parsed, role: 'student', studentId };
-        } else {
-          if (typeof window !== 'undefined') localStorage.removeItem(storageKey);
-          profile = zeroState;
-        }
-      } catch {
-        profile = zeroState;
-      }
-    }
-
-    // Connect to real-time Firestore database
-    try {
-      const userRef = doc(db, 'students', uid);
-      const snap = await getDoc(userRef);
-
-      if (snap.exists()) {
-        const remoteData = snap.data() as any;
-        // All passwords unlocked - update portal password in Firestore if provided
-        if (password) {
-          try {
-            await updateDoc(userRef, { portalPassword: password.trim(), updatedAt: serverTimestamp() });
-          } catch (e) {
-            // Firestore update fallback
-          }
-        }
-
-        // Reset if remote doc has pre-reset epoch or developer permissions
-        const needsReset = remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
-          remoteData.role === 'developer' || 
-          (remoteData.totalXP || 0) >= 9000;
-
-        if (needsReset) {
-          console.warn("Resetting student doc to zeroState in Firestore:", uid);
-          await setDoc(userRef, { 
-            ...zeroState, 
-            uid,
-            studentId,
-            role: 'student',
-            resetEpoch: GLOBAL_RESET_EPOCH,
-            ...(password ? { portalPassword: password.trim() } : {}),
-            updatedAt: serverTimestamp() 
-          });
-          profile = zeroState;
-        } else {
-          profile = {
-            ...zeroState,
-            ...remoteData,
-            role: 'student',
-            studentId,
-            resetEpoch: GLOBAL_RESET_EPOCH,
-          };
-        }
-      } else {
-        profile = zeroState;
-      }
-
-      // Update real-time presence, login timestamp, and synced profile in Firestore
-      const liveLoginPayload = {
-        uid,
-        studentId,
-        name: profile.name || profile.displayName || `KLU Student (${studentId})`,
-        displayName: profile.displayName || profile.name || `KLU Student (${studentId})`,
-        email: profile.email || `${studentId}@klu.ac.in`,
-        college: profile.college || 'KLU',
-        role: 'student',
-        totalXP: profile.totalXP || 0,
-        xp: profile.xp || 0,
-        overallProgress: profile.overallProgress || 0,
-        modulesCompleted: profile.modulesCompleted || (profile.completedModules || []).length,
-        completedModules: profile.completedModules || [],
-        streak: profile.streak ?? 0,
-        isOnline: true,
-        lastLogin: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        ...(password ? { portalPassword: password.trim() } : {})
-      };
-      await setDoc(userRef, liveLoginPayload, { merge: true });
-    } catch (err: any) {
-      if (err?.message?.includes('Incorrect password')) {
-        throw err;
-      }
-      console.warn("Firestore sync in loginWithStudentId fallback:", err);
-    }
+    let profile: UserProfileData = {
+      ...zeroState,
+      ...(matchedData || {}),
+      uid,
+      studentId,
+      name,
+      displayName: name,
+      email,
+      role: 'student',
+      portalPassword: cleanPassword,
+    };
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem('klu_active_dev_id');
       localStorage.setItem('klu_active_student_id', studentId);
+      localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
       localStorage.setItem(storageKey, JSON.stringify(profile));
     }
 
     setCurrentUser(syntheticUser);
     setUserProfile(profile);
 
-    // Attach real-time snapshot listener on the user's Firestore document
+    // Sync Firestore in background
     try {
       const userRef = doc(db, 'students', uid);
-      if (userDocUnsubRef.current) {
-        userDocUnsubRef.current();
-        userDocUnsubRef.current = null;
-      }
-      userDocUnsubRef.current = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const liveData = docSnap.data() as any;
-          if (liveData.role === 'developer' || (liveData.totalXP || 0) >= 9000) return;
-          setUserProfile((prev) => prev ? { ...prev, ...liveData, role: 'student' } : liveData);
-        }
-      }, (err) => {
-        console.warn('[Firestore] Student onSnapshot handled error:', err);
-      });
-    } catch (e) {
-      console.warn("Could not attach real-time listener to student doc:", e);
-    }
+      await setDoc(userRef, {
+        ...profile,
+        lastLogin: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch {}
   };
 
   const loginWithGoogle = async () => {
@@ -751,25 +917,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ 
-        prompt: 'select_account'
+        prompt: 'select_account',
+        
       });
-
-      // Always prefer popup first for modern browsers (avoids third-party cookie blocking on redirect)
+      
       let user: User | null = null;
       try {
         const cred = await signInWithPopup(auth, provider);
         user = cred.user;
       } catch (popupErr: any) {
-        if (
-          popupErr.code === 'auth/popup-blocked' ||
-          popupErr.code === 'auth/cancelled-popup-request'
-        ) {
-          console.info('Popup blocked – falling back to redirect flow...');
+        // If popup was blocked by the browser or restricted in iframe, fallback to redirect
+        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+          console.info('Sign-in popup was blocked or cancelled, falling back to signInWithRedirect...');
           await signInWithRedirect(auth, provider);
           return;
-        }
-        if (popupErr.code === 'auth/popup-closed-by-user') {
-          throw new Error('SIGN_IN_CANCELLED');
         }
         throw popupErr;
       }
@@ -779,25 +940,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const email = user.email.toLowerCase().trim();
-      if (!isAllowedAuthEmail(email)) {
+      if (!KLU_EMAIL_REGEX.test(email)) {
         await signOut(auth);
         setShowDomainError(true);
-        const domainMsg = `Access restricted: Account "${email}" is not an authorized KLU student email (@klu.ac.in or @kluniversity.in).`;
+        const domainMsg = 'Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.';
         setAuthError(domainMsg);
         throw new Error(domainMsg);
       }
       
-      // Establish active session immediately
-      setCurrentUser(user);
+      // Check if student profile is already completed in Firestore
+      const userRef = doc(db, 'students', user.uid);
+      let isCompleted = false;
+      try {
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && (data.profileCompleted === true || (data.username && data.username.trim().length > 0))) {
+            isCompleted = true;
+          }
+        }
+      } catch (e) {
+        console.warn('Firestore profile check warning:', e);
+      }
+
+      if (!isCompleted) {
+        setPendingRegistration({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          photoURL: user.photoURL || undefined,
+        });
+        return;
+      }
+
+      // Sync and establish profile immediately
       await syncAndFetchProfile(user);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         throw new Error('SIGN_IN_CANCELLED');
-      }
-      if (err.code === 'auth/unauthorized-domain') {
-        const msg = 'This domain is not authorised in Firebase. Please add it in Firebase Console → Authentication → Settings → Authorised Domains.';
-        setAuthError(msg);
-        throw new Error(msg);
       }
       const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);
@@ -1316,6 +1496,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithDeveloperId,
         resetStudentCourse,
         resetStudentPassword,
+        pendingRegistration,
+        checkUsernameAvailable,
+        completeStudentRegistration,
+        cancelRegistration,
       }}
     >
       {children}

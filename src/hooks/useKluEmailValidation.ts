@@ -15,7 +15,7 @@ export const useKluEmailValidation = (email: string) => {
 
     if (!KLU_EMAIL_REGEX.test(trimmedEmail)) {
       setIsValid(false);
-      setError('Please use a valid @klu.ac.in email address.');
+      setError('Please use a valid KLU email address (@klu.ac.in or @kluniversity.in).');
     } else {
       setIsValid(true);
       setError(null);

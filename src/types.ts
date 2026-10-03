@@ -32,9 +32,9 @@ export type NavTab =
   | 'companion-select'
   | 'guidemaster-select'
   | 'guidemaster-tutor'
+  | 'animated-learning'
   | 'prelaunch'
-  | 'landing'
-  | 'animated-learning';
+  | 'landing';
 
 export interface LearningNode {
   id: string;

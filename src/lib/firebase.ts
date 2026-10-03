@@ -11,7 +11,6 @@ import {
   disableNetwork,
   Firestore
 } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase App singleton
@@ -41,18 +40,6 @@ try {
 
 export const db = firestoreDb;
 export { waitForPendingWrites, enableNetwork, disableNetwork };
-
-// Initialize Firebase Cloud Storage for images, videos, PDFs, PPTs, animations, etc.
-let firebaseStorage: FirebaseStorage;
-try {
-  firebaseStorage = getStorage(app);
-  console.info('[Firebase Storage] Cloud Storage initialized successfully for bucket:', firebaseConfig.storageBucket);
-} catch (error) {
-  console.warn('[Firebase Storage] Cloud Storage initialization fallback:', error);
-  firebaseStorage = getStorage(app);
-}
-
-export const storage = firebaseStorage;
 
 export enum OperationType {
   CREATE = 'create',

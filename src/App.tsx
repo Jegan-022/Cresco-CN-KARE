@@ -47,6 +47,7 @@ import { ProfileView } from './components/views/ProfileView';
 import { ExamModeView } from './components/views/ExamModeView';
 import { NetworkChallengesView } from './components/views/NetworkChallengesView';
 import { SettingsView } from './components/views/SettingsView';
+import { AnimatedLearningView } from './components/views/AnimatedLearningView';
 
 // Existing Secondary Supporting Views
 import { TeacherDashboardView } from './components/views/TeacherDashboardView';
@@ -55,7 +56,6 @@ import { DeveloperDashboardView } from './components/views/DeveloperDashboardVie
 import { AnalyticsView } from './components/views/AnalyticsView';
 import { MyLearningView } from './components/views/MyLearningView';
 import { LoginView } from './components/views/LoginView';
-import { AnimatedLearningView } from './components/views/AnimatedLearningView';
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -65,9 +65,10 @@ import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { CharacterProvider, useCharacter } from './context/CharacterContext';
 import { CharacterHubModal } from './components/character/CharacterHubModal';
 import { FloatingCompanion } from './components/character/FloatingCompanion';
+import { KluRegistrationModal } from './components/auth/KluRegistrationModal';
 
 function MainApp() {
-  const { currentUser, userProfile, loading, recordModuleCompletion } = useAuth();
+  const { currentUser, userProfile, loading, recordModuleCompletion, pendingRegistration } = useAuth();
   const { isOnline } = useNetworkStatus();
   const { isCharacterHubOpen, closeCharacterHub } = useCharacter();
 
@@ -254,22 +255,24 @@ function MainApp() {
     return <BootTerminal />;
   }
 
-  // Direct Authentication Gateway for Visitors (Direct Web Application Access)
+  // Authentication Gateway for Unauthenticated Visitors
   if (!currentUser) {
     return (
-      <LoginView
-        initialPortal={selectedPortal}
-        onSuccess={() => {
-          setCurrentTab('home');
-        }}
-      />
+      <>
+        <LoginView
+          initialPortal={selectedPortal}
+          onSuccess={() => {
+            setCurrentTab('home');
+          }}
+        />
+        <KluRegistrationModal
+          isOpen={!!pendingRegistration}
+          onSuccess={() => {
+            setCurrentTab('home');
+          }}
+        />
+      </>
     );
-  }
-
-  // Pre-launch & Landing redirects directly to home
-  if (currentTab === 'prelaunch' || currentTab === 'landing') {
-    setCurrentTab('home');
-    return null;
   }
 
   // SCREEN 01 — WELCOME / ONBOARDING (if tab is 'welcome')
@@ -374,11 +377,10 @@ function MainApp() {
               />
             )}
 
-            {/* Animated Learning – Interactive Labs */}
+            {/* Screen 08: Animated Learning */}
             {currentTab === 'animated-learning' && (
               <AnimatedLearningView
-                onNavigate={handleNavigate}
-                onSelectLesson={handleSelectLesson}
+                onNavigateHome={() => handleNavigate('home')}
               />
             )}
 
@@ -491,6 +493,10 @@ function MainApp() {
       <StreakModal
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
+        onReturnToDashboard={() => {
+          setIsStreakModalOpen(false);
+          handleNavigate('home');
+        }}
         streakDays={userStats.streak}
       />
 
@@ -498,6 +504,10 @@ function MainApp() {
       <LevelProgressModal
         isOpen={isLevelModalOpen}
         onClose={() => setIsLevelModalOpen(false)}
+        onReturnToDashboard={() => {
+          setIsLevelModalOpen(false);
+          handleNavigate('home');
+        }}
         currentXp={userStats.xp}
       />
 
@@ -528,6 +538,14 @@ function MainApp() {
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
         onSuccess={() => {
+        }}
+      />
+
+      {/* Student Profile & Registration Wizard Modal */}
+      <KluRegistrationModal
+        isOpen={!!pendingRegistration}
+        onSuccess={() => {
+          setCurrentTab('home');
         }}
       />
 

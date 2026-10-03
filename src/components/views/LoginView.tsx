@@ -40,7 +40,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const displayError = localError || authError;
 
-  // Google sign in with @klu.ac.in / @kluniversity.in restriction
+  // Listen for Escape key to return to launch page
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (onCancel) onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
+  // Google sign in with @klu.ac.in restriction
   const handleGoogleLogin = async () => {
     clearAuthError();
     setLocalError(null);
@@ -57,24 +68,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
   };
 
-  // Student ID / Roll No login
+  // Student ID / Username login
   const handleStudentIdLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const id = studentIdInput.trim();
     const pwd = passwordInput.trim();
 
     if (!id) {
-      setLocalError('Please enter your Student ID (e.g. 99240040116).');
-      return;
-    }
-    if (!/^992400\d{5}(@klu\.ac\.in)?$/i.test(id)) {
-      setLocalError('Student ID must be in format 992400xxxxx (e.g. 99240040116).');
+      setLocalError('Please enter your Username, Student ID, or KLU Email.');
       return;
     }
     if (!pwd) {
-      const cleanId = id.split('@')[0];
-      const last5 = cleanId.slice(-5);
-      setLocalError(`Please enter your password (format: sid@${last5}).`);
+      setLocalError('Please enter your password.');
       return;
     }
 
@@ -96,6 +101,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   return (
     <div className="relative min-h-screen bg-[#070D18] flex items-center justify-center p-4 overflow-hidden select-none">
+      
+      {/* Back to Launch Page Fixed Button */}
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          id="fixed-back-to-launch-button"
+          className="fixed top-5 left-5 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0E1626]/80 hover:bg-[#142036] border border-cyan-500/30 hover:border-cyan-400/50 text-slate-200 hover:text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-lg hover:-translate-x-0.5 group"
+          title="Back to Launch Page (Esc)"
+        >
+          <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Launch Page</span>
+        </button>
+      )}
 
       {/* React Bits Pro: Liquid Lines Background */}
       <div className="absolute inset-0 pointer-events-none z-0">
@@ -377,7 +396,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               {showForgotHint && (
                 <div className="mx-6 mb-2 p-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] flex items-start gap-1.5 leading-snug animate-in fade-in">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
-                  <span>Your password is <strong>sid@&lt;last 5 digits of ID&gt;</strong> (e.g. sid@40116).</span>
+                  <span>Enter your created password, or <strong>sid@&lt;last 5 digits of ID&gt;</strong> for pre-enrolled accounts.</span>
                 </div>
               )}
 
@@ -391,7 +410,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   required 
                   autoFocus
                 />
-                <label htmlFor="email">Username (992400xxxxx)</label>
+                <label htmlFor="email">Username / Student ID</label>
               </div>
 
               <div className="input-block">
@@ -403,7 +422,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   onChange={(e) => setPasswordInput(e.target.value)}
                   required 
                 />
-                <label htmlFor="pass">Password (sid@xxxxx)</label>
+                <label htmlFor="pass">Password</label>
               </div>
 
               <div className="input-block">
@@ -425,12 +444,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   )}
                 </button>
 
-                {/* Google Sign In with @klu.ac.in restriction */}
+                {/* Google Sign In for all KLU students */}
                 <button 
                   type="button" 
                   onClick={handleGoogleLogin} 
                   disabled={loading || googleLoading}
                   className="google-login-btn"
+                  title="Sign in with your official KLU Google account (@klu.ac.in or @kluniversity.in)"
                 >
                   {googleLoading ? (
                     <Loader size="1.35em" />
@@ -443,10 +463,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                       </svg>
                       <span>Continue with Google</span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold">@klu.ac.in</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">KLU Access</span>
                     </>
                   )}
                 </button>
+
+                <p className="text-[10px] text-slate-400 text-center mt-2 font-mono">
+                  All KLU students welcome • Sign in to create profile
+                </p>
               </div>
 
             </form>

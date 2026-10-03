@@ -10,8 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx test_curriculum_and_gamification.ts",
-    "seed:firestore": "tsx scripts/seedFirestoreCollections.ts"
+    "test": "tsx test_curriculum_and_gamification.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

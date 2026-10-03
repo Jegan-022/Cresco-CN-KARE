@@ -1,21 +1,34 @@
-import React from 'react';
-import { CrescoMascot } from '../brand/CrescoMascot';
+import React, { useEffect } from 'react';
 import { soundFx } from '../../utils/soundEffects';
-import { X, Unlock } from 'lucide-react';
+import { X, Zap, Unlock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface LevelProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onReturnToDashboard?: () => void;
   currentXp?: number;
 }
 
 export const LevelProgressModal: React.FC<LevelProgressModalProps> = ({
   isOpen,
   onClose,
+  onReturnToDashboard,
   currentXp,
 }) => {
   const { userProfile } = useAuth();
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const xp = userProfile?.totalXP ?? userProfile?.xp ?? currentXp ?? 0;
@@ -32,7 +45,7 @@ export const LevelProgressModal: React.FC<LevelProgressModalProps> = ({
 
   const currentTier = allLevels.find(l => xp >= l.minXp && xp < l.maxXp) || (xp >= 5000 ? allLevels[allLevels.length - 1] : allLevels[0]);
   const currentLevelNumber = currentTier.level;
-  const currentLevelTitle = currentTier.title.toUpperCase();
+  const currentLevelTitle = currentTier.title;
   const nextTier = allLevels.find(l => l.level === currentLevelNumber + 1);
   const nextLevelTitle = nextTier ? nextTier.title : 'Supreme Network Master';
   const minXp = currentTier.minXp;
@@ -40,127 +53,108 @@ export const LevelProgressModal: React.FC<LevelProgressModalProps> = ({
   const progressPercent = Math.min(100, Math.max(0, Math.round(((xp - minXp) / Math.max(1, maxXp - minXp)) * 100)));
   const xpNeeded = Math.max(0, maxXp - xp);
 
+  const handleReturnHome = () => {
+    try {
+      soundFx.playClick();
+    } catch {}
+    if (onReturnToDashboard) {
+      onReturnToDashboard();
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn select-none">
-      <div className="w-full max-w-md bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative animate-scaleUp">
-        
-        {/* Close Button */}
-        <button
-          onClick={() => {
-            soundFx.playClick();
-            onClose();
-          }}
-          className="absolute top-5 right-5 p-2 rounded-xl text-[#64748B] hover:text-[#172033] hover:bg-[#F7F5F0] dark:hover:bg-slate-800 cursor-pointer"
-        >
-          <X size={18} />
-        </button>
-
-        {/* Mascot Avatar */}
-        <div className="flex justify-center mb-4">
-          <CrescoMascot
-            pose="levelup"
-            size="xl"
-            animation="glow"
-            withGlow
-            speechText={`Level ${currentLevelNumber}: ${currentLevelTitle}`}
-            speechPosition="top"
-          />
-        </div>
-
-        {/* Level Header */}
-        <div className="text-center space-y-1">
-          <span className="text-xs font-mono font-black text-[#3157D5] dark:text-[#6D8CFF] uppercase tracking-widest">
-            LEVEL {currentLevelNumber}
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#172033] dark:text-[#F9FAFB] tracking-tight">
-            {currentLevelTitle}
-          </h2>
-          <p className="text-xs font-medium text-[#64748B] dark:text-slate-400">
-            {xp.toLocaleString()} / {maxXp.toLocaleString()} XP
-          </p>
-        </div>
-
-        {/* XP Progress Bar */}
-        <div className="mt-5 space-y-1.5">
-          <div className="w-full h-4 bg-[#F7F5F0] dark:bg-[#111827] rounded-full overflow-hidden border border-[#E5E0D8] dark:border-slate-700 p-0.5">
-            <div 
-              className="h-full bg-gradient-to-r from-[#3157D5] to-[#5B7CFA] rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[11px] font-mono font-bold text-[#64748B]">
-            <span>Level {currentLevelNumber}</span>
-            <span className="text-[#3157D5] dark:text-[#6D8CFF]">{xpNeeded} XP to Level {currentLevelNumber + 1}</span>
-            <span>Level {currentLevelNumber + 1}</span>
-          </div>
-        </div>
-
-        {/* Next Level & Rewards Section */}
-        <div className="mt-6 pt-5 border-t border-[#EFECE6] dark:border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-bold text-[#64748B] uppercase">NEXT LEVEL</span>
-            <span className="text-xs font-black text-[#172033] dark:text-[#F9FAFB]">{nextLevelTitle}</span>
+    <div 
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-3 animate-fadeIn select-none"
+      onClick={onClose}
+    >
+      <div 
+        className="w-full max-w-sm bg-white dark:bg-[#101928] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl relative animate-scaleUp text-slate-800 dark:text-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top Header: Badge & ✕ Close */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-bold font-mono border border-amber-500/20">
+            <Zap size={13} className="fill-amber-500 text-amber-500" />
+            <span>LEVEL &amp; XP PROGRESS</span>
           </div>
 
-          <div className="space-y-2">
-            <div className="p-3 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#3157D5]/15 text-[#3157D5] dark:text-[#6D8CFF] flex items-center justify-center shrink-0">
-                <Unlock size={16} />
-              </div>
-              <div className="text-xs font-bold text-[#172033] dark:text-[#F9FAFB]">
-                🔓 Advanced Protocol Scenarios
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#35A86B]/15 text-[#35A86B] flex items-center justify-center shrink-0">
-                <Unlock size={16} />
-              </div>
-              <div className="text-xs font-bold text-[#172033] dark:text-[#F9FAFB]">
-                🔓 Topology Sandbox Simulator
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Level Path Mini-Timeline */}
-        <div className="mt-5 pt-4 border-t border-[#EFECE6] dark:border-slate-800">
-          <span className="text-[10px] font-mono font-bold text-[#64748B] uppercase tracking-wider block mb-2">
-            LEVEL ROADMAP
-          </span>
-          <div className="space-y-1.5 text-xs">
-            {allLevels.slice(0, 5).map((lvl) => {
-              const isCurrent = lvl.level === currentLevelNumber;
-              const isCompleted = lvl.level < currentLevelNumber;
-              return (
-                <div 
-                  key={lvl.level}
-                  className={`flex items-center justify-between p-2 rounded-xl ${
-                    isCurrent
-                      ? 'bg-[#3157D5]/10 font-black text-[#3157D5] dark:text-[#6D8CFF]'
-                      : isCompleted
-                      ? 'text-[#64748B] line-through'
-                      : 'text-[#94A3B8]'
-                  }`}
-                >
-                  <span>Level {lvl.level}: {lvl.title}</span>
-                  <span className="font-mono">{lvl.minXp} XP</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div className="mt-6">
           <button
+            type="button"
             onClick={() => {
               soundFx.playClick();
               onClose();
             }}
-            className="w-full py-3.5 rounded-2xl bg-[#3157D5] hover:bg-[#2442B0] text-white font-black text-xs tracking-wider shadow-[0_4px_0_0_#2442B0] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Close (Esc)"
           >
-            {xp > 0 ? 'CONTINUE EARNING XP' : 'START EARNING XP'}
+            <X size={17} />
+          </button>
+        </div>
+
+        {/* Level Title & XP */}
+        <div className="text-center py-4 space-y-1">
+          <span className="text-[11px] font-mono font-bold text-amber-500 uppercase tracking-wider block">
+            LEVEL {currentLevelNumber}
+          </span>
+          <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            {currentLevelTitle}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono font-semibold">
+            {xp.toLocaleString()} / {maxXp.toLocaleString()} XP
+          </p>
+        </div>
+
+        {/* Compact Progress Bar */}
+        <div className="space-y-1.5 py-1 mb-3">
+          <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 p-0.5">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 to-cyan-500 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400">
+            <span>{progressPercent}% completed</span>
+            <span className="text-cyan-600 dark:text-cyan-400">
+              {xpNeeded > 0 ? `${xpNeeded} XP to Level ${currentLevelNumber + 1}` : 'Max Tier!'}
+            </span>
+          </div>
+        </div>
+
+        {/* Next Unlock Preview */}
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/15 text-cyan-500 flex items-center justify-center shrink-0">
+              <Unlock size={14} />
+            </div>
+            <div>
+              <div className="text-[10px] font-mono uppercase text-slate-400">UPCOMING UNLOCK</div>
+              <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{nextLevelTitle}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons: 1-click Return to Dashboard */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleReturnHome}
+            className="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide shadow-md shadow-cyan-600/20 active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <ArrowLeft size={14} />
+            <span>Return to Dashboard</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playClick();
+              onClose();
+            }}
+            className="w-full py-1.5 text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          >
+            Close
           </button>
         </div>
 
