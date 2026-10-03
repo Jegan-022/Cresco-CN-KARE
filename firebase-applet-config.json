@@ -1,10 +1,10 @@
 {
-  "projectId": "computernetworks-af026",
-  "appId": "1:38508481032:web:a7d335c4571cc69cfbdfbd",
-  "apiKey": "AIzaSyDhIMmCRj41Qo2IK8D3fOQYQsQL-vgzdh8",
-  "authDomain": "computernetworks-af026.firebaseapp.com",
+  "projectId": "cresco-cn",
+  "appId": "1:843600800160:web:03b40ea6ef2935647e9cc5",
+  "apiKey": "AIzaSyBi09IyrnH2cGsRN09c0LxV083ydWq76cU",
+  "authDomain": "cresco-cn.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
-  "storageBucket": "computernetworks-af026.firebasestorage.app",
-  "messagingSenderId": "38508481032",
-  "measurementId": "G-CGMXTQ4GY2"
+  "storageBucket": "cresco-cn.firebasestorage.app",
+  "messagingSenderId": "843600800160",
+  "measurementId": "G-BGZFM4EVSF"
 }

@@ -159,52 +159,114 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex-1 min-w-0">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md mb-3 border border-white/25 shadow-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-300 animate-pulse" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-300 animate-pulse" />
                   <span className="font-headline text-xs text-white tracking-widest uppercase font-black">
-                    CRESCO CN • {nextModule.unitTitle || 'COMPUTER NETWORKS'}
+                    CRESCO CN • {currentUser ? (nextModule.unitTitle || 'COMPUTER NETWORKS') : 'INTERACTIVE LEARNING PLATFORM'}
                   </span>
                 </div>
 
                 <h1 className="font-headline-lg text-headline-lg text-on-primary tracking-tight leading-tight">
-                  Welcome to <span className="font-black text-amber-200">Cresco CN</span> — Continue your journey
+                  {currentUser ? (
+                    <>Welcome back, <span className="font-black text-amber-200">{firstName}</span> — Continue your journey</>
+                  ) : (
+                    <>Welcome to <span className="font-black text-amber-200">Cresco CN</span> — Master Networks Visually</>
+                  )}
                 </h1>
 
-                <p className="font-body-md text-body-md text-primary-fixed pt-1 max-w-xl opacity-90">
-                  Master architectural models, deterministic routing, and packet framing one simulation at a time.
+                <p className="font-body-md text-body-md text-primary-fixed pt-1 max-w-xl opacity-95 text-white/90">
+                  {currentUser
+                    ? 'Master architectural models, deterministic routing, and packet framing one simulation at a time.'
+                    : 'The interactive visual computer networks platform for KLU students. Explore real-time protocol simulations, animated learning modules, hands-on packet labs, and curriculum-aligned modules.'
+                  }
                 </p>
 
-                {/* Status Indicators & Track Bar */}
-                <div className="pt-5 flex flex-col gap-2 max-w-md">
-                  <div className="flex items-center justify-between font-label-md text-label-md text-primary-fixed">
-                    <span className="flex items-center gap-1.5 font-bold">
-                      <Sparkles size={14} className="text-tertiary-fixed-dim" />
-                      Level {currentLevel}
+                {currentUser ? (
+                  /* Status Indicators & Track Bar */
+                  <div className="pt-5 flex flex-col gap-2 max-w-md">
+                    <div className="flex items-center justify-between font-label-md text-label-md text-primary-fixed">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        <Sparkles size={14} className="text-tertiary-fixed-dim" />
+                        Level {currentLevel}
+                      </span>
+                      <span>{currentXp.toLocaleString()} XP Earned</span>
+                      <span className="text-tertiary-fixed font-bold">{progressPercent}% Completed</span>
+                    </div>
+
+                    {/* Glow Progress Bar */}
+                    <div className="w-full h-3.5 bg-on-primary/20 rounded-full p-0.5 overflow-hidden backdrop-blur-sm">
+                      <div 
+                        className="h-full bg-gradient-to-r from-tertiary-fixed-dim via-tertiary-fixed to-surface-tint rounded-full shadow-[0_0_12px_#ffba20] transition-all duration-700" 
+                        style={{ width: `${Math.max(4, progressPercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Feature highlights pills for unauthenticated visitor */
+                  <div className="pt-4 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black/25 text-white/95 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                      ⚡ Interactive Labs
                     </span>
-                    <span>{currentXp.toLocaleString()} XP Earned</span>
-                    <span className="text-tertiary-fixed font-bold">{progressPercent}% Completed</span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black/25 text-white/95 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                      🎬 Animated Learning
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black/25 text-white/95 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                      🌐 Live Packet Simulator
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black/25 text-white/95 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                      🎓 Open KLU Google Sign-In
+                    </span>
                   </div>
+                )}
 
-                  {/* Glow Progress Bar */}
-                  <div className="w-full h-3.5 bg-on-primary/20 rounded-full p-0.5 overflow-hidden backdrop-blur-sm">
-                    <div 
-                      className="h-full bg-gradient-to-r from-tertiary-fixed-dim via-tertiary-fixed to-surface-tint rounded-full shadow-[0_0_12px_#ffba20] transition-all duration-700" 
-                      style={{ width: `${Math.max(4, progressPercent)}%` }}
-                    />
-                  </div>
-                </div>
+                {/* Primary Action CTA Buttons */}
+                <div className="pt-6 flex flex-wrap items-center gap-3">
+                  {currentUser ? (
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        onNavigate('learn-map');
+                      }}
+                      className="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl bg-surface-container-lowest text-primary font-headline-sm text-headline-sm shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_2px_0_0_#fed7aa,0_6px_12px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all cursor-pointer"
+                    >
+                      <span>Continue on Island Map</span>
+                      <ArrowRight size={18} strokeWidth={2.8} />
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          soundFx.playClick();
+                          onNavigate('login');
+                        }}
+                        className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-surface-container-lowest text-primary font-headline-sm text-headline-sm shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_2px_0_0_#fed7aa,0_6px_12px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all cursor-pointer"
+                      >
+                        <span>Student Login / Get Started</span>
+                        <ArrowRight size={18} strokeWidth={2.8} />
+                      </button>
 
-                {/* Primary Action CTA Button */}
-                <div className="pt-6">
-                  <button
-                    onClick={() => {
-                      soundFx.playClick();
-                      onNavigate('learn-map');
-                    }}
-                    className="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl bg-surface-container-lowest text-primary font-headline-sm text-headline-sm shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_2px_0_0_#fed7aa,0_6px_12px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all cursor-pointer"
-                  >
-                    <span>Continue on Island Map</span>
-                    <ArrowRight size={18} strokeWidth={2.8} />
-                  </button>
+                      <button
+                        onClick={() => {
+                          soundFx.playClick();
+                          onNavigate('animated-learning');
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-headline-sm text-headline-sm backdrop-blur-md border border-white/25 active:translate-y-0.5 transition-all cursor-pointer"
+                      >
+                        <Play size={16} className="fill-white" />
+                        <span>Animated Learning</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          soundFx.playClick();
+                          onNavigate('simulator');
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-headline-sm text-headline-sm backdrop-blur-md border border-white/25 active:translate-y-0.5 transition-all cursor-pointer"
+                      >
+                        <Router size={16} />
+                        <span>Try Packet Lab</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -216,7 +278,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   size="hero"
                   animation="float"
                   withGlow
-                  speechText={`Let's conquer ${nextModule.title?.split(':')[0]?.split('—')[0]?.trim() || 'Network Layer'}!`}
+                  speechText={
+                    currentUser
+                      ? `Let's conquer ${nextModule.title?.split(':')[0]?.split('—')[0]?.trim() || 'Network Layer'}!`
+                      : "Welcome to Cresco CN! Learn computer networks visually."
+                  }
                   speechPosition="top"
                 />
               </div>
@@ -368,64 +434,111 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="xl:col-span-4 flex flex-col gap-6">
           
           {/* 1. STUDENT PROFILE SUMMARY & 7-DAY XP ACTIVITY */}
-          <section className="rounded-xl bg-surface-container-lowest p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-on-primary text-xl font-bold shadow-sm">
-                  {firstName[0]}
+          {!currentUser ? (
+            <section className="rounded-xl bg-surface-container-lowest p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] border border-emerald-500/20 flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-2xl shadow-md shrink-0">
+                  🎓
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[12px] font-bold shadow-[0_2px_0_0_#047857]">
-                  {currentLevel}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">KLU Student Portal</h3>
+                  <p className="font-body-sm text-body-sm text-primary font-semibold">Open Access for All Students</p>
+                  <span className="font-label-md text-label-md text-outline block">KLU • Computer Networks</span>
                 </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">{displayName}</h3>
-                <p className="font-body-sm text-body-sm text-primary font-semibold flex items-center gap-1">
-                  <Router size={14} />
-                  <span>Network Apprentice</span>
-                </p>
-                <span className="font-label-md text-label-md text-outline block truncate">
-                  {studentId ? `ID: #${studentId} • ` : ''}{college}
-                </span>
-              </div>
-            </div>
-
-            {/* 7-Day Activity Bar Chart */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Weekly Output</span>
-                <span className="font-code-metric text-code-metric text-on-surface font-bold">{currentXp} XP total</span>
-              </div>
-
-              <div className="grid grid-cols-7 gap-2 items-end h-28 pt-4 pb-1 px-1 bg-surface-container-low rounded-xl">
-                {days.map((dayLabel, idx) => {
-                  const isCurrent = idx === todayIdx;
-                  const barHeight = currentXp > 0 ? (isCurrent ? 95 : weeklyHeights[idx]) : 8;
-                  return (
-                    <div key={idx} className="flex flex-col items-center gap-1.5 h-full justify-end group">
-                      <div 
-                        className={`w-full max-w-[16px] rounded-t-md transition-all ${
-                          isCurrent
-                            ? 'bg-gradient-to-t from-primary to-primary-container shadow-[0_0_8px_#ff6b00]'
-                            : 'bg-surface-container-highest group-hover:bg-primary-container'
-                        }`} 
-                        style={{ height: `${barHeight}%` }}
-                      />
-                      <span className={`font-label-md text-label-md text-[11px] ${isCurrent ? 'text-primary font-bold' : 'text-outline'}`}>
-                        {dayLabel}
-                      </span>
-                    </div>
-                  );
-                })}
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
+                <div className="text-xs font-headline font-bold uppercase tracking-wider flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <Sparkles size={14} />
+                  <span>Platform Highlights</span>
+                </div>
+                <ul className="text-xs text-on-surface-variant space-y-1.5">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span><strong>KLU Google Sign-In:</strong> Open to any @klu.ac.in student</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0" />
+                    <span><strong>Animated Learning:</strong> Dynamic visual protocol flows</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span><strong>Hands-On Labs:</strong> Interactive topology & packet simulator</span>
+                  </li>
+                </ul>
               </div>
 
-              <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm text-[12px] pt-1">
-                <span>{currentStreak > 0 ? `Goal met: ${Math.min(7, currentStreak)} of 7 days` : 'Goal met: 0 of 7 days'}</span>
-                <span className="text-tertiary-container font-semibold">Sunday Peak</span>
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('login');
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-headline-sm text-headline-sm shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+              >
+                <span>Sign In / Create Account</span>
+                <ArrowRight size={16} />
+              </button>
+            </section>
+          ) : (
+            <section className="rounded-xl bg-surface-container-lowest p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex flex-col gap-6">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-on-primary text-xl font-bold shadow-sm">
+                    {firstName[0]}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[12px] font-bold shadow-[0_2px_0_0_#047857]">
+                    {currentLevel}
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">{displayName}</h3>
+                  <p className="font-body-sm text-body-sm text-primary font-semibold flex items-center gap-1">
+                    <Router size={14} />
+                    <span>Network Apprentice</span>
+                  </p>
+                  <span className="font-label-md text-label-md text-outline block truncate">
+                    {studentId ? `ID: #${studentId} • ` : ''}{college}
+                  </span>
+                </div>
               </div>
-            </div>
-          </section>
+
+              {/* 7-Day Activity Bar Chart */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Weekly Output</span>
+                  <span className="font-code-metric text-code-metric text-on-surface font-bold">{currentXp} XP total</span>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2 items-end h-28 pt-4 pb-1 px-1 bg-surface-container-low rounded-xl">
+                  {days.map((dayLabel, idx) => {
+                    const isCurrent = idx === todayIdx;
+                    const barHeight = currentXp > 0 ? (isCurrent ? 95 : weeklyHeights[idx]) : 8;
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-1.5 h-full justify-end group">
+                        <div 
+                          className={`w-full max-w-[16px] rounded-t-md transition-all ${
+                            isCurrent
+                              ? 'bg-gradient-to-t from-primary to-primary-container shadow-[0_0_8px_#ff6b00]'
+                              : 'bg-surface-container-highest group-hover:bg-primary-container'
+                          }`} 
+                          style={{ height: `${barHeight}%` }}
+                        />
+                        <span className={`font-label-md text-label-md text-[11px] ${isCurrent ? 'text-primary font-bold' : 'text-outline'}`}>
+                          {dayLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm text-[12px] pt-1">
+                  <span>{currentStreak > 0 ? `Goal met: ${Math.min(7, currentStreak)} of 7 days` : 'Goal met: 0 of 7 days'}</span>
+                  <span className="text-tertiary-container font-semibold">Sunday Peak</span>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* 2. DAILY CHALLENGE CARD */}
           <section className="rounded-xl bg-gradient-to-br from-surface-container-lowest to-emerald-50/60 dark:to-emerald-950/20 p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] relative overflow-hidden border border-emerald-100/80 dark:border-emerald-950/40">

@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getAnalytics, Analytics } from 'firebase/analytics';
 import { 
   getFirestore, 
   initializeFirestore, 
@@ -15,6 +16,15 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase App singleton
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+// Initialize Firebase Analytics (browser environment only)
+export const analytics: Analytics | null = typeof window !== 'undefined' ? (() => {
+  try {
+    return getAnalytics(app);
+  } catch (e) {
+    return null;
+  }
+})() : null;
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);

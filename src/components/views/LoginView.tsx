@@ -102,17 +102,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
   return (
     <div className="relative min-h-screen bg-[#070D18] flex items-center justify-center p-4 overflow-hidden select-none">
       
-      {/* Back to Dashboard Fixed Button */}
+      {/* Back to Home Page Fixed Button */}
       {onCancel && (
         <button
           type="button"
           onClick={onCancel}
-          id="fixed-back-to-dashboard-button"
+          id="fixed-back-to-launch-button"
           className="fixed top-5 left-5 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0E1626]/80 hover:bg-[#142036] border border-cyan-500/30 hover:border-cyan-400/50 text-slate-200 hover:text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-lg hover:-translate-x-0.5 group"
-          title="Back to Dashboard (Esc)"
+          title="Back to Home (Esc)"
         >
           <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Dashboard</span>
+          <span>Back to Cresco CN Home</span>
         </button>
       )}
 
@@ -380,7 +380,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         </button>
                       )}
                       <a
-                        href="https://console.firebase.google.com/project/computernetworks-af026/authentication/settings"
+                        href="https://console.firebase.google.com/project/cresco-cn/authentication/settings"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-2 py-0.5 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded transition-colors flex items-center gap-1 inline-flex cursor-pointer"

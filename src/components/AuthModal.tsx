@@ -134,7 +134,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </button>
                   )}
                   <a
-                    href="https://console.firebase.google.com/project/computernetworks-af026/authentication/settings"
+                    href="https://console.firebase.google.com/project/cresco-cn/authentication/settings"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-2.5 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg transition-colors flex items-center space-x-1 inline-flex cursor-pointer"

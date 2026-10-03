@@ -232,7 +232,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           console.warn("Developer Dashboard Firestore sync error:", err);
           const errMsg = err?.message || String(err);
           if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
-            setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'computernetworks-af026'. Please create the database in the Firebase Console so student progress syncs across devices.");
+            setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'cresco-cn'. Please create the database in the Firebase Console so student progress syncs across devices.");
           } else {
             setFirestoreError(errMsg);
           }
@@ -278,7 +278,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
     } catch (err: any) {
       const errMsg = err?.message || String(err);
       if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
-        setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'computernetworks-af026'. Please create the database in the Firebase Console.");
+        setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'cresco-cn'. Please create the database in the Firebase Console.");
       } else {
         setFirestoreError(errMsg);
       }
@@ -546,7 +546,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
                   Cloud Firestore Database Is Not Activated
                 </h3>
                 <p className="text-xs text-red-300">
-                  Firebase Project: <span className="font-mono font-bold">computernetworks-af026</span>
+                  Firebase Project: <span className="font-mono font-bold">cresco-cn</span>
                 </p>
               </div>
             </div>
@@ -571,7 +571,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <a
-              href="https://console.firebase.google.com/project/computernetworks-af026/firestore"
+              href="https://console.firebase.google.com/project/cresco-cn/firestore"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-red-600/20 cursor-pointer"
@@ -581,7 +581,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
             </a>
 
             <a
-              href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=computernetworks-af026"
+              href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=cresco-cn"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#1A1F2B] hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer"

@@ -1,6 +1,5 @@
 export type NavTab = 
   | 'home'
-  | 'login'
   | 'welcome'
   | 'learn-map'
   | 'courses'
@@ -35,7 +34,8 @@ export type NavTab =
   | 'guidemaster-tutor'
   | 'animated-learning'
   | 'prelaunch'
-  | 'landing';
+  | 'landing'
+  | 'login';
 
 export interface LearningNode {
   id: string;
