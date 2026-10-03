@@ -26,7 +26,37 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     xl: 168,
   }[size];
 
-  // Dynamic mouth height based on speaking amplitude
+  if (characterId === 'cresco-mascot' || (characterId as string) === 'mascot' || (characterId as string) === 'octopus') {
+    return (
+      <div
+        className={`inline-flex items-center justify-center select-none relative transition-transform duration-300 ${
+          isSpeaking ? 'scale-108 animate-bounce' : 'hover:scale-105'
+        } ${className}`}
+        style={{ width: sizePixels, height: sizePixels }}
+      >
+        <img
+          src="/assets/mascot/cresco-mascot.png"
+          alt="Cresco CN Octopus Mascot"
+          className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(6,182,212,0.4)]"
+        />
+        {/* Floating Mood Bubble during celebrations or tips */}
+        {pose === 'celebrating' && (
+          <span className="absolute -top-1 -right-1 text-sm animate-bounce">✨</span>
+        )}
+        {pose === 'correct' && (
+          <span className="absolute -top-1 -right-1 text-sm animate-bounce">🌟</span>
+        )}
+        {pose === 'thinking' && (
+          <span className="absolute -top-1 -right-1 text-xs font-mono font-bold text-amber-500 bg-white dark:bg-slate-800 rounded-full px-1 shadow-sm animate-pulse">
+            💭
+          </span>
+        )}
+        {isSpeaking && (
+          <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping pointer-events-none opacity-50" />
+        )}
+      </div>
+    );
+  }
   const mouthOpen = isSpeaking ? Math.max(2, Math.round(amplitude * 8)) : 0;
   const isHappy = pose === 'celebrating' || pose === 'correct' || pose === 'level-up';
   const isSad = pose === 'wrong';

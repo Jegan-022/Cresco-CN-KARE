@@ -7,17 +7,9 @@ import {
   Zap, 
   Bell,
   User,
-  Settings,
+  Settings, 
   LogOut,
-  ChevronDown,
-  Search,
-  Diamond,
-  Compass,
-  Target,
-  Swords,
-  RotateCcw,
-  Sparkles,
-  ArrowLeft
+  Search
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 
@@ -32,9 +24,6 @@ interface HeaderProps {
   onOpenStreak?: () => void;
   onOpenLevel?: () => void;
   onSearch?: () => void;
-  onTriggerPreloader?: () => void;
-  canGoBack?: boolean;
-  onGoBack?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,9 +33,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStreak,
   onOpenLevel,
   onSearch,
-  onTriggerPreloader,
-  canGoBack = false,
-  onGoBack,
 }) => {
   const { userProfile, currentUser, logout, resetStudentCourse } = useAuth();
   const { activeCharacter, openCharacterHub, isSpeaking, audioAmplitude } = useCharacter();
@@ -91,22 +77,11 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/90 dark:bg-[#111827]/90 backdrop-blur-xl border-b border-[#E5E0D8] dark:border-slate-800 shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-colors">
-      <div className="max-w-[1440px] mx-auto h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 w-full bg-surface-container-lowest/90 dark:bg-[#111827]/90 backdrop-blur-xl border-b border-[#E5E0D8] dark:border-slate-800 shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-colors">
+      <div className="max-w-[1440px] mx-auto h-16 pl-14 sm:pl-16 pr-4 sm:pr-6 flex items-center justify-between gap-4">
         
-        {/* Left: Optional In-App Back Button + Brand Logo + Course Pill */}
+        {/* Left: Brand Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {onGoBack && (
-            <button
-              type="button"
-              onClick={onGoBack}
-              className="p-2 rounded-xl bg-surface-container/80 hover:bg-surface-container-high border border-outline-variant/40 text-slate-700 dark:text-slate-200 transition-all cursor-pointer flex items-center justify-center shadow-2xs active:scale-95"
-              title="Go Back to Previous Page"
-            >
-              <ArrowLeft size={18} strokeWidth={2.5} />
-            </button>
-          )}
-
           <button
             onClick={() => {
               soundFx.playClick();
@@ -114,35 +89,23 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="flex items-center gap-2.5 text-left cursor-pointer focus:outline-hidden group"
           >
-            {/* Stylized Network Hub 3D Logo with green conic/emerald theme */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.35)] group-hover:scale-105 transition-all shrink-0">
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 3v6m0 6v6M3 12h6m6 0h6" />
-                <circle cx="12" cy="3" r="1.5" />
-                <circle cx="12" cy="21" r="1.5" />
-                <circle cx="3" cy="12" r="1.5" />
-                <circle cx="21" cy="12" r="1.5" />
-              </svg>
+            {/* Network Octopus Mascot Brand Mark */}
+            <div className="w-11 h-11 relative flex items-center justify-center group-hover:scale-110 active:scale-95 transition-transform shrink-0">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Cresco CN Mascot Logo"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(6,182,212,0.4)]"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-headline text-2xl sm:text-[26px] font-black tracking-tight leading-none text-slate-900 dark:text-white flex items-center gap-1.5">
-                CRESCO <span className="text-emerald-500 dark:text-emerald-400 font-black">CN</span>
+                CRESCO <span className="text-[#06B6D4] dark:text-[#22D3EE] font-black">CN</span>
               </span>
-              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400/90 font-extrabold tracking-widest uppercase leading-none mt-1">
+              <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-extrabold tracking-widest uppercase leading-none mt-1">
                 COMPUTER NETWORKS
               </span>
             </div>
           </button>
-
-          {/* Course selector pill */}
-          <div className="hidden md:flex items-center gap-1.5 bg-surface-container dark:bg-slate-800/80 px-3 py-1 rounded-full text-on-surface-variant border border-outline-variant/30">
-            <span className="w-2 h-2 rounded-full bg-primary-container" />
-            <span className="font-body text-xs text-on-surface dark:text-slate-200 font-bold">
-              Computer Networks
-            </span>
-            <ChevronDown size={14} className="text-outline" />
-          </div>
         </div>
 
         {/* Center: Search Bar (⌘K) */}
@@ -197,13 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* League Tier Pill */}
-          <div className="hidden xl:flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full border border-amber-200/80 dark:border-amber-800/50 shadow-xs">
-            <Diamond size={15} className="text-amber-500 fill-amber-500/20" />
-            <span className="font-body text-xs text-amber-900 dark:text-amber-200 font-bold">
-              Diamond Tier
-            </span>
-          </div>
+          
 
           {/* Notification Icon & Dropdown */}
           <div className="relative" ref={notifMenuRef}>
@@ -264,9 +221,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-surface-tint ring-2 ring-surface-container-lowest" />
               </div>
-              <span className="hidden md:inline-flex bg-primary-container text-white font-headline text-[11px] font-bold px-2 py-0.5 rounded-full shadow-[0_2px_0_0_#047857]">
-                Lvl {level}
-              </span>
+              
             </button>
 
             {showProfileMenu && (
@@ -315,20 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="pt-2 border-t border-surface-container dark:border-slate-800">
-                  {onTriggerPreloader && (
-                    <button
-                      onClick={() => {
-                        soundFx.playClick();
-                        setShowProfileMenu(false);
-                        onTriggerPreloader();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 transition-colors cursor-pointer"
-                      title="Replay Post-Login Preloader Screen with compliments"
-                    >
-                      <Sparkles size={15} className="text-cyan-500" />
-                      <span>Preview Preloader Screen</span>
-                    </button>
-                  )}
+
 
                   <button
                     onClick={() => {

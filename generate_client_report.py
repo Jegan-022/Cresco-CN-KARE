@@ -1,10 +1,3 @@
-"""
-NetQuest Client Project Report Generator
-Authors: Platform Engineering Team (ID 285 & ID 279)
-Client: KL University (Department of Computer Science & Engineering)
-Deliverables: NetQuest_Client_Project_Report.docx and NetQuest_Client_Project_Report.pdf
-"""
-
 import os
 import csv
 import docx
@@ -15,8 +8,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import parse_xml, OxmlElement
 from docx.oxml.ns import nsdecls, qn
 
-# --- STYLING CONSTANTS ---
-COLOR_PRIMARY_HEX = "1E3A8A"      # Deep Navy
+COLOR_PRIMARY_HEX = "1E3A8A"      
 COLOR_SECONDARY_HEX = "0D9488"    # Deep Teal
 COLOR_DARK_HEX = "1E293B"         # Slate 800
 COLOR_MUTED_HEX = "64748B"        # Slate 500

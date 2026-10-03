@@ -80,14 +80,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <GraduationCap className="w-4 h-4" />
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Cresco CN Octopus Mascot"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_6px_rgba(6,182,212,0.4)]"
+              />
             </div>
-            <h2 className="text-lg font-bold text-slate-800">
-              Cresco CN Student Portal
-            </h2>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-none font-headline">
+                CRESCO <span className="text-[#06B6D4] font-black">CN</span>
+              </h2>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
+                Student Learning Portal
+              </span>
+            </div>
           </div>
           <button 
             onClick={onClose}

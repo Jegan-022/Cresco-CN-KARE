@@ -83,14 +83,18 @@ export const PreLaunchView: React.FC<PreLaunchViewProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left: Brand Tag (Desktop) */}
           <div className="hidden md:flex items-center gap-3 min-w-[180px]">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-black text-xs shadow-md shadow-emerald-500/30">
-              CCN
+            <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Cresco CN Octopus Mascot"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(6,182,212,0.4)]"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-lg tracking-tight text-white leading-none font-headline">
-                CRESCO <span className="text-emerald-400 font-black">CN</span>
+                CRESCO <span className="text-[#06B6D4] font-black">CN</span>
               </span>
-              <span className="text-[9px] font-mono text-slate-400 tracking-wider uppercase leading-none mt-1">
+              <span className="text-[9px] font-mono text-cyan-400/90 tracking-wider uppercase leading-none mt-1">
                 KLU CSE
               </span>
             </div>
@@ -99,8 +103,8 @@ export const PreLaunchView: React.FC<PreLaunchViewProps> = ({
           {/* Center: Prominent PillNav */}
           <div className="flex-1 sm:flex-none flex items-center justify-center">
             <PillNav
-              logo="/logo-green.svg"
-              logoAlt="Cresco CN Logo"
+              logo="/assets/mascot/cresco-mascot.png"
+              logoAlt="Cresco CN Octopus Mascot"
               items={navItems}
               activeHref="#launch"
               baseColor="#12131C"

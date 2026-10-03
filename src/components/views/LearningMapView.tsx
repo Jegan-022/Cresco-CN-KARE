@@ -1050,12 +1050,7 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
           {/* Animated Dynamic Mascot on Current Level */}
           {(() => {
             const currentNode = nodes.find((n) => n.status === "current" || n.status === "in-progress") || nodes[0];
-            const isBoss = currentNode.id === 10 || currentNode.id === 21;
-            const mascotSrc = isBoss 
-              ? "/assets/mascot/mascot-challenge.png" 
-              : completedCount > 0 
-              ? "/assets/mascot/mascot-levelup.png" 
-              : "/assets/mascot/cresco-mascot.png";
+            const mascotSrc = "/assets/mascot/cresco-mascot.png";
 
             return (
               <div

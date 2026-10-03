@@ -23,11 +23,12 @@ export type MascotPose =
 export type MascotAnimation = 'float' | 'glow' | 'bounce' | 'sway' | 'none';
 export type MascotSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'hero';
 
-interface CrescoMascotProps {
+export interface CrescoMascotProps {
   pose?: MascotPose;
   size?: MascotSize;
   animation?: MascotAnimation;
   withGlow?: boolean;
+  useFullLogo?: boolean;
   badge?: string;
   speechText?: string;
   speechPosition?: 'top' | 'right' | 'left';
@@ -39,23 +40,23 @@ interface CrescoMascotProps {
 
 const POSE_IMAGE_MAP: Record<MascotPose, string> = {
   front: '/assets/mascot/cresco-mascot.png',
-  side: '/assets/mascot/mascot-side.png',
-  thinking: '/assets/mascot/mascot-thinking.png',
-  correct: '/assets/mascot/mascot-correct.png',
-  wrong: '/assets/mascot/mascot-wrong.png',
-  levelup: '/assets/mascot/mascot-levelup.png',
-  achievement: '/assets/mascot/mascot-achievement.png',
-  streak: '/assets/mascot/mascot-streak.png',
-  challenge: '/assets/mascot/mascot-challenge.png',
-  boss: '/assets/mascot/mascot-boss.png',
-  'problem-solving': '/assets/mascot/mascot-problem-solving.png',
-  connected: '/assets/mascot/mascot-connected.png',
-  disconnected: '/assets/mascot/mascot-disconnected.png',
-  security: '/assets/mascot/mascot-security.png',
-  'coding-lab': '/assets/mascot/mascot-coding-lab.png',
-  'exam-mode': '/assets/mascot/mascot-exam-mode.png',
-  'exam-done': '/assets/mascot/mascot-exam-done.png',
-  'exam-excellent': '/assets/mascot/mascot-exam-excellent.png',
+  side: '/assets/mascot/cresco-mascot.png',
+  thinking: '/assets/mascot/cresco-mascot.png',
+  correct: '/assets/mascot/cresco-mascot.png',
+  wrong: '/assets/mascot/cresco-mascot.png',
+  levelup: '/assets/mascot/cresco-mascot.png',
+  achievement: '/assets/mascot/cresco-mascot.png',
+  streak: '/assets/mascot/cresco-mascot.png',
+  challenge: '/assets/mascot/cresco-mascot.png',
+  boss: '/assets/mascot/cresco-mascot.png',
+  'problem-solving': '/assets/mascot/cresco-mascot.png',
+  connected: '/assets/mascot/cresco-mascot.png',
+  disconnected: '/assets/mascot/cresco-mascot.png',
+  security: '/assets/mascot/cresco-mascot.png',
+  'coding-lab': '/assets/mascot/cresco-mascot.png',
+  'exam-mode': '/assets/mascot/cresco-mascot.png',
+  'exam-done': '/assets/mascot/cresco-mascot.png',
+  'exam-excellent': '/assets/mascot/cresco-mascot.png',
 };
 
 const SIZE_CLASSES: Record<MascotSize, { container: string; img: string }> = {
@@ -73,6 +74,7 @@ export const CrescoMascot: React.FC<CrescoMascotProps> = ({
   size = 'md',
   animation = 'float',
   withGlow = false,
+  useFullLogo = false,
   badge,
   speechText,
   speechPosition = 'top',
@@ -81,7 +83,7 @@ export const CrescoMascot: React.FC<CrescoMascotProps> = ({
   onClick,
   alt = 'Cresco CN Network Octopus Mascot',
 }) => {
-  const imageSrc = POSE_IMAGE_MAP[pose] || POSE_IMAGE_MAP.front;
+  const imageSrc = useFullLogo ? '/assets/brand/cresco-logo-full.png' : (POSE_IMAGE_MAP[pose] || POSE_IMAGE_MAP.front);
   const sizeConfig = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 
   const animationClass = (() => {

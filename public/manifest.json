@@ -11,16 +11,22 @@
   "background_color": "#faf8ff",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "/assets/brand/cresco-app-icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/cresco-app-icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ]
 }

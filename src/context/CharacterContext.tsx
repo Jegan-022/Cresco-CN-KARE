@@ -27,7 +27,7 @@ interface CharacterContextType {
 const CharacterContext = createContext<CharacterContextType | undefined>(undefined);
 
 export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeCharacterId, setActiveCharacterIdState] = useState<CharacterId>('aria-vance');
+  const [activeCharacterId, setActiveCharacterIdState] = useState<CharacterId>('cresco-mascot');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [audioAmplitude, setAudioAmplitude] = useState(0);

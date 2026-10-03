@@ -4,6 +4,7 @@
  */
 
 export type CharacterId =
+  | 'cresco-mascot'
   | 'aria-vance'
   | 'maya-lin'
   | 'chloe-sterling'
@@ -65,6 +66,42 @@ export interface CharacterProfile {
 }
 
 export const CHARACTERS: CharacterProfile[] = [
+  {
+    id: 'cresco-mascot',
+    name: 'Octo',
+    title: 'Cresco CN Official Mascot',
+    archetype: 'The Network Navigator & Mascot',
+    category: 'architect',
+    networkLayer: 'Layers 1–7 (Full OSI Stack)',
+    themeColor: '#06B6D4',
+    accentColor: '#EC4899',
+    gradient: 'from-cyan-500 via-teal-400 to-pink-500',
+    badgeText: 'OFFICIAL MASCOT',
+    avatarMood: 'Pink Octopus, Dumbbell Nodes, Big Friendly Eyes',
+    voiceName: 'Octo Companion',
+    voiceDescription: 'Vibrant, uplifting, enthusiastic and encouraging mascot voice',
+    voiceStyleTag: 'Playful & Encouraging',
+    voiceSettings: {
+      stability: 0.65,
+      similarity_boost: 0.85,
+    },
+    fallbackVoice: {
+      pitch: 1.15,
+      rate: 1.05,
+    },
+    learnBio: 'The official mascot of Cresco CN! With eight multi-tasking tentacles holding network barbell nodes and routing arrows, Octo guides you through every byte, packet, frame, and handshake.',
+    playBio: 'Boosts overall engagement with tactile celebrations, packet traces, and network wisdom.',
+    catchphrase: 'Eight tentacles, seven OSI layers, zero lost packets! Let’s connect!',
+    defaultIntro: 'Ahoy, network engineer! I am Octo, your official Cresco CN mascot. Ready to lift some routing weights and build ultra-fast connections?',
+    gameplayPerk: '+20% Streak Bonus & tactile guidance across all simulators and quizzes',
+    studyTips: [
+      'Remember: An octopus has 8 arms, which is exactly 1 Byte (8 bits)!',
+      'The 3-way handshake is SYN, SYN-ACK, ACK. Always remember to complete the handshake!',
+      'Subnetting is easier with powers of 2: 2, 4, 8, 16, 32, 64, 128, 256.',
+      'Routers connect different networks (Layer 3), while switches connect devices within the same network (Layer 2).',
+      'Keep your packets flowing and your latency ultra-low!'
+    ]
+  },
   {
     id: 'aria-vance',
     name: 'Aria Vance',

@@ -25,7 +25,6 @@ import { SearchModal } from './components/SearchModal';
 import { QuizModal } from './components/QuizModal';
 import { PracticeDrillModal } from './components/PracticeDrillModal';
 import { NetworkBackground } from './components/background/NetworkBackground';
-import { Preloader } from './components/ui/Preloader';
 
 // Modals
 import { StreakModal } from './components/modals/StreakModal';
@@ -77,7 +76,7 @@ function MainApp() {
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
   const [tabHistory, setTabHistory] = useState<NavTab[]>(['home']);
   const [userRole, setUserRole] = useState<UserRole>('student');
-  const [authPortalMode, setAuthPortalMode] = useState<'prelaunch' | 'login' | 'landing'>('prelaunch');
+  const [authPortalMode, setAuthPortalMode] = useState<'login' | 'landing' | 'prelaunch'>('login');
   const [selectedPortal, setSelectedPortal] = useState<'student' | 'developer' | 'teacher'>('student');
   
   // Gamified User State (XP, Streak, Hearts) - Clean 0 baseline for student login
@@ -105,7 +104,6 @@ function MainApp() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [pendingWritesCount, setPendingWritesCount] = useState(0);
-  const [isPostLoginLoading, setIsPostLoginLoading] = useState(false);
   const [sectionCompletionCelebration, setSectionCompletionCelebration] = useState<{
     sectionTitle: string;
     bonusXp: number;
@@ -265,7 +263,6 @@ function MainApp() {
           initialPortal={selectedPortal}
           onCancel={() => setAuthPortalMode('prelaunch')}
           onSuccess={() => {
-            setIsPostLoginLoading(true);
             setAuthPortalMode('prelaunch');
             setCurrentTab('home');
           }}
@@ -345,32 +342,8 @@ function MainApp() {
     );
   }
 
-  const studentIdentifier = userProfile?.displayName || userProfile?.studentId || currentUser?.email?.split('@')[0] || 'KLU Student';
-
   return (
-    <Preloader
-      loading={isPostLoginLoading}
-      duration={2600}
-      variant="stairs"
-      stairCount={10}
-      stairsRevealDirection="up"
-      showProgressBar={true}
-      progressBarPosition="bottom"
-      brandTitle="Cresco CN"
-      userIdentifier={studentIdentifier}
-      compliments={[
-        'Establishing encrypted TLS 1.3 socket...',
-        `Authenticating student node: ${studentIdentifier}...`,
-        'Verifying Subnet & CIDR routing tables...',
-        'Synchronizing OSI 7-Layer Protocol achievements...',
-        'High bandwidth verified — academic latency < 1ms!',
-        'Access Granted! Directing you to your Dashboard...',
-      ]}
-      onComplete={() => {
-        setIsPostLoginLoading(false);
-      }}
-    >
-      <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-full bg-surface text-on-surface flex flex-col overflow-hidden font-sans selection:bg-primary/20 selection:text-primary transition-colors duration-300">
+    <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-full bg-surface text-on-surface flex flex-col overflow-hidden font-sans selection:bg-primary/20 selection:text-primary transition-colors duration-300">
         
         {/* Subtle Network Topology Background Mesh (Sections 10 & 11) */}
         <NetworkBackground mode={currentTab === 'exam' ? 'exam' : 'static'} />
@@ -384,9 +357,6 @@ function MainApp() {
             onOpenStreak={() => setIsStreakModalOpen(true)}
             onOpenLevel={() => setIsLevelModalOpen(true)}
             onSearch={() => setIsSearchOpen(true)}
-            onTriggerPreloader={() => setIsPostLoginLoading(true)}
-            canGoBack={tabHistory.length > 1}
-            onGoBack={handleGoBack}
           />
         )}
 
@@ -409,7 +379,7 @@ function MainApp() {
           <OfflinePersistenceBanner pendingSyncCount={pendingWritesCount} />
 
           {/* Main Content Area */}
-          <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 pb-28 sm:pb-24 md:pb-16">
+          <main className={`flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-28 sm:pb-24 md:pb-16 ${currentTab === 'home' ? 'pt-14 sm:pt-16' : 'py-4'}`}>
             
             {/* Screen 02: Home */}
             {currentTab === 'home' && (
@@ -585,7 +555,6 @@ function MainApp() {
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
         onSuccess={() => {
-          setIsPostLoginLoading(true);
         }}
       />
 
@@ -599,7 +568,6 @@ function MainApp() {
       )}
 
       </div>
-    </Preloader>
   );
 }
 
