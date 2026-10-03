@@ -9,7 +9,10 @@ import {
   User,
   Settings, 
   LogOut,
-  Search
+  Search,
+  X,
+  Flame,
+  TrendingUp
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 
@@ -39,8 +42,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showXpPop, setShowXpPop] = useState(false);
+  const [showStreakPop, setShowStreakPop] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
+  const xpPopRef = useRef<HTMLDivElement>(null);
+  const streakPopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,6 +56,12 @@ export const Header: React.FC<HeaderProps> = ({
       }
       if (notifMenuRef.current && !notifMenuRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
+      }
+      if (xpPopRef.current && !xpPopRef.current.contains(e.target as Node)) {
+        setShowXpPop(false);
+      }
+      if (streakPopRef.current && !streakPopRef.current.contains(e.target as Node)) {
+        setShowStreakPop(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -128,37 +141,114 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Stats & Controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           
-          {/* XP Pill */}
-          <button
-            onClick={() => {
-              soundFx.playClick();
-              if (onOpenLevel) onOpenLevel();
-              else onNavigate('level');
-            }}
-            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-primary transition-all cursor-pointer"
-            title="Experience Points"
-          >
-            <Zap size={15} className="text-tertiary-fixed-dim fill-tertiary-fixed-dim" />
-            <span className="font-headline text-xs font-bold text-on-surface dark:text-[#F9FAFB]">
-              {xp.toLocaleString()} XP
-            </span>
-          </button>
+          {/* XP Pill — compact with inline popup */}
+          <div className="relative" ref={xpPopRef}>
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                setShowXpPop((p) => !p);
+                setShowStreakPop(false);
+                setShowNotifications(false);
+                setShowProfileMenu(false);
+              }}
+              className="flex items-center gap-1 bg-surface-container dark:bg-slate-800 px-2 py-1 rounded-full border border-outline-variant/30 hover:border-primary/50 transition-all cursor-pointer shadow-sm"
+              title="Experience Points"
+            >
+              <Zap size={12} className="text-amber-500 fill-amber-500 shrink-0" />
+              <span className="font-headline text-[11px] font-bold text-on-surface dark:text-[#F9FAFB] leading-none">
+                {xp.toLocaleString()}
+              </span>
+            </button>
 
-          {/* Streak Pill */}
-          <button
-            onClick={() => {
-              soundFx.playClick();
-              if (onOpenStreak) onOpenStreak();
-              else onNavigate('streak');
-            }}
-            className="flex items-center gap-1.5 bg-surface-container dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-[0_3px_0_0_#fed7aa] dark:shadow-none border border-outline-variant/30 hover:border-tertiary transition-all cursor-pointer"
-            title={`${streak}-Day Active Streak`}
-          >
-            <span className="text-sm leading-none">🔥</span>
-            <span className="font-headline text-xs font-bold text-on-surface dark:text-[#F9FAFB]">
-              {streak} {streak === 1 ? 'Day' : 'Days'}
-            </span>
-          </button>
+            {showXpPop && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1F2937] border border-outline-variant/30 dark:border-slate-700 rounded-2xl shadow-xl z-50 animate-scaleUp overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/30">
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp size={13} className="text-amber-500" />
+                    <span className="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-wide">XP Progress</span>
+                  </div>
+                  <button onClick={() => setShowXpPop(false)} className="p-0.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-500 cursor-pointer transition-colors">
+                    <X size={13} />
+                  </button>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Total XP</span>
+                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">{xp.toLocaleString()} XP</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Level</span>
+                    <span className="text-sm font-black text-slate-800 dark:text-white">Lvl {level}</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all"
+                      style={{ width: `${Math.min(100, ((xp % 300) / 300) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">{300 - (xp % 300)} XP to next level</p>
+                  <button
+                    onClick={() => { setShowXpPop(false); if (onOpenLevel) onOpenLevel(); }}
+                    className="w-full text-center text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                  >
+                    View full progress →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Streak Pill — compact with inline popup */}
+          <div className="relative" ref={streakPopRef}>
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                setShowStreakPop((p) => !p);
+                setShowXpPop(false);
+                setShowNotifications(false);
+                setShowProfileMenu(false);
+              }}
+              className="flex items-center gap-1 bg-surface-container dark:bg-slate-800 px-2 py-1 rounded-full border border-outline-variant/30 hover:border-tertiary/50 transition-all cursor-pointer shadow-sm"
+              title={`${streak}-Day Streak`}
+            >
+              <span className="text-sm leading-none">🔥</span>
+              <span className="font-headline text-[11px] font-bold text-on-surface dark:text-[#F9FAFB] leading-none">
+                {streak}d
+              </span>
+            </button>
+
+            {showStreakPop && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1F2937] border border-outline-variant/30 dark:border-slate-700 rounded-2xl shadow-xl z-50 animate-scaleUp overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-100 dark:border-orange-900/30">
+                  <div className="flex items-center gap-1.5">
+                    <Flame size={13} className="text-orange-500 fill-orange-500" />
+                    <span className="text-xs font-black text-orange-700 dark:text-orange-300 uppercase tracking-wide">Daily Streak</span>
+                  </div>
+                  <button onClick={() => setShowStreakPop(false)} className="p-0.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-500 cursor-pointer transition-colors">
+                    <X size={13} />
+                  </button>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Current Streak</span>
+                    <span className="text-sm font-black text-orange-600 dark:text-orange-400">🔥 {streak} {streak === 1 ? 'Day' : 'Days'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Status</span>
+                    <span className={`text-[11px] font-bold ${streak > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                      {streak > 0 ? '✅ Active Today' : '⚠️ Start Today'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => { setShowStreakPop(false); if (onOpenStreak) onOpenStreak(); }}
+                    className="w-full text-center text-[11px] font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                  >
+                    View streak calendar →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           
 

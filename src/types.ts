@@ -33,7 +33,8 @@ export type NavTab =
   | 'guidemaster-select'
   | 'guidemaster-tutor'
   | 'prelaunch'
-  | 'landing';
+  | 'landing'
+  | 'animated-learning';
 
 export interface LearningNode {
   id: string;

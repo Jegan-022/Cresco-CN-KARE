@@ -57,6 +57,7 @@ import { MyLearningView } from './components/views/MyLearningView';
 import { LoginView } from './components/views/LoginView';
 import { PreLaunchView } from './components/views/PreLaunchView';
 import { LandingView } from './components/views/LandingView';
+import { AnimatedLearningView } from './components/views/AnimatedLearningView';
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -406,6 +407,14 @@ function MainApp() {
             {(currentTab === 'simulator' || currentTab === 'lab') && (
               <PacketSimulatorView
                 onBack={() => handleNavigate('home')}
+              />
+            )}
+
+            {/* Animated Learning – Interactive Labs */}
+            {currentTab === 'animated-learning' && (
+              <AnimatedLearningView
+                onNavigate={handleNavigate}
+                onSelectLesson={handleSelectLesson}
               />
             )}
 

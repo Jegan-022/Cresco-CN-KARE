@@ -744,15 +744,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         prompt: 'select_account',
         hd: 'klu.ac.in'
       });
-      
+
+      // On production (non-localhost), always prefer redirect to avoid popup issues
+      const isLocalhost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+      if (!isLocalhost) {
+        // Production: use redirect flow (reliable on deployed sites)
+        await signInWithRedirect(auth, provider);
+        return; // Page will reload; result handled by getRedirectResult in useEffect
+      }
+
+      // Localhost: use popup flow for faster DX
       let user: User | null = null;
       try {
         const cred = await signInWithPopup(auth, provider);
         user = cred.user;
       } catch (popupErr: any) {
-        // If popup was blocked by the browser or restricted in iframe, fallback to redirect
-        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
-          console.info('Sign-in popup was blocked or cancelled, falling back to signInWithRedirect...');
+        if (
+          popupErr.code === 'auth/popup-blocked' ||
+          popupErr.code === 'auth/cancelled-popup-request' ||
+          popupErr.code === 'auth/unauthorized-domain'
+        ) {
+          console.info('Popup blocked/unauthorized domain – falling back to redirect...');
           await signInWithRedirect(auth, provider);
           return;
         }
@@ -777,6 +792,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         throw new Error('SIGN_IN_CANCELLED');
+      }
+      if (err.code === 'auth/unauthorized-domain') {
+        const msg = 'This domain is not authorised in Firebase. Please add it in Firebase Console → Authentication → Settings → Authorised Domains.';
+        setAuthError(msg);
+        throw new Error(msg);
       }
       const message = getHumanErrorMessage(err?.code || err?.message);
       setAuthError(message);

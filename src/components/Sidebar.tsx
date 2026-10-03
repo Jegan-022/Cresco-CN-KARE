@@ -11,7 +11,8 @@ import {
   Settings, 
   Sparkles,
   X,
-  Cpu
+  Cpu,
+  Clapperboard
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 
@@ -88,9 +89,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     id: NavTab;
     label: string;
     icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+    badge?: string;
     index: string;
   }[] = [
     { id: 'simulator', label: 'Packet Lab', icon: Cpu, index: '07' },
+    { id: 'animated-learning', label: 'Animated Learning', icon: Clapperboard, badge: 'New', index: '08' },
   ];
 
   const bottomItems: {
@@ -328,6 +331,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span className="flex-1 truncate">
                       {item.label}
                     </span>
+                    {'badge' in item && item.badge && (
+                      <span
+                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
+                          isCurrent
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
