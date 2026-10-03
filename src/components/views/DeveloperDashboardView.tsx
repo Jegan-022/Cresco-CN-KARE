@@ -39,8 +39,18 @@ import {
   FileSpreadsheet,
   FileText,
   Lock,
-  ExternalLink
+  ExternalLink,
+  Database,
+  Layers,
+  Cloud,
+  Server,
+  FileCode,
+  UploadCloud,
+  FolderTree,
+  BookOpen
 } from 'lucide-react';
+import { seedAllFirestoreCollections, ALL_SEEDS } from '../../services/firestoreSeedService';
+import { uploadCategorizedAsset } from '../../services/storageService';
 
 interface StudentData {
   uid: string;
@@ -84,12 +94,58 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
   const [manualRollNumber, setManualRollNumber] = useState('');
   const [showManualModal, setShowManualModal] = useState(false);
 
-  // Main Dashboard Tab: 'progress' (Syllabus completion & reset) vs 'credentials' (Student credentials & CSV roster)
-  const [activeMainTab, setActiveMainTab] = useState<'progress' | 'credentials'>('progress');
+  // Main Dashboard Tab: 'progress' | 'credentials' | 'firestore'
+  const [activeMainTab, setActiveMainTab] = useState<'progress' | 'credentials' | 'firestore'>('progress');
   const [credentialSearch, setCredentialSearch] = useState('');
   const [showPasswords, setShowPasswords] = useState(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showRawCsv, setShowRawCsv] = useState(false);
+
+  // Firestore & Storage Management State
+  const [isSeedingFirestore, setIsSeedingFirestore] = useState(false);
+  const [seedingProgress, setSeedingProgress] = useState<{ collection: string; current: number; total: number; status: string } | null>(null);
+  const [seedingSummary, setSeedingSummary] = useState<{ totalSeeded: number; errors: string[] } | null>(null);
+  const [uploadingAsset, setUploadingAsset] = useState(false);
+  const [uploadedAssetUrl, setUploadedAssetUrl] = useState<string | null>(null);
+  const [activeRulesView, setActiveRulesView] = useState<'none' | 'firestore' | 'storage'>('none');
+
+  const handleSeedFirestore = async () => {
+    setIsSeedingFirestore(true);
+    setSeedingSummary(null);
+    try {
+      const res = await seedAllFirestoreCollections({
+        overwrite: true,
+        onProgress: (collection, current, total, status) => {
+          setSeedingProgress({ collection, current, total, status });
+        }
+      });
+      setSeedingSummary({ totalSeeded: res.seededCount, errors: res.errors });
+      if (res.success) {
+        showToast(`Successfully seeded all 15 Firestore collections (${res.seededCount} items)!`, 'success');
+      } else {
+        showToast(`Seeded with ${res.errors.length} warnings.`, 'error');
+      }
+    } catch (err: any) {
+      showToast(`Seeding failed: ${err.message}`, 'error');
+    } finally {
+      setIsSeedingFirestore(false);
+    }
+  };
+
+  const handleTestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAsset(true);
+    try {
+      const res = await uploadCategorizedAsset(file, 'images', 'test_uploads');
+      setUploadedAssetUrl(res.url);
+      showToast(`Uploaded ${file.name} to Firebase Storage!`, 'success');
+    } catch (err: any) {
+      showToast(`Storage upload error: ${err.message}`, 'error');
+    } finally {
+      setUploadingAsset(false);
+    }
+  };
 
   const handleCopy = (text: string, key: string, label: string = 'Copied to clipboard!') => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -525,6 +581,22 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           <span>Student Credentials & CSV Roster</span>
           <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 text-[10px] font-mono font-bold">
             {STUDENT_CREDENTIALS.length} Students • CSV File
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('firestore')}
+          className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeMainTab === 'firestore'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 ring-1 ring-emerald-400'
+              : 'bg-[#141822] text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
+          }`}
+        >
+          <Database className="w-4 h-4 text-emerald-300" />
+          <span>Firestore & Storage Architecture</span>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] font-mono font-bold">
+            15 Collections • Storage SDK
           </span>
         </button>
       </div>
@@ -1281,6 +1353,356 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
               </div>
             </div>
 
+          </div>
+
+        </div>
+      )}
+
+      {/* 4. FIRESTORE (NOSQL) + FIREBASE STORAGE ARCHITECTURE VIEW */}
+      {activeMainTab === 'firestore' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          
+          {/* Header Overview Card */}
+          <div className="bg-gradient-to-r from-emerald-950/40 via-[#11141B] to-[#11141B] border border-emerald-500/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white tracking-tight">
+                    Cloud Firestore (NoSQL) + Firebase Storage Setup
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Cresco CN architecture powered by Google Firebase. Houses 15 top-level NoSQL collections for pedagogical modules, XP progression, and mastery tracking alongside segmented Cloud Storage for multimedia assets.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Project: computernetworks-af026</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300">
+                    Mode: Production Mode
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                    DB: (default)
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                    Storage: computernetworks-af026.firebasestorage.app
+                  </span>
+                </div>
+              </div>
+
+              {/* Seed Button */}
+              <div className="shrink-0 flex flex-col sm:flex-row lg:flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleSeedFirestore}
+                  disabled={isSeedingFirestore}
+                  className="flex items-center justify-center space-x-2 px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className={`w-4 h-4 ${isSeedingFirestore ? 'animate-spin' : ''}`} />
+                  <span>{isSeedingFirestore ? 'Syncing Collections...' : 'Seed All 15 Collections'}</span>
+                </button>
+                <span className="text-[10px] text-slate-400 text-center font-mono">
+                  CLI: <code className="text-emerald-400">npm run seed:firestore</code>
+                </span>
+              </div>
+            </div>
+
+            {/* Live Seeding Progress Banner */}
+            {isSeedingFirestore && seedingProgress && (
+              <div className="mt-5 p-4 rounded-xl bg-black/60 border border-emerald-500/40 space-y-2 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-emerald-300 font-mono font-bold flex items-center space-x-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    <span>Seeding collection: <strong className="text-white">{seedingProgress.collection}</strong></span>
+                  </span>
+                  <span className="text-slate-400 font-mono">
+                    {seedingProgress.current} / {seedingProgress.total} documents
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 transition-all duration-200"
+                    style={{ width: `${Math.round((seedingProgress.current / seedingProgress.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Seeding Completion Summary */}
+            {seedingSummary && (
+              <div className="mt-5 p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2 text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    Successfully synchronized <strong>{seedingSummary.totalSeeded}</strong> curriculum documents across all 15 top-level collections!
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSeedingSummary(null)}
+                  className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 15 Top-Level Collections Grid */}
+          <div className="bg-[#11141B] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <FolderTree className="w-4 h-4 text-emerald-400" />
+                  <span>Top-Level Firestore Collections (15)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Organized into curriculum content, user state, gamification tiers, and assessment audit logs.
+                </p>
+              </div>
+              <div className="px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs">
+                Total Collections: <strong className="text-white">15</strong>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { name: 'courses', desc: 'Course catalog metadata, syllabus links, unit mappings', count: ALL_SEEDS.courses.docs.length, icon: BookOpen, color: 'text-cyan-400', border: 'border-cyan-500/30' },
+                { name: 'units', desc: 'Unit 3 (Network), Unit 4 (Transport), Unit 5 (App/Security)', count: ALL_SEEDS.units.docs.length, icon: Layers, color: 'text-blue-400', border: 'border-blue-500/30' },
+                { name: 'levels', desc: '10-level gamified XP tiers (Byte Scout to NetQuest Grandmaster)', count: ALL_SEEDS.levels.docs.length, icon: Award, color: 'text-amber-400', border: 'border-amber-500/30' },
+                { name: 'lessons', desc: '30 interactive modules with pedagogy, hooks, and takeaways', count: ALL_SEEDS.lessons.docs.length, icon: FileText, color: 'text-purple-400', border: 'border-purple-500/30' },
+                { name: 'concepts', desc: 'Atomic concepts with real-world analogies and key points', count: ALL_SEEDS.concepts.docs.length, icon: Sparkles, color: 'text-pink-400', border: 'border-pink-500/30' },
+                { name: 'questions', desc: 'Comprehensive module quiz question bank with explanations', count: ALL_SEEDS.questions.docs.length, icon: CheckCircle2, color: 'text-emerald-400', border: 'border-emerald-500/30' },
+                { name: 'flashcards', desc: 'Quick-reference recall cards for active study and revisions', count: ALL_SEEDS.flashcards.docs.length, icon: RotateCcw, color: 'text-teal-400', border: 'border-teal-500/30' },
+                { name: 'activities', desc: 'Interactive drills, subnet calculators, and protocol labs', count: ALL_SEEDS.activities.docs.length, icon: Terminal, color: 'text-indigo-400', border: 'border-indigo-500/30' },
+                { name: 'missions', desc: 'Daily, weekly, and milestone quest goals with XP awards', count: ALL_SEEDS.missions.docs.length, icon: Flame, color: 'text-orange-400', border: 'border-orange-500/30' },
+                { name: 'bosses', desc: 'Unit Boss battle arena entities (Colossus, Slayer, Cipher King)', count: ALL_SEEDS.bosses.docs.length, icon: ShieldAlert, color: 'text-red-400', border: 'border-red-500/30' },
+                { name: 'users', desc: 'Student and instructor profile records with role permissions', count: ALL_SEEDS.users.docs.length, icon: Users, color: 'text-emerald-400', border: 'border-emerald-500/30' },
+                { name: 'userProgress', desc: 'Per-user module completion tracking and unit progress', count: ALL_SEEDS.userProgress.docs.length, icon: TrendingUp, color: 'text-sky-400', border: 'border-sky-500/30' },
+                { name: 'userMastery', desc: 'Spaced repetition concept mastery and retention scores', count: ALL_SEEDS.userMastery.docs.length, icon: Clock, color: 'text-violet-400', border: 'border-violet-500/30' },
+                { name: 'quizAttempts', desc: 'Historical quiz attempt audit log with scores and timing', count: ALL_SEEDS.quizAttempts.docs.length, icon: CheckCheck, color: 'text-yellow-400', border: 'border-yellow-500/30' },
+                { name: 'achievements', desc: 'Milestone badges, streak trophies, and special accolades', count: ALL_SEEDS.achievements.docs.length, icon: Award, color: 'text-amber-300', border: 'border-amber-400/30' }
+              ].map((c) => {
+                const Icon = c.icon;
+                return (
+                  <div key={c.name} className={`bg-[#0E1117] border ${c.border} rounded-xl p-4 flex flex-col justify-between hover:bg-[#141822] transition-colors`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Icon className={`w-4 h-4 ${c.color}`} />
+                          <span className="font-mono font-bold text-white text-xs">
+                            {c.name}
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300">
+                          {c.count} items
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {c.desc}
+                      </p>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>doc(db, &apos;{c.name}&apos;, id)</span>
+                      <span className="text-emerald-400">Ready</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Firebase Storage Architecture Card */}
+          <div className="bg-[#11141B] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Cloud className="w-4 h-4 text-blue-400" />
+                  <span>Firebase Storage (Media Assets & Documents)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Bucket: <span className="font-mono text-blue-300">computernetworks-af026.firebasestorage.app</span>. Segregated into 4 primary asset categories.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl bg-[#0E1117] border border-blue-500/20 space-y-2">
+                <div className="flex items-center space-x-2 text-blue-400 text-xs font-bold">
+                  <FolderTree className="w-4 h-4" />
+                  <span>images/</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Avatars, badges, concept diagrams, UI thumbnails, course banners.
+                </p>
+                <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800">
+                  Subfolders: avatars, badges, diagrams
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#0E1117] border border-purple-500/20 space-y-2">
+                <div className="flex items-center space-x-2 text-purple-400 text-xs font-bold">
+                  <FolderTree className="w-4 h-4" />
+                  <span>videos/</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Curriculum lecture clips, protocol demonstrations, video drills.
+                </p>
+                <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800">
+                  Subfolders: lectures, demos, concepts
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#0E1117] border border-emerald-500/20 space-y-2">
+                <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold">
+                  <FolderTree className="w-4 h-4" />
+                  <span>documents/</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  PDF slide decks, PPTs, syllabus files, student lab worksheets.
+                </p>
+                <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800">
+                  Subfolders: pdfs, ppts, syllabus
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#0E1117] border border-amber-500/20 space-y-2">
+                <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold">
+                  <FolderTree className="w-4 h-4" />
+                  <span>animations/</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Lottie JSON files, animated SVGs, interactive packet flow visualizers.
+                </p>
+                <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800">
+                  Subfolders: lottie, packet-flows
+                </div>
+              </div>
+            </div>
+
+            {/* Test Upload Widget */}
+            <div className="p-4 bg-[#0B0D13] border border-slate-800 rounded-xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center space-x-2">
+                    <UploadCloud className="w-4 h-4 text-emerald-400" />
+                    <span>Test Upload to Firebase Storage</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Select an image or asset to test client-side upload to Firebase Cloud Storage.
+                  </p>
+                </div>
+
+                <label className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-md shadow-blue-600/20">
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>{uploadingAsset ? 'Uploading...' : 'Choose File to Upload'}</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleTestUpload}
+                    disabled={uploadingAsset}
+                  />
+                </label>
+              </div>
+
+              {uploadedAssetUrl && (
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center space-x-2 text-emerald-300 truncate">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="truncate font-mono">{uploadedAssetUrl}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(uploadedAssetUrl, 'uploaded_url', 'Copied Storage URL!')}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer"
+                    >
+                      Copy URL
+                    </button>
+                    <a
+                      href={uploadedAssetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium inline-flex items-center space-x-1"
+                    >
+                      <span>Open</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Security Rules Inspector Box */}
+          <div className="bg-[#11141B] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <FileCode className="w-4 h-4 text-purple-400" />
+                  <span>Production Security Rules (Ready for Firebase Console)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Pre-configured production security rules for Firestore NoSQL and Cloud Storage.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveRulesView(activeRulesView === 'firestore' ? 'none' : 'firestore')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    activeRulesView === 'firestore'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  firestore.rules
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveRulesView(activeRulesView === 'storage' ? 'none' : 'storage')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    activeRulesView === 'storage'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  storage.rules
+                </button>
+              </div>
+            </div>
+
+            {activeRulesView !== 'none' && (
+              <div className="p-4 bg-[#0B0D13] border border-slate-800 rounded-xl space-y-2 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-mono text-purple-300">
+                    {activeRulesView === 'firestore' ? 'firestore.rules (15 Collections + Students)' : 'storage.rules (Images, Videos, Docs, Animations)'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = activeRulesView === 'firestore'
+                        ? `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} { allow read, write: if request.auth != null; }\n  }\n}`
+                        : `rules_version = '2';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /{allPaths=**} { allow read: if true; allow write: if request.auth != null; }\n  }\n}`;
+                      handleCopy(text, 'rules_copy', 'Copied rules snippet!');
+                    }}
+                    className="flex items-center space-x-1 text-slate-300 hover:text-white cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Copy this rule set and paste directly into <strong>Firebase Console → Build → {activeRulesView === 'firestore' ? 'Firestore Database' : 'Storage'} → Rules</strong> tab.
+                </p>
+              </div>
+            )}
           </div>
 
         </div>

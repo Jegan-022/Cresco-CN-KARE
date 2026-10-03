@@ -1,261 +1,253 @@
 {
   "entities": {
-    "users": {
-      "title": "User Profile",
-      "description": "Authenticated student or instructor profile data",
+    "courses": {
+      "title": "Course Definition",
+      "description": "Top-level syllabus course metadata",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Firebase Auth UID",
-          "maxLength": 128
-        },
-        "email": {
-          "type": "string",
-          "description": "User email address",
-          "maxLength": 256
-        },
-        "displayName": {
-          "type": "string",
-          "description": "User display name",
-          "maxLength": 120
-        },
-        "studentId": {
-          "type": "string",
-          "description": "KLU Student ID e.g. 99240040285",
-          "maxLength": 64
-        },
-        "college": {
-          "type": "string",
-          "description": "KL University",
-          "maxLength": 128
-        },
-        "course": {
-          "type": "string",
-          "description": "Enrolled course title",
-          "maxLength": 128
-        },
-        "year": {
-          "type": "string",
-          "description": "Academic year",
-          "maxLength": 32
-        },
-        "section": {
-          "type": "string",
-          "description": "Class section",
-          "maxLength": 32
-        },
-        "role": {
-          "type": "string",
-          "description": "User role (student or teacher)",
-          "enum": ["student", "teacher"]
-        },
-        "xp": {
-          "type": "number",
-          "description": "Total gamified XP earned by student"
-        },
-        "streak": {
-          "type": "number",
-          "description": "Learning streak days count"
-        },
-        "lessonsCompletedCount": {
-          "type": "number",
-          "description": "Number of completed lessons"
-        },
-        "courseProgressPercent": {
-          "type": "number",
-          "description": "Percentage course completion"
-        },
-        "quizAverage": {
-          "type": "number",
-          "description": "Average quiz score percentage"
-        },
-        "lastCompletedLessonId": {
-          "type": "string",
-          "description": "Last completed lesson identifier"
-        },
-        "lastLesson": {
-          "type": "string",
-          "description": "Last visited lesson title"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Creation timestamp string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Last update timestamp string"
-        }
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "department": { "type": "string" },
+        "totalUnits": { "type": "number" },
+        "totalModules": { "type": "number" },
+        "totalXP": { "type": "number" },
+        "units": { "type": "array" },
+        "thumbnailUrl": { "type": "string" },
+        "syllabusUrl": { "type": "string" }
+      },
+      "required": ["id", "code", "title"]
+    },
+    "units": {
+      "title": "Course Unit",
+      "description": "Curriculum units e.g. Unit 3, 4, 5",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "courseId": { "type": "string" },
+        "unitNumber": { "type": "number" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "totalModules": { "type": "number" },
+        "totalXP": { "type": "number" },
+        "bossId": { "type": "string" }
+      },
+      "required": ["id", "courseId", "unitNumber", "title"]
+    },
+    "levels": {
+      "title": "XP Level Tier",
+      "description": "Student gamification tier definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "levelNumber": { "type": "number" },
+        "title": { "type": "string" },
+        "minXP": { "type": "number" },
+        "maxXP": { "type": "number" },
+        "rewards": { "type": "object" }
+      },
+      "required": ["id", "levelNumber", "title", "minXP", "maxXP"]
+    },
+    "lessons": {
+      "title": "Curriculum Module / Lesson",
+      "description": "30 interactive pedagogical networking modules",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "unitId": { "type": "string" },
+        "title": { "type": "string" },
+        "order": { "type": "number" },
+        "durationMinutes": { "type": "number" },
+        "xpReward": { "type": "number" },
+        "pedagogy": { "type": "object" },
+        "keyTakeaways": { "type": "array" }
+      },
+      "required": ["id", "unitId", "title"]
+    },
+    "concepts": {
+      "title": "Core Concept Card",
+      "description": "Atomic network concept definition with analogy",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "unitId": { "type": "string" },
+        "term": { "type": "string" },
+        "definition": { "type": "string" },
+        "analogy": { "type": "string" },
+        "keyPoints": { "type": "array" }
+      },
+      "required": ["id", "unitId", "term", "definition"]
+    },
+    "questions": {
+      "title": "Quiz / Drill Question",
+      "description": "Multiple choice or fill-in drill question",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array" },
+        "correctIndex": { "type": "number" },
+        "explanation": { "type": "string" },
+        "xpReward": { "type": "number" }
+      },
+      "required": ["id", "question", "options", "correctIndex"]
+    },
+    "flashcards": {
+      "title": "Quick Reference Flashcard",
+      "description": "Front/back quick recall item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "front": { "type": "string" },
+        "back": { "type": "string" },
+        "tag": { "type": "string" }
+      },
+      "required": ["id", "front", "back"]
+    },
+    "activities": {
+      "title": "Interactive Lab Activity",
+      "description": "Packet tracer, subnet calculator, or protocol drill",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "instructions": { "type": "string" },
+        "xpReward": { "type": "number" }
+      },
+      "required": ["id", "type", "title"]
+    },
+    "missions": {
+      "title": "Daily / Weekly Mission",
+      "description": "Goal-driven learning quests with XP bonus",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "targetCount": { "type": "number" },
+        "xpReward": { "type": "number" }
+      },
+      "required": ["id", "title", "xpReward"]
+    },
+    "bosses": {
+      "title": "Unit Boss Challenge",
+      "description": "Cumulative arena exam entity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "unitId": { "type": "string" },
+        "bossName": { "type": "string" },
+        "hp": { "type": "number" },
+        "xpReward": { "type": "number" }
+      },
+      "required": ["id", "unitId", "bossName"]
+    },
+    "users": {
+      "title": "User Profile",
+      "description": "Student or instructor account",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "studentId": { "type": "string" },
+        "role": { "type": "string" },
+        "totalXP": { "type": "number" },
+        "streak": { "type": "number" }
       },
       "required": ["uid", "email"]
     },
-    "lessonCompletions": {
-      "title": "Lesson Completion",
-      "description": "Record of a completed networking lecture or lab drill",
+    "userProgress": {
+      "title": "User Curriculum Progress",
+      "description": "Module completions and unit percentages",
       "type": "object",
       "properties": {
-        "lessonId": {
-          "type": "string",
-          "description": "Unique lesson identifier",
-          "maxLength": 128
-        },
-        "userId": {
-          "type": "string",
-          "description": "Firebase Auth UID of the student",
-          "maxLength": 128
-        },
-        "courseId": {
-          "type": "string",
-          "description": "Course identifier (e.g. cs455-comp-networks)",
-          "maxLength": 128
-        },
-        "completed": {
-          "type": "boolean",
-          "description": "Completion state"
-        },
-        "completedAt": {
-          "type": "string",
-          "description": "ISO timestamp when lesson was finished"
-        },
-        "xpEarned": {
-          "type": "number",
-          "description": "XP awarded for completing this lesson"
-        }
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "completedLessons": { "type": "array" },
+        "overallProgressPercent": { "type": "number" }
       },
-      "required": ["lessonId", "userId", "completed"]
+      "required": ["id", "userId", "courseId"]
+    },
+    "userMastery": {
+      "title": "Concept Retention Mastery",
+      "description": "Spaced repetition concept retention scores",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "conceptId": { "type": "string" },
+        "masteryScore": { "type": "number" }
+      },
+      "required": ["id", "userId", "conceptId"]
+    },
+    "quizAttempts": {
+      "title": "Quiz Attempt Audit Record",
+      "description": "Historical audit of quiz submissions and scores",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "quizId": { "type": "string" },
+        "score": { "type": "number" },
+        "percentage": { "type": "number" },
+        "passed": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "quizId", "score"]
+    },
+    "achievements": {
+      "title": "Gamification Achievement Badge",
+      "description": "Milestone achievement definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "xpReward": { "type": "number" }
+      },
+      "required": ["id", "code", "title"]
     },
     "students": {
-      "title": "Student Progress Record",
-      "description": "Authenticated student academic progress, XP, streak, and curriculum completion metrics",
+      "title": "Student Progress Record (Legacy/Leaderboard)",
+      "description": "Student academic progress, XP, streak, and curriculum metrics",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Firebase Auth UID",
-          "maxLength": 128
-        },
-        "email": {
-          "type": "string",
-          "description": "KLU student email address",
-          "maxLength": 256
-        },
-        "name": {
-          "type": "string",
-          "description": "Student full name",
-          "maxLength": 128
-        },
-        "displayName": {
-          "type": "string",
-          "description": "Student display name",
-          "maxLength": 128
-        },
-        "studentId": {
-          "type": "string",
-          "description": "KLU Student ID e.g. 99240040285",
-          "maxLength": 64
-        },
-        "college": {
-          "type": "string",
-          "description": "Academic Institution",
-          "maxLength": 128
-        },
-        "role": {
-          "type": "string",
-          "description": "User role",
-          "enum": ["student", "teacher"]
-        },
-        "totalXP": {
-          "type": "number",
-          "description": "Total XP earned by the student"
-        },
-        "xp": {
-          "type": "number",
-          "description": "Gamified score"
-        },
-        "streak": {
-          "type": "number",
-          "description": "Current active daily learning streak"
-        },
-        "overallProgress": {
-          "type": "number",
-          "description": "Overall curriculum progress percentage (0-100)"
-        },
-        "unit3Progress": {
-          "type": "number",
-          "description": "Unit 3 progress percentage"
-        },
-        "unit4Progress": {
-          "type": "number",
-          "description": "Unit 4 progress percentage"
-        },
-        "unit5Progress": {
-          "type": "number",
-          "description": "Unit 5 progress percentage"
-        },
-        "lessonsCompleted": {
-          "type": "number",
-          "description": "Total count of lessons finished"
-        },
-        "modulesCompleted": {
-          "type": "number",
-          "description": "Total count of modules finished"
-        },
-        "completedUnits": {
-          "type": "number",
-          "description": "Count of units completed"
-        },
-        "quizAttempts": {
-          "type": "number",
-          "description": "Total quiz attempts"
-        },
-        "quizAverage": {
-          "type": "number",
-          "description": "Average quiz score percentage"
-        },
-        "currentUnit": {
-          "type": "number",
-          "description": "Current active unit number (3, 4, or 5)"
-        },
-        "currentModule": {
-          "type": "string",
-          "description": "ID of current module"
-        },
-        "lastLesson": {
-          "type": "string",
-          "description": "Last accessed lesson identifier"
-        },
-        "completedModules": {
-          "type": "array",
-          "description": "Array of completed curriculum module identifiers"
-        },
-        "unlockedUnits": {
-          "type": "array",
-          "description": "Array of unlocked unit IDs (e.g. unit-3, unit-4, unit-5)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "ISO creation timestamp"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "ISO last update timestamp"
-        }
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "studentId": { "type": "string" },
+        "totalXP": { "type": "number" },
+        "overallProgress": { "type": "number" }
       },
       "required": ["uid", "email"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
-      "entity": "users",
-      "description": "Isolated user profile collection locked to account owner"
-    },
-    "/users/{userId}/lessonCompletions/{lessonId}": {
-      "entity": "lessonCompletions",
-      "description": "Per-lesson completion status records synced immediately"
-    },
-    "/students/{userId}": {
-      "entity": "students",
-      "description": "Student academic progress and leaderboard tracking record"
-    }
+    "/courses/{courseId}": { "entity": "courses" },
+    "/units/{unitId}": { "entity": "units" },
+    "/levels/{levelId}": { "entity": "levels" },
+    "/lessons/{lessonId}": { "entity": "lessons" },
+    "/concepts/{conceptId}": { "entity": "concepts" },
+    "/questions/{questionId}": { "entity": "questions" },
+    "/flashcards/{flashcardId}": { "entity": "flashcards" },
+    "/activities/{activityId}": { "entity": "activities" },
+    "/missions/{missionId}": { "entity": "missions" },
+    "/bosses/{bossId}": { "entity": "bosses" },
+    "/users/{userId}": { "entity": "users" },
+    "/userProgress/{progressId}": { "entity": "userProgress" },
+    "/userMastery/{masteryId}": { "entity": "userMastery" },
+    "/quizAttempts/{attemptId}": { "entity": "quizAttempts" },
+    "/achievements/{achievementId}": { "entity": "achievements" },
+    "/students/{studentId}": { "entity": "students" }
+  },
+  "storage": {
+    "/images/{path}": "Images, avatars, diagrams, badges, course thumbnails",
+    "/videos/{path}": "Lecture videos, protocol animations, video drills",
+    "/documents/{path}": "PDFs, PPTs, slides, syllabus, worksheets",
+    "/animations/{path}": "Lottie animations, packet flow visuals"
   }
 }
