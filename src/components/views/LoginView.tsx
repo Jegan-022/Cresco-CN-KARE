@@ -40,18 +40,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const displayError = localError || authError;
 
-  // Listen for Escape key to return to launch page
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (onCancel) onCancel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCancel]);
-
-  // Google sign in with @klu.ac.in restriction
+  // Google sign in with @klu.ac.in / @kluniversity.in restriction
   const handleGoogleLogin = async () => {
     clearAuthError();
     setLocalError(null);
@@ -107,20 +96,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   return (
     <div className="relative min-h-screen bg-[#070D18] flex items-center justify-center p-4 overflow-hidden select-none">
-      
-      {/* Back to Launch Page Fixed Button */}
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          id="fixed-back-to-launch-button"
-          className="fixed top-5 left-5 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0E1626]/80 hover:bg-[#142036] border border-cyan-500/30 hover:border-cyan-400/50 text-slate-200 hover:text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-lg hover:-translate-x-0.5 group"
-          title="Back to Launch Page (Esc)"
-        >
-          <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Launch Page</span>
-        </button>
-      )}
 
       {/* React Bits Pro: Liquid Lines Background */}
       <div className="absolute inset-0 pointer-events-none z-0">

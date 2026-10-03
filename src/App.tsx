@@ -55,8 +55,6 @@ import { DeveloperDashboardView } from './components/views/DeveloperDashboardVie
 import { AnalyticsView } from './components/views/AnalyticsView';
 import { MyLearningView } from './components/views/MyLearningView';
 import { LoginView } from './components/views/LoginView';
-import { PreLaunchView } from './components/views/PreLaunchView';
-import { LandingView } from './components/views/LandingView';
 import { AnimatedLearningView } from './components/views/AnimatedLearningView';
 
 import { BootTerminal } from './components/BootTerminal';
@@ -256,56 +254,22 @@ function MainApp() {
     return <BootTerminal />;
   }
 
-  // Pre-Launch Gateway for Unauthenticated Visitors
+  // Direct Authentication Gateway for Visitors (Direct Web Application Access)
   if (!currentUser) {
-    if (authPortalMode === 'login') {
-      return (
-        <LoginView
-          initialPortal={selectedPortal}
-          onCancel={() => setAuthPortalMode('prelaunch')}
-          onSuccess={() => {
-            setAuthPortalMode('prelaunch');
-            setCurrentTab('home');
-          }}
-        />
-      );
-    }
-    if (authPortalMode === 'landing') {
-      return (
-        <LandingView
-          onNavigateToLogin={() => setAuthPortalMode('login')}
-          onNavigateToSignup={() => setAuthPortalMode('login')}
-          onNavigateToLaunch={() => setAuthPortalMode('prelaunch')}
-        />
-      );
-    }
     return (
-      <PreLaunchView
-        onNavigateToLogin={() => setAuthPortalMode('login')}
-        onNavigateToLanding={() => setAuthPortalMode('landing')}
+      <LoginView
+        initialPortal={selectedPortal}
+        onSuccess={() => {
+          setCurrentTab('home');
+        }}
       />
     );
   }
 
-  // Preview Pre-Launch Countdown when explicitly requested
-  if (currentTab === 'prelaunch') {
-    return (
-      <PreLaunchView
-        onNavigateToLogin={() => setCurrentTab('home')}
-        onNavigateToLanding={() => setCurrentTab('landing')}
-      />
-    );
-  }
-
-  // Preview Landing Page when explicitly requested
-  if (currentTab === 'landing') {
-    return (
-      <LandingView
-        onNavigateToLogin={() => setCurrentTab('home')}
-        onNavigateToSignup={() => setCurrentTab('home')}
-        onNavigateToLaunch={() => setCurrentTab('prelaunch')}
-      />
-    );
+  // Pre-launch & Landing redirects directly to home
+  if (currentTab === 'prelaunch' || currentTab === 'landing') {
+    setCurrentTab('home');
+    return null;
   }
 
   // SCREEN 01 — WELCOME / ONBOARDING (if tab is 'welcome')

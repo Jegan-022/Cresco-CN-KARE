@@ -22,12 +22,21 @@ import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } f
 import { findStudentCredential, verifyStudentCredential } from '../data/studentCredentials';
 import { ALL_MODULES } from '../data/courseContent';
 
-// KLU email validation regex strictly mandated by requirements
-export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@klu\.ac\.in$/i;
+// KLU email validation regex strictly mandated by requirements (@klu.ac.in or @kluniversity.in)
+export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@(klu\.ac\.in|kluniversity\.in)$/i;
 
 export const extractStudentId = (email: string): string => {
-  const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@klu\.ac\.in$/i);
+  const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@(klu\.ac\.in|kluniversity\.in)$/i);
   return match ? match[1] : email.split('@')[0];
+};
+
+export const isAllowedAuthEmail = (email: string): boolean => {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (KLU_EMAIL_REGEX.test(clean)) return true;
+  const studentId = extractStudentId(clean);
+  if (isAuthorizedDeveloper(clean) || isAuthorizedDeveloper(studentId)) return true;
+  return false;
 };
 
 export interface UserProfileData {
@@ -467,12 +476,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(async (result) => {
         if (result?.user) {
           const email = (result.user.email || '').toLowerCase().trim();
-          if (!KLU_EMAIL_REGEX.test(email)) {
+          if (!isAllowedAuthEmail(email)) {
             await signOut(auth);
             setShowDomainError(true);
-            setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
+            setAuthError(`Access restricted: "${email}" is not an official KLU student email (@klu.ac.in or @kluniversity.in).`);
             return;
           }
+          setCurrentUser(result.user);
           await syncAndFetchProfile(result.user);
         }
       })
@@ -484,10 +494,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         const email = (user.email || '').toLowerCase().trim();
         const isGoogle = user.providerData?.some((p) => p.providerId === 'google.com');
-        if (isGoogle && !KLU_EMAIL_REGEX.test(email)) {
+        if (isGoogle && !isAllowedAuthEmail(email)) {
           await signOut(auth);
           setShowDomainError(true);
-          setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
+          setAuthError(`Access restricted: "${email}" is not an official KLU student email (@klu.ac.in or @kluniversity.in).`);
           return;
         }
         setCurrentUser(user);
@@ -741,22 +751,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ 
-        prompt: 'select_account',
-        hd: 'klu.ac.in'
+        prompt: 'select_account'
       });
 
-      // On production (non-localhost), always prefer redirect to avoid popup issues
-      const isLocalhost =
-        typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-      if (!isLocalhost) {
-        // Production: use redirect flow (reliable on deployed sites)
-        await signInWithRedirect(auth, provider);
-        return; // Page will reload; result handled by getRedirectResult in useEffect
-      }
-
-      // Localhost: use popup flow for faster DX
+      // Always prefer popup first for modern browsers (avoids third-party cookie blocking on redirect)
       let user: User | null = null;
       try {
         const cred = await signInWithPopup(auth, provider);
@@ -764,12 +762,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (popupErr: any) {
         if (
           popupErr.code === 'auth/popup-blocked' ||
-          popupErr.code === 'auth/cancelled-popup-request' ||
-          popupErr.code === 'auth/unauthorized-domain'
+          popupErr.code === 'auth/cancelled-popup-request'
         ) {
-          console.info('Popup blocked/unauthorized domain – falling back to redirect...');
+          console.info('Popup blocked – falling back to redirect flow...');
           await signInWithRedirect(auth, provider);
           return;
+        }
+        if (popupErr.code === 'auth/popup-closed-by-user') {
+          throw new Error('SIGN_IN_CANCELLED');
         }
         throw popupErr;
       }
@@ -779,15 +779,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const email = user.email.toLowerCase().trim();
-      if (!KLU_EMAIL_REGEX.test(email)) {
+      if (!isAllowedAuthEmail(email)) {
         await signOut(auth);
         setShowDomainError(true);
-        const domainMsg = 'Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.';
+        const domainMsg = `Access restricted: Account "${email}" is not an authorized KLU student email (@klu.ac.in or @kluniversity.in).`;
         setAuthError(domainMsg);
         throw new Error(domainMsg);
       }
       
-      // Sync and establish profile immediately
+      // Establish active session immediately
+      setCurrentUser(user);
       await syncAndFetchProfile(user);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
