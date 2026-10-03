@@ -102,17 +102,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
   return (
     <div className="relative min-h-screen bg-[#070D18] flex items-center justify-center p-4 overflow-hidden select-none">
       
-      {/* Back to Launch Page Fixed Button */}
+      {/* Back to Dashboard Fixed Button */}
       {onCancel && (
         <button
           type="button"
           onClick={onCancel}
-          id="fixed-back-to-launch-button"
+          id="fixed-back-to-dashboard-button"
           className="fixed top-5 left-5 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0E1626]/80 hover:bg-[#142036] border border-cyan-500/30 hover:border-cyan-400/50 text-slate-200 hover:text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-lg hover:-translate-x-0.5 group"
-          title="Back to Launch Page (Esc)"
+          title="Back to Dashboard (Esc)"
         >
           <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Launch Page</span>
+          <span>Back to Dashboard</span>
         </button>
       )}
 

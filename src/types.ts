@@ -1,5 +1,6 @@
 export type NavTab = 
   | 'home'
+  | 'login'
   | 'welcome'
   | 'learn-map'
   | 'courses'

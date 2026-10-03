@@ -255,20 +255,21 @@ function MainApp() {
     return <BootTerminal />;
   }
 
-  // Authentication Gateway for Unauthenticated Visitors
-  if (!currentUser) {
+  // SCREEN 00 — LOGIN / STUDENT REGISTRATION (if tab is 'login')
+  if (currentTab === 'login') {
     return (
       <>
         <LoginView
           initialPortal={selectedPortal}
+          onCancel={() => handleNavigate('home')}
           onSuccess={() => {
-            setCurrentTab('home');
+            handleNavigate('home');
           }}
         />
         <KluRegistrationModal
           isOpen={!!pendingRegistration}
           onSuccess={() => {
-            setCurrentTab('home');
+            handleNavigate('home');
           }}
         />
       </>
@@ -316,17 +317,15 @@ function MainApp() {
         {/* Subtle Network Topology Background Mesh (Sections 10 & 11) */}
         <NetworkBackground mode={currentTab === 'exam' ? 'exam' : 'static'} />
 
-        {/* 1. Global Header Bar (Hidden above Dashboard for clean hero experience) */}
-        {currentTab !== 'home' && (
-          <Header
-            currentTab={currentTab}
-            onNavigate={handleNavigate}
-            userStats={userStats}
-            onOpenStreak={() => setIsStreakModalOpen(true)}
-            onOpenLevel={() => setIsLevelModalOpen(true)}
-            onSearch={() => setIsSearchOpen(true)}
-          />
-        )}
+        {/* 1. Global Header Bar */}
+        <Header
+          currentTab={currentTab}
+          onNavigate={handleNavigate}
+          userStats={userStats}
+          onOpenStreak={() => setIsStreakModalOpen(true)}
+          onOpenLevel={() => setIsLevelModalOpen(true)}
+          onSearch={() => setIsSearchOpen(true)}
+        />
 
       {/* 2. Main Body: Left Sidebar + Independent Scrollable Content */}
       <div className="flex-1 flex flex-row min-w-0 min-h-0 overflow-hidden">
@@ -347,7 +346,7 @@ function MainApp() {
           <OfflinePersistenceBanner pendingSyncCount={pendingWritesCount} />
 
           {/* Main Content Area */}
-          <main className={`flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-28 sm:pb-24 md:pb-16 ${currentTab === 'home' ? 'pt-14 sm:pt-16' : 'py-4'}`}>
+          <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 pb-28 sm:pb-24 md:pb-16">
             
             {/* Screen 02: Home */}
             {currentTab === 'home' && (

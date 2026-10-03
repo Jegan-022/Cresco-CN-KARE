@@ -208,86 +208,99 @@ export const Header: React.FC<HeaderProps> = ({
             <ThemeToggleSwitch variant="switch" />
           </div>
 
-          {/* User Profile Avatar with Level Badge */}
-          <div className="relative pl-1" ref={profileMenuRef}>
-            <button
-              onClick={() => {
-                soundFx.playClick();
-                setShowProfileMenu((prev) => !prev);
-              }}
-              className="flex items-center gap-2 cursor-pointer focus:outline-hidden"
-            >
-              <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-white text-xs font-bold ring-2 ring-surface-container-lowest shadow-sm">
-                  {firstName[0]}
+          {/* User Profile Avatar with Level Badge OR Sign In Button */}
+          {currentUser ? (
+            <div className="relative pl-1" ref={profileMenuRef}>
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  setShowProfileMenu((prev) => !prev);
+                }}
+                className="flex items-center gap-2 cursor-pointer focus:outline-hidden"
+              >
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-white text-xs font-bold ring-2 ring-surface-container-lowest shadow-sm">
+                    {firstName[0]}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-surface-tint ring-2 ring-surface-container-lowest" />
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-surface-tint ring-2 ring-surface-container-lowest" />
-              </div>
-              
-            </button>
+              </button>
 
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1F2937] border border-outline-variant/30 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50 animate-scaleUp">
-                <div className="pb-3 border-b border-surface-container dark:border-slate-800">
-                  <div className="font-headline font-black text-sm text-on-surface dark:text-[#F9FAFB] truncate">
-                    {displayName}
-                  </div>
-                  <div className="text-[11px] text-outline font-mono truncate">
-                    {userProfile?.studentId ? `#${userProfile.studentId}` : currentUser?.email}
-                  </div>
-                  <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">
-                    <span>Level {level} Packet Cadet</span>
-                  </div>
-                </div>
-
-                <div className="py-2 space-y-1">
-                  <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-surface-container-low dark:bg-slate-800/60 border border-outline-variant/20 mb-1">
-                    <span className="text-xs font-bold text-on-surface dark:text-[#F9FAFB]">Theme Mode</span>
-                    <ThemeToggleSwitch variant="switch" />
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1F2937] border border-outline-variant/30 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50 animate-scaleUp">
+                  <div className="pb-3 border-b border-surface-container dark:border-slate-800">
+                    <div className="font-headline font-black text-sm text-on-surface dark:text-[#F9FAFB] truncate">
+                      {displayName}
+                    </div>
+                    <div className="text-[11px] text-outline font-mono truncate">
+                      {userProfile?.studentId ? `#${userProfile.studentId}` : currentUser?.email}
+                    </div>
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">
+                      <span>Level {level} Packet Cadet</span>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      soundFx.playClick();
-                      setShowProfileMenu(false);
-                      onNavigate('profile');
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
-                  >
-                    <User size={15} />
-                    <span>My Profile</span>
-                  </button>
+                  <div className="py-2 space-y-1">
+                    <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-surface-container-low dark:bg-slate-800/60 border border-outline-variant/20 mb-1">
+                      <span className="text-xs font-bold text-on-surface dark:text-[#F9FAFB]">Theme Mode</span>
+                      <ThemeToggleSwitch variant="switch" />
+                    </div>
 
-                  <button
-                    onClick={() => {
-                      soundFx.playClick();
-                      setShowProfileMenu(false);
-                      onNavigate('settings');
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
-                  >
-                    <Settings size={15} />
-                    <span>Settings</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        setShowProfileMenu(false);
+                        onNavigate('profile');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
+                    >
+                      <User size={15} />
+                      <span>My Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        setShowProfileMenu(false);
+                        onNavigate('settings');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
+                    >
+                      <Settings size={15} />
+                      <span>Settings</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-surface-container dark:border-slate-800">
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-error hover:bg-error/10 transition-colors cursor-pointer"
+                    >
+                      <LogOut size={15} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
-
-                <div className="pt-2 border-t border-surface-container dark:border-slate-800">
-
-
-                  <button
-                    onClick={() => {
-                      soundFx.playClick();
-                      logout();
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-error hover:bg-error/10 transition-colors cursor-pointer"
-                  >
-                    <LogOut size={15} />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 pl-1">
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('login');
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                title="Student Login / Registration"
+              >
+                <User size={14} />
+                <span>Sign In</span>
+              </button>
+            </div>
+          )}
 
         </div>
 
