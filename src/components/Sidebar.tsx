@@ -13,7 +13,8 @@ import {
   X,
   Cpu,
   Film,
-  LogIn
+  LogIn,
+  Globe
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 import { useAuth } from '../context/AuthContext';
@@ -95,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     index: string;
   }[] = [
     { id: 'simulator', label: 'Packet Lab', icon: Cpu, index: '07' },
+    { id: 'landing', label: 'Cresco Home', icon: Globe, index: '08' },
   ];
 
   const animatedLearningItems: {

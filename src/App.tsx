@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NavTab, UserRole, CourseSection, PracticeCategory } from './types';
 import { 
   PRIMARY_COURSE, 
@@ -48,6 +48,7 @@ import { ExamModeView } from './components/views/ExamModeView';
 import { NetworkChallengesView } from './components/views/NetworkChallengesView';
 import { SettingsView } from './components/views/SettingsView';
 import { AnimatedLearningView } from './components/views/AnimatedLearningView';
+import { LandingView } from './components/views/LandingView';
 
 // Existing Secondary Supporting Views
 import { TeacherDashboardView } from './components/views/TeacherDashboardView';
@@ -72,7 +73,7 @@ function MainApp() {
   const { isOnline } = useNetworkStatus();
   const { isCharacterHubOpen, closeCharacterHub } = useCharacter();
 
-  // Navigation State - defaults to the Cresco preview landing page before login
+  // Navigation State - defaults to 'landing' for visitors
   const [currentTab, setCurrentTab] = useState<NavTab>('landing');
   const [tabHistory, setTabHistory] = useState<NavTab[]>(['landing']);
   const [userRole, setUserRole] = useState<UserRole>('student');
@@ -135,6 +136,34 @@ function MainApp() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  const prevUserRef = useRef<any>(currentUser);
+  const initialRedirectDoneRef = useRef(false);
+
+  // Synchronize authenticated user profile & restore genuine metrics from Firebase
+  useEffect(() => {
+    // 1. Initial auth resolution: if user is logged in, transition from 'landing' to their dashboard
+    if (!loading && currentUser && !initialRedirectDoneRef.current) {
+      initialRedirectDoneRef.current = true;
+      setCurrentTab((prev) => {
+        if (prev === 'landing') {
+          const dest = userProfile?.role === 'developer' ? 'developer-dashboard' : 'home';
+          setTabHistory([dest]);
+          return dest;
+        }
+        return prev;
+      });
+    }
+
+    // 2. User logout: if user was logged in and is now logged out, route back to landing
+    if (prevUserRef.current && !currentUser) {
+      initialRedirectDoneRef.current = false;
+      setCurrentTab('landing');
+      setTabHistory(['landing']);
+    }
+
+    prevUserRef.current = currentUser;
+  }, [loading, currentUser, userProfile?.role]);
 
   // Synchronize authenticated user profile & restore genuine metrics from Firebase
   useEffect(() => {
@@ -241,9 +270,9 @@ function MainApp() {
       setTabHistory(updated);
       setCurrentTab(prevTab);
     } else {
-      setCurrentTab('landing');
+      setCurrentTab(currentUser ? 'home' : 'landing');
     }
-  }, [tabHistory]);
+  }, [tabHistory, currentUser]);
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -270,13 +299,29 @@ function MainApp() {
     return <BootTerminal />;
   }
 
-  // Landing page preview -> login flow before an authenticated dashboard can load
+  // Dedicated Landing Page (Default for Visitors: Visitor → Cresco CN Landing/Home → Sign Up / Sign In)
   if (currentTab === 'landing') {
     return (
-      <WelcomeOnboardingView
-        onStart={() => setCurrentTab('login')}
-        onKnowBasics={() => setCurrentTab('learn-map')}
-        onSignIn={() => setCurrentTab('login')}
+      <LandingView
+        isLoggedIn={!!currentUser}
+        onNavigateToLogin={() => {
+          if (currentUser) {
+            handleNavigate('home');
+          } else {
+            handleNavigate('login');
+          }
+        }}
+        onNavigateToSignup={() => {
+          if (currentUser) {
+            handleNavigate('home');
+          } else {
+            handleNavigate('login');
+          }
+        }}
+        onNavigateToLaunch={() => {
+          const el = document.getElementById('launch') || document.getElementById('simulators');
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
     );
   }
