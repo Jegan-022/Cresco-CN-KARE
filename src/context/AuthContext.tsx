@@ -61,6 +61,10 @@ export interface UserProfileData {
   year?: string;
   section?: string;
   role: 'student' | 'teacher' | 'developer';
+  bio?: string;
+  phoneNumber?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
   createdAt?: string;
   lastLogin?: string;
   totalXP: number;
@@ -1525,20 +1529,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   
   const updateStudentProfile = async (updates: Partial<UserProfileData>) => {
-    if (!currentUser) return;
+    if (!currentUser && !userProfile) return;
+    const uid = currentUser?.uid || userProfile?.uid;
+    const cleanId = userProfile?.studentId || (currentUser?.email ? extractStudentId(currentUser.email) : '');
+
+    const effectiveName = updates.displayName || updates.name;
+    const sanitizedUpdates: Partial<UserProfileData> = {
+      ...updates,
+      ...(effectiveName ? { name: effectiveName, displayName: effectiveName } : {}),
+      updatedAt: new Date().toISOString()
+    };
+
     setUserProfile((prev) => {
-      const next = prev ? { ...prev, ...updates } : null;
-      if (next && typeof window !== 'undefined' && next.studentId) {
-        localStorage.setItem(`klu_profile_${next.studentId}`, JSON.stringify(next));
+      const next = prev ? { ...prev, ...sanitizedUpdates } : null;
+      if (next && typeof window !== 'undefined') {
+        if (cleanId) localStorage.setItem(`klu_profile_${cleanId}`, JSON.stringify(next));
+        if (uid) localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(next));
         window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: next }));
       }
       return next;
     });
+
     try {
-      const userRef = doc(db, 'students', currentUser.uid);
-      await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
+      if (effectiveName && auth.currentUser) {
+        try {
+          await updateProfile(auth.currentUser, { displayName: effectiveName });
+        } catch (authErr) {
+          console.warn("Could not update Firebase Auth displayName:", authErr);
+        }
+      }
+
+      if (uid) {
+        const studentRef = doc(db, 'students', uid);
+        await setDoc(studentRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }, { merge: true });
+        const userRef = doc(db, 'users', uid);
+        await setDoc(userRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }, { merge: true });
+      }
+      if (cleanId && cleanId !== uid) {
+        const legacyRef = doc(db, 'students', `klu_${cleanId}`);
+        await setDoc(legacyRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }, { merge: true });
+      }
     } catch (e) {
       console.warn('Failed to update student profile in Firestore:', e);
+      throw e;
     }
   };
 
