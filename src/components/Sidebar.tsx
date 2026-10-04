@@ -14,6 +14,7 @@ import {
   Cpu,
   Film,
   LogIn,
+  LogOut,
   Globe
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
@@ -36,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggle: controlledOnToggle,
   onClose: controlledOnClose,
 }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile, logout } = useAuth();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
@@ -450,6 +451,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
               <ThemeToggleSwitch variant="switch" />
             </div>
+
+            {(currentUser || userProfile) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    soundFx.playClick();
+                  } catch {}
+                  handleClose();
+                  await logout();
+                  onNavigate('landing');
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl font-headline font-bold text-[13px] text-red-500 hover:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-500/15 transition-all cursor-pointer select-none text-left"
+              >
+                <LogOut size={16} className="shrink-0 text-red-500" />
+                <span className="flex-1 truncate">Sign Out</span>
+              </button>
+            )}
           </nav>
 
           {/* Engine Status Card */}

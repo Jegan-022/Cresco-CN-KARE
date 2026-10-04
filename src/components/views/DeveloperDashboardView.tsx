@@ -485,7 +485,10 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           </button>
 
           <button
-            onClick={logout}
+            onClick={async () => {
+              await logout();
+              onNavigate('landing');
+            }}
             className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />

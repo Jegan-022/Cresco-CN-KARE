@@ -283,9 +283,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
         <div className="pt-2 flex justify-between items-center">
           <span className="text-xs font-mono text-[#64748B]">Cresco CN v2.4 • Educational Edition</span>
           <button
-            onClick={() => {
+            onClick={async () => {
               soundFx.playClick();
-              logout();
+              await logout();
+              onNavigate('landing');
             }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#D95C5C]/10 text-[#D95C5C] hover:bg-[#D95C5C]/20 border border-[#D95C5C]/30 text-xs font-black transition-all cursor-pointer"
           >

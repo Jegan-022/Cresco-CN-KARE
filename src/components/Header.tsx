@@ -286,9 +286,11 @@ export const Header: React.FC<HeaderProps> = ({
 
 
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       soundFx.playClick();
-                      logout();
+                      setShowProfileMenu(false);
+                      await logout();
+                      onNavigate('landing');
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-error hover:bg-error/10 transition-colors cursor-pointer"
                   >

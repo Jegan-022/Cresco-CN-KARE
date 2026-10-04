@@ -119,7 +119,8 @@ function MainApp() {
       return;
     }
 
-    if (!currentUser && currentTab === 'home') {
+    if (!currentUser && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome') {
+      initialRedirectDoneRef.current = false;
       setCurrentTab('landing');
       setTabHistory(['landing']);
     }

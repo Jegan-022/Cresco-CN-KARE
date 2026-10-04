@@ -1054,32 +1054,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setAuthError(null);
-    if (currentUser?.uid) {
+    const uidToMarkOffline = currentUser?.uid;
+
+    // 1. Immediately unsubscribe from any active Firestore listener
+    if (userDocUnsubRef.current) {
       try {
-        const userRef = doc(db, 'students', currentUser.uid);
-        await updateDoc(userRef, {
+        userDocUnsubRef.current();
+      } catch (e) {
+        console.warn('Error unsubscribing user listener on logout:', e);
+      }
+      userDocUnsubRef.current = null;
+    }
+
+    // 2. Immediately clear all active credentials and cached session tokens
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('klu_active_student_id');
+        localStorage.removeItem('klu_active_dev_id');
+        localStorage.removeItem('klu_active_developer_id');
+        sessionStorage.clear();
+      } catch (e) {
+        console.warn('Error clearing local storage on logout:', e);
+      }
+    }
+
+    // 3. Immediately clear all auth state in React so the UI transitions instantly
+    setCurrentUser(null);
+    setUserProfile(null);
+    setPendingRegistration(null);
+    setLoading(false);
+
+    // 4. Fire-and-forget online presence update so network hangs never block logout
+    if (uidToMarkOffline) {
+      try {
+        const userRef = doc(db, 'students', uidToMarkOffline);
+        updateDoc(userRef, {
           isOnline: false,
           lastLogout: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
+        }).catch(() => {});
       } catch (e) {
-        // Offline or permission fallback
+        // Safe ignore for offline/synthetic accounts
       }
     }
-    if (userDocUnsubRef.current) {
-      userDocUnsubRef.current();
-      userDocUnsubRef.current = null;
-    }
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('klu_active_student_id');
-      localStorage.removeItem('klu_active_dev_id');
-    }
+
+    // 5. Complete Firebase auth signout if a Firebase session was active
     try {
-      await signOut(auth);
-      setUserProfile(null);
-      setCurrentUser(null);
+      if (auth.currentUser) {
+        await signOut(auth);
+      }
     } catch (err: any) {
-      console.error('Sign out error:', err);
+      console.warn('Firebase signOut warning (session cleared locally):', err);
     }
   };
 

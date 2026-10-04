@@ -159,11 +159,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate }) => {
             <span>{isResetting ? 'Resetting...' : 'Reset to 0'}</span>
           </button>
 
-          {currentUser && (
+          {(currentUser || userProfile) && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 soundFx.playClick();
-                logout();
+                await logout();
+                onNavigate('landing');
               }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[#D95C5C] hover:bg-[#D95C5C]/10 border border-[#D95C5C]/30 transition-all cursor-pointer"
             >
