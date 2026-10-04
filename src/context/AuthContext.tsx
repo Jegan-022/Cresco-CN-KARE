@@ -12,7 +12,9 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
-  deleteUser
+  deleteUser,
+  EmailAuthProvider,
+  linkWithCredential
 } from 'firebase/auth';
 import { 
   doc, 
@@ -225,6 +227,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): Promise<{ docId: string; data: UserProfileData } | null> => {
     const cleanEmail = email.toLowerCase().trim();
     const studentId = extractStudentId(cleanEmail);
+
+    // 0. Direct match on users collection using the authenticated Google UID
+    try {
+      const uSnap = await getDoc(doc(db, 'users', uid));
+      if (uSnap.exists()) {
+        const uData = uSnap.data() as any;
+        const sSnap = await getDoc(doc(db, 'students', uid));
+        const sData = sSnap.exists() ? (sSnap.data() as any) : {};
+        const profileData = {
+          ...createZeroStudentState(uid, email, uData.name || 'Student', 'student'),
+          ...sData,
+          ...uData,
+          uid,
+          email: uData.email || email,
+          username: uData.username,
+          profileCompleted: true,
+        };
+        return { docId: uid, data: profileData };
+      }
+    } catch (e) {
+      console.warn('[Auth] Direct users collection lookup error:', e);
+    }
 
     // 1. Direct match on students collection using the authenticated Google UID
     try {
@@ -836,7 +860,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedAt: now,
     };
 
-    // 1. Write username reservation in Firestore
+    // 1. Link Email/Password to their existing Google account UID
+    if (auth.currentUser) {
+      try {
+        const credential = EmailAuthProvider.credential(email, cleanPass);
+        await linkWithCredential(auth.currentUser, credential);
+      } catch (linkErr: any) {
+        console.warn('Firebase linkWithCredential (already linked or note):', linkErr);
+      }
+    }
+
+    // 2. Save profile and mapping in Firestore
     try {
       await setDoc(usernameDocRef, {
         uid,
@@ -849,7 +883,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firestore username claim write warning:', e);
     }
 
-    // 2. Write student profile in Firestore under primary Google UID
+    try {
+      const usersDocRef = doc(db, 'users', uid);
+      await setDoc(usersDocRef, {
+        username: cleanUser,
+        email,
+        uid,
+        studentId: cleanId,
+        name: cleanName,
+        department: department || 'CSE',
+        year: year || '3rd Year',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore users collection write warning:', e);
+    }
+
+    // 3. Write student profile in Firestore under primary Google UID
     try {
       const studentDocRef = doc(db, 'students', uid);
       await setDoc(studentDocRef, {
@@ -960,7 +1011,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // 1. Check if user claim exists for this username in Firestore
     let matchedUid: string | null = null;
     let matchedStudentId: string | null = null;
     let matchedEmail: string | null = null;
@@ -968,16 +1018,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let matchedPassword: string | null = null;
     let matchedData: any = null;
 
+    // 1. Subsequent Login (Username -> Password Flow)
+    // Look up the username to retrieve their email address, then sign in with Firebase Auth:
     try {
-      const usernameSnap = await getDoc(doc(db, 'usernames', cleanInput.toLowerCase()));
-      if (usernameSnap.exists()) {
-        const uData = usernameSnap.data();
-        matchedUid = uData.uid;
-        matchedStudentId = uData.studentId || cleanInput;
-        matchedEmail = uData.email;
+      const usernameDoc = await getDoc(doc(db, 'usernames', cleanInput.toLowerCase()));
+      if (usernameDoc.exists()) {
+        const uData = usernameDoc.data() as { email?: string; uid?: string; studentId?: string };
+        const email = uData?.email;
+        if (email) {
+          try {
+            // Authenticate securely
+            const cred = await signInWithEmailAndPassword(auth, email, cleanPassword);
+            await syncAndFetchProfile(cred.user);
+            return;
+          } catch (fbAuthErr: any) {
+            console.warn('Firebase signInWithEmailAndPassword error for username:', fbAuthErr);
+            if (fbAuthErr?.code === 'auth/wrong-password' || fbAuthErr?.code === 'auth/invalid-credential') {
+              const msg = 'Incorrect password. Please verify your credentials or sign in with Google.';
+              setAuthError(msg);
+              throw new Error(msg);
+            }
+          }
+        }
+        matchedUid = uData?.uid || null;
+        matchedStudentId = uData?.studentId || cleanInput;
+        matchedEmail = email || null;
       }
     } catch (e) {
       console.warn('Firestore username lookup fallback:', e);
+    }
+
+    // Direct email authentication if input is an email
+    if (cleanInput.includes('@')) {
+      try {
+        const cred = await signInWithEmailAndPassword(auth, cleanInput.toLowerCase(), cleanPassword);
+        await syncAndFetchProfile(cred.user);
+        return;
+      } catch (fbErr: any) {
+        if (fbErr?.code === 'auth/wrong-password' || fbErr?.code === 'auth/invalid-credential') {
+          const msg = 'Incorrect password. Please verify your credentials.';
+          setAuthError(msg);
+          throw new Error(msg);
+        }
+      }
     }
 
     // 2. If not found by username, check students collection by direct UID or cleanInput
@@ -1162,36 +1245,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(domainMsg);
       }
       
-      // Robustly check if student profile already exists anywhere in Firestore or cache
-      const existing = await findExistingUserProfile(user.uid, email);
-
-      if (existing) {
-        setPendingRegistration(null);
-        if (existing.docId !== user.uid) {
-          try {
-            await setDoc(doc(db, 'students', user.uid), {
-              ...existing.data,
-              uid: user.uid,
-              email,
-              profileCompleted: true,
-              updatedAt: serverTimestamp(),
-            }, { merge: true });
-          } catch (e) {
-            console.warn('Error mirroring existing student profile to uid:', e);
-          }
+      // 1. Check if user document already exists in "users" collection
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        // Also check existing profile in students collection or aliases
+        const existing = await findExistingUserProfile(user.uid, email);
+        if (existing) {
+          setPendingRegistration(null);
+          await syncAndFetchProfile(user, undefined, undefined, existing.data);
+          return { isNewUser: false, profile: existing.data };
         }
-        await syncAndFetchProfile(user, undefined, undefined, existing.data);
-        return { isNewUser: false, profile: existing.data };
+
+        // Show Setup UI (username & password)
+        setPendingRegistration({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          photoURL: user.photoURL || undefined,
+        });
+        return { isNewUser: true, profile: null };
       }
 
-      // Genuinely NEW user: trigger the "Create Username & Password" setup screen
-      setPendingRegistration({
-        uid: user.uid,
-        email: user.email,
-        name: user.displayName || '',
-        photoURL: user.photoURL || undefined,
-      });
-      return { isNewUser: true, profile: null };
+      // Existing user in users collection
+      const existing = await findExistingUserProfile(user.uid, email);
+      const profileData = existing?.data || (userDoc.data() as any);
+      setPendingRegistration(null);
+      await syncAndFetchProfile(user, undefined, undefined, profileData);
+      return { isNewUser: false, profile: profileData };
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         throw new Error('SIGN_IN_CANCELLED');
