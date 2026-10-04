@@ -29,7 +29,6 @@ import { InteractiveTerminal } from '../landing/InteractiveTerminal';
 import { SubnetCalculatorWidget } from '../landing/SubnetCalculatorWidget';
 import { InteractiveOsiExplorer } from '../landing/InteractiveOsiExplorer';
 import { ByteBotLandingCard } from '../landing/ByteBotLandingCard';
-import { ThemeToggleSwitch } from '../ThemeToggleSwitch';
 
 interface LandingViewProps {
   onNavigateToLogin: () => void;
@@ -57,18 +56,6 @@ export const LandingView: React.FC<LandingViewProps> = ({
       }
     },
     {
-      label: 'Launch',
-      href: '#launch',
-      onClick: (e) => {
-        e?.preventDefault();
-        if (onNavigateToLaunch) {
-          onNavigateToLaunch();
-        } else {
-          document.getElementById('launch')?.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    },
-    {
       label: 'Simulators',
       href: '#simulators',
       onClick: (e) => {
@@ -92,7 +79,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
         document.getElementById('syllabus')?.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  ], [onNavigateToLaunch]);
+  ], []);
 
   const faqs = [
     {
@@ -119,10 +106,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
       {/* 1. Global Navigation Bar with PillNav */}
       <header className="sticky top-0 w-full px-4 sm:px-10 py-4 z-50 bg-[#0B0B11]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Left Brand Badge */}
+          {/* Left Brand Badge with Official Octopus Mascot */}
           <div className="hidden md:flex items-center gap-3 min-w-[180px]">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-black text-xs shadow-md shadow-emerald-500/30">
-              CCN
+            <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Cresco CN Octopus Mascot Logo"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-lg tracking-tight text-white leading-none font-headline">
@@ -137,8 +128,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
           {/* Center PillNav (UIverse & ReactBits Inspired) */}
           <div className="flex-1 sm:flex-none flex items-center justify-center">
             <PillNav
-              logo="/logo-green.svg"
-              logoAlt="Cresco CN Logo"
+              logo="/assets/mascot/cresco-mascot.png"
+              logoAlt="Cresco CN Octopus Mascot"
               items={navItems}
               activeHref="#hero"
               baseColor="#12131C"
@@ -152,7 +143,6 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
           {/* Right Action Buttons */}
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-[120px] justify-end">
-            <ThemeToggleSwitch variant="compact" className="text-slate-300 hover:text-white" />
 
             <button
               onClick={onNavigateToLogin}
@@ -626,8 +616,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
       <footer className="w-full bg-[#08080E] border-t border-white/[0.06] py-12 px-4 sm:px-8 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-xs tracking-wider">
-              CCN
+            <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Cresco CN Octopus Mascot Logo"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(16,185,129,0.35)]"
+              />
             </div>
             <div>
               <div className="text-white font-bold text-sm">Cresco CN</div>
