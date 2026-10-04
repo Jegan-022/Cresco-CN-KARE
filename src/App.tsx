@@ -11,6 +11,7 @@ import {
 
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CurriculumProvider } from './context/CurriculumContext';
 import { AuthModal } from './components/AuthModal';
 import { collection, onSnapshot, getDocsFromCache } from 'firebase/firestore';
 import { db } from './lib/firebase';
@@ -609,9 +610,11 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <CharacterProvider>
-            <MainApp />
-          </CharacterProvider>
+          <CurriculumProvider>
+            <CharacterProvider>
+              <MainApp />
+            </CharacterProvider>
+          </CurriculumProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

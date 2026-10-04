@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Real-time student leaderboard collection
+    // Real-time student leaderboard & progress collection
     match /students/{studentId} {
       // Allow public read so all enrolled cohort members and friends see live standings
       allow read: if true;
@@ -15,37 +15,36 @@ service cloud.firestore {
       allow write: if request.auth != null || (username is string && username.size() > 0);
     }
 
-    // User account profiles
+    // User authentication profiles
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null || (userId is string && userId.size() > 0);
+      allow write: if request.auth != null;
     }
 
-    // Course units, modules, quizzes, and flashcards curriculum content
+    // Dynamic curriculum, courses, units, and interactive learning modules
     match /courses/{courseId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    match /curriculum_modules/{moduleId} {
+    match /curriculum_units/{unitId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    match /quizzes/{quizId} {
+    match /modules/{moduleId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    match /flashcards/{cardId} {
+    match /course_management/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Default authenticated access for user documents and quiz records
+    // Default fallback access
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
   }
 }
-

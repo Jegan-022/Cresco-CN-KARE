@@ -3,6 +3,9 @@ import { TeacherMetric, CourseSection, NavTab } from '../../types';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { isAuthorizedDeveloper } from '../../config/developers';
+import { useCurriculum } from '../../context/CurriculumContext';
+import { AddModuleModal } from '../modals/AddModuleModal';
+import { AddCourseModal } from '../modals/AddCourseModal';
 import { 
   GraduationCap, 
   Users, 
@@ -18,7 +21,11 @@ import {
   Eye, 
   Edit3,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Database,
+  UploadCloud,
+  Sparkles,
+  Check
 } from 'lucide-react';
 
 interface TeacherDashboardViewProps {
@@ -34,6 +41,30 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'course-management' | 'live-activity'>('overview');
   const [showAddLessonModal, setShowAddLessonModal] = useState(false);
+  const [showAddModuleModal, setShowAddModuleModal] = useState(false);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedSuccessMsg, setSeedSuccessMsg] = useState<string | null>(null);
+  const { modules, courses, seedDatabase, isLoading: isCurriculumLoading } = useCurriculum();
+
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    setSeedSuccessMsg(null);
+    try {
+      const res = await seedDatabase();
+      if (res.success) {
+        setSeedSuccessMsg(`Successfully synced & seeded ${res.count} curriculum items into Firestore!`);
+        setTimeout(() => setSeedSuccessMsg(null), 4000);
+      } else {
+        alert(res.error || 'Failed to seed curriculum to Firestore.');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error syncing database.');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const [realStudents, setRealStudents] = useState<any[]>([]);
   const [publishedStatus, setPublishedStatus] = useState<Record<number, boolean>>({
     1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true, 9: true, 10: true,
@@ -310,28 +341,65 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
       {/* 5. Tab 2: Course Management */}
       {activeTab === 'course-management' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Curriculum Structure (23 Sections)</h3>
-              <p className="text-xs text-slate-500">Manage visibility, publish status, or add new lessons and quiz modules.</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+          
+          {/* Firestore Database Sync Banner */}
+          <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-purple-50/90 border border-blue-200/80 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-sm">
+                <Database className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-slate-900">Firestore Curriculum Database</h4>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE DB ACTIVE
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {modules.length} dynamic learning modules • {courses.length} courses loaded dynamically from Firestore.
+                </p>
+                {seedSuccessMsg && (
+                  <p className="text-xs font-semibold text-emerald-700 mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> {seedSuccessMsg}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center flex-wrap gap-2">
               <button
-                onClick={() => alert('New lesson template draft created.')}
-                className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                onClick={handleSeedDatabase}
+                disabled={isSeeding}
+                className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>{isSeeding ? 'Syncing to Firestore...' : 'Sync / Seed All to Firestore'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowAddModuleModal(true)}
+                className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Lesson</span>
+                <span>Add Module to DB</span>
               </button>
+
               <button
-                onClick={() => alert('New quiz builder opened.')}
-                className="flex items-center space-x-1.5 px-3.5 py-2 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                onClick={() => setShowAddCourseModal(true)}
+                className="flex items-center space-x-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Quiz</span>
+                <span>Add Course</span>
               </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Curriculum Structure ({sections.length} Sections)</h3>
+              <p className="text-xs text-slate-500">Manage visibility, publish status, or inspect modules synced to Firebase.</p>
             </div>
           </div>
 
@@ -447,6 +515,26 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
         </div>
       )}
+
+      {/* Add Module Modal */}
+      <AddModuleModal
+        isOpen={showAddModuleModal}
+        onClose={() => setShowAddModuleModal(false)}
+        onModuleAdded={(modId) => {
+          setSeedSuccessMsg(`Successfully created module (${modId}) and synced to Firestore!`);
+          setTimeout(() => setSeedSuccessMsg(null), 4000);
+        }}
+      />
+
+      {/* Add Course Modal */}
+      <AddCourseModal
+        isOpen={showAddCourseModal}
+        onClose={() => setShowAddCourseModal(false)}
+        onCourseAdded={(cId) => {
+          setSeedSuccessMsg(`Successfully created course (${cId}) and synced to Firestore!`);
+          setTimeout(() => setSeedSuccessMsg(null), 4000);
+        }}
+      />
 
     </div>
   );

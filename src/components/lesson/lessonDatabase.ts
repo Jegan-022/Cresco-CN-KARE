@@ -1,5 +1,6 @@
 import { LessonDefinition } from './lessonTypes';
 import syllabusData from '../../data/syllabusUnits345.json';
+import { getCachedModules } from '../../services/courseDatabaseService';
 
 export const LESSONS_DATABASE: Record<string, LessonDefinition> = {
   // =========================================================================
@@ -545,6 +546,100 @@ export const getLessonById = (lessonId: string): LessonDefinition => {
   }
   if (LESSONS_DATABASE[lessonId]) {
     return LESSONS_DATABASE[lessonId];
+  }
+
+  // 1. Look up dynamically loaded Firestore module from database cache
+  const dbModules = getCachedModules();
+  const dbMod = dbModules.find((m) => m.id === lessonId || m.id === normalizedId);
+  if (dbMod && dbMod.isCustom) {
+    const quizQuestions = dbMod.quiz || [];
+    const primaryQ = quizQuestions[0] || {
+      question: `What is the core function of ${dbMod.title}?`,
+      options: ['Logical routing & delivery', 'Physical signal modulation', 'Application UI presentation', 'Error correction on wire'],
+      correctIndex: 0,
+      explanation: `${dbMod.title} provides critical end-to-end transport and routing guarantees across network topologies.`
+    };
+
+    const options = (primaryQ.options || []).map((opt: string, i: number) => ({
+      id: String.fromCharCode(65 + i),
+      text: opt,
+      isCorrect: i === primaryQ.correctIndex,
+    }));
+
+    const unitNum = (dbMod.unitId as string).includes('4') ? 4 : (dbMod.unitId as string).includes('5') ? 5 : 3;
+
+    return {
+      id: lessonId,
+      unitNumber: unitNum as 3 | 4 | 5,
+      unitName: dbMod.unitTitle?.toUpperCase() || `UNIT ${unitNum}`,
+      lessonNumber: dbMod.moduleIndex || 1,
+      totalLessonsInUnit: 10,
+      topicTitle: dbMod.title,
+      subtitle: dbMod.pedagogy?.hook || dbMod.pedagogy?.analogy || 'Master critical network principles through guided interaction.',
+      estimatedDuration: `${dbMod.readTimeMinutes || 4}–5 min`,
+      masteryRating: 85,
+      phases: [
+        {
+          id: `${lessonId}-intro`,
+          type: 'intro',
+          title: dbMod.title,
+          subtitle: dbMod.pedagogy?.hook || 'Understand the real-world design requirements.',
+          byteQuote: dbMod.pedagogy?.hook || `Ready to master ${dbMod.title}? Let's inspect the protocol mechanics!`,
+          bytePose: 'explaining',
+        },
+        {
+          id: `${lessonId}-explain`,
+          type: 'explain',
+          title: 'Concept & Real-World Analogy',
+          subtitle: 'Core theory explained with concrete networking models.',
+          byteQuote: dbMod.pedagogy?.analogy || 'Think of this mechanism like a global logistics dispatch hub.',
+          bytePose: 'thinking',
+          conceptHeading: 'Architectural Model & Invariants',
+          conceptBody: dbMod.pedagogy?.concept || 'Network protocols enforce deterministic state synchronization across untrusted links.',
+          highlightWords: (dbMod.keyTakeaways || []).map((t: string) => {
+            const parts = t.split(':');
+            return {
+              word: parts[0]?.trim() || 'Protocol Rule',
+              explanation: parts[1]?.trim() || t,
+            };
+          }),
+        },
+        {
+          id: `${lessonId}-visualize`,
+          type: 'visualize',
+          title: 'Interactive Protocol Topology',
+          subtitle: 'Inspect end-to-end packet transitions and frame flows.',
+          byteQuote: 'Observe how the network entities synchronize states and forward traffic.',
+          bytePose: 'boss-mode',
+          diagramType: unitNum === 4 ? 'tcp-handshake' : unitNum === 5 ? 'dns-pipeline' : 'routing-topology',
+        },
+        {
+          id: `${lessonId}-drill`,
+          type: 'question',
+          title: 'Knowledge Check',
+          subtitle: 'Test your grasp of this protocol concept.',
+          byteQuote: 'Analyze the packet parameters carefully before answering!',
+          bytePose: 'thinking',
+          questionText: primaryQ.question,
+          mcqOptions: options,
+          explanation: primaryQ.explanation,
+          xpReward: 30,
+        },
+        {
+          id: `${lessonId}-fillin`,
+          type: 'fill-in',
+          title: 'Protocol Parameter Check',
+          subtitle: 'Complete the core protocol rule.',
+          byteQuote: 'Fill in the key technical term or protocol acronym.',
+          bytePose: 'explaining',
+          questionText: `Complete the sentence: In ${dbMod.title}, logical addressing and data exchange are governed by standard _____ specifications.`,
+          fillInCorrectAnswer: 'RFC',
+          fillInHint: 'Three-letter acronym for Request for Comments standard specifications',
+          explanation: 'Internet protocols are formalized as RFC documents published by the IETF.',
+          xpReward: 20,
+        }
+      ]
+    };
   }
 
   // Parse Unit & Module number from lessonId, e.g. 'u3_m4', 'u3_m04', 'mod-3-4', '3-4'

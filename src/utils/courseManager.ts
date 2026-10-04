@@ -1,6 +1,13 @@
 import { Course, CourseUnitData, CourseModuleData } from '../types';
 import { PRIMARY_COURSE, SECONDARY_COURSES } from '../data/networkCourse';
 import { COURSE_UNITS, FlattenedModule } from '../data/courseContent';
+import { 
+  saveModuleToFirestore, 
+  saveCourseToFirestore, 
+  deleteModuleFromFirestore,
+  getCachedModules,
+  getCachedCourses
+} from '../services/courseDatabaseService';
 
 const STORAGE_KEY_COURSES = 'netquest_custom_courses_v1';
 const STORAGE_KEY_MODULES = 'netquest_custom_modules_v1';
@@ -69,6 +76,7 @@ export function saveCustomCourse(input: NewCourseInput): Course {
 
   const updated = [...existing, newCourse];
   localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(updated));
+  saveCourseToFirestore(input).catch((e) => console.warn('Background Firestore course save error:', e));
   notifyCurriculumUpdated();
   return newCourse;
 }
@@ -170,6 +178,7 @@ export function saveCustomModule(input: NewModuleInput): FlattenedModule {
 
   const updated = [...existing, newModule];
   localStorage.setItem(STORAGE_KEY_MODULES, JSON.stringify(updated));
+  saveModuleToFirestore(input).catch((e) => console.warn('Background Firestore module save error:', e));
   notifyCurriculumUpdated();
   return newModule;
 }
@@ -179,6 +188,7 @@ export function deleteCustomModule(moduleId: string): boolean {
   const filtered = existing.filter((m) => m.id !== moduleId);
   if (filtered.length === existing.length) return false;
   localStorage.setItem(STORAGE_KEY_MODULES, JSON.stringify(filtered));
+  deleteModuleFromFirestore(moduleId).catch((e) => console.warn('Background Firestore module delete error:', e));
   notifyCurriculumUpdated();
   return true;
 }
@@ -226,22 +236,34 @@ export function moveModule(unitId: string, moduleId: string, direction: 'up' | '
 // 3. Merged Data Providers
 export function getMergedCourses(): Course[] {
   const custom = loadCustomCourses();
-  return [PRIMARY_COURSE, ...SECONDARY_COURSES, ...custom];
+  const dbCourses = getCachedCourses();
+  const map = new Map<string, Course>();
+  dbCourses.forEach((c) => map.set(c.id, c));
+  custom.forEach((c) => map.set(c.id, c));
+  return Array.from(map.values());
 }
 
 export function getMergedUnits(): CourseUnitData[] {
   const customModules = loadCustomModules();
+  const dbModules = getCachedModules();
   const savedOrders = loadModuleOrder();
+
+  const allExtraModules = [...customModules];
+  dbModules.forEach((dm) => {
+    if (!allExtraModules.some((em) => em.id === dm.id)) {
+      allExtraModules.push(dm);
+    }
+  });
 
   return COURSE_UNITS.map((baseUnit) => {
     const normUnitId = baseUnit.id.replace('-', '_');
-    const unitCustom = customModules.filter((m) => (m.unitId as string).replace('-', '_') === normUnitId);
+    const unitCustom = allExtraModules.filter((m) => (m.unitId as string).replace('-', '_') === normUnitId);
     
     // Combine base modules with custom modules for this unit
-    let combined: CourseModuleData[] = [
-      ...(baseUnit.modules || []),
-      ...(unitCustom as unknown as CourseModuleData[])
-    ];
+    const baseMap = new Map<string, CourseModuleData>();
+    (baseUnit.modules || []).forEach((m) => baseMap.set(m.id, m));
+    unitCustom.forEach((m) => baseMap.set(m.id, m as unknown as CourseModuleData));
+    let combined: CourseModuleData[] = Array.from(baseMap.values());
 
     // Apply custom ordering if saved
     const order = savedOrders[normUnitId];

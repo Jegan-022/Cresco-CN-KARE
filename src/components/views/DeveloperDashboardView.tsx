@@ -39,8 +39,16 @@ import {
   FileSpreadsheet,
   FileText,
   Lock,
-  ExternalLink
+  ExternalLink,
+  Database,
+  UploadCloud,
+  BookOpen,
+  Layers,
+  Plus
 } from 'lucide-react';
+import { useCurriculum } from '../../context/CurriculumContext';
+import { AddModuleModal } from '../modals/AddModuleModal';
+import { AddCourseModal } from '../modals/AddCourseModal';
 
 interface StudentData {
   uid: string;
@@ -84,12 +92,36 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
   const [manualRollNumber, setManualRollNumber] = useState('');
   const [showManualModal, setShowManualModal] = useState(false);
 
-  // Main Dashboard Tab: 'progress' (Syllabus completion & reset) vs 'credentials' (Student credentials & CSV roster)
-  const [activeMainTab, setActiveMainTab] = useState<'progress' | 'credentials'>('progress');
+  // Main Dashboard Tab: 'progress' vs 'credentials' vs 'curriculum'
+  const [activeMainTab, setActiveMainTab] = useState<'progress' | 'credentials' | 'curriculum'>('progress');
   const [credentialSearch, setCredentialSearch] = useState('');
   const [showPasswords, setShowPasswords] = useState(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showRawCsv, setShowRawCsv] = useState(false);
+
+  // Curriculum Database State
+  const { modules, courses, seedDatabase, isDbConnected } = useCurriculum();
+  const [showAddModuleModal, setShowAddModuleModal] = useState(false);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [isSeedingDb, setIsSeedingDb] = useState(false);
+  const [curriculumSearch, setCurriculumSearch] = useState('');
+  const [curriculumUnitFilter, setCurriculumUnitFilter] = useState<'all' | 'unit_3' | 'unit_4' | 'unit_5'>('all');
+
+  const handleSeedDatabase = async () => {
+    setIsSeedingDb(true);
+    try {
+      const res = await seedDatabase();
+      if (res.success) {
+        showToast(`Successfully seeded ${res.count} items into Firestore!`);
+      } else {
+        showToast(res.error || 'Failed to seed curriculum to Firestore.', 'error');
+      }
+    } catch (e: any) {
+      showToast(e.message || 'Error syncing database.', 'error');
+    } finally {
+      setIsSeedingDb(false);
+    }
+  };
 
   const handleCopy = (text: string, key: string, label: string = 'Copied to clipboard!') => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -528,6 +560,22 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           <span>Student Credentials & CSV Roster</span>
           <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 text-[10px] font-mono font-bold">
             {STUDENT_CREDENTIALS.length} Students • CSV File
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('curriculum')}
+          className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeMainTab === 'curriculum'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 ring-1 ring-emerald-400'
+              : 'bg-[#141822] text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
+          }`}
+        >
+          <Database className="w-4 h-4 text-emerald-300" />
+          <span>Curriculum Database</span>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] font-mono font-bold">
+            {modules.length} Modules • Live DB
           </span>
         </button>
       </div>
@@ -1289,6 +1337,208 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
         </div>
       )}
 
+      {/* 5. FIRESTORE CURRICULUM DATABASE MANAGEMENT VIEW */}
+      {activeMainTab === 'curriculum' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Top Banner with Stats & Seed Button */}
+          <div className="bg-[#11141B] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold shadow-lg">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white">Firestore Curriculum Database</h3>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      LIVE CLOUD FIRESTORE
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Dynamic courses, units, lessons, interactive simulators, and quiz question banks persisted in Firestore.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleSeedDatabase}
+                  disabled={isSeedingDb}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>{isSeedingDb ? 'Syncing to Firestore...' : 'Sync / Seed All to Firestore'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddModuleModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/30 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Module to DB</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddCourseModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-purple-600/30 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Course</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Stat Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-[#1A1F2B] border border-slate-800 rounded-xl p-4">
+                <div className="text-xs font-semibold text-slate-400">Total Live Modules</div>
+                <div className="text-2xl font-extrabold text-white mt-1">{modules.length}</div>
+                <div className="text-[10px] text-emerald-400 font-mono mt-0.5">Database Driven</div>
+              </div>
+
+              <div className="bg-[#1A1F2B] border border-slate-800 rounded-xl p-4">
+                <div className="text-xs font-semibold text-slate-400">Unit 3 (Network Layer)</div>
+                <div className="text-2xl font-extrabold text-blue-400 mt-1">
+                  {modules.filter(m => (m.unitId as string).replace('-', '_') === 'unit_3').length}
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">Modules & Routing Drills</div>
+              </div>
+
+              <div className="bg-[#1A1F2B] border border-slate-800 rounded-xl p-4">
+                <div className="text-xs font-semibold text-slate-400">Unit 4 (Transport Layer)</div>
+                <div className="text-2xl font-extrabold text-purple-400 mt-1">
+                  {modules.filter(m => (m.unitId as string).replace('-', '_') === 'unit_4').length}
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">TCP/UDP & Handshakes</div>
+              </div>
+
+              <div className="bg-[#1A1F2B] border border-slate-800 rounded-xl p-4">
+                <div className="text-xs font-semibold text-slate-400">Unit 5 (Application Layer)</div>
+                <div className="text-2xl font-extrabold text-amber-400 mt-1">
+                  {modules.filter(m => (m.unitId as string).replace('-', '_') === 'unit_5').length}
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">DNS, HTTP & Sockets</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Module List with Search & Filter */}
+          <div className="bg-[#11141B] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-base font-bold text-white">Live Modules Directory</h4>
+              </div>
+
+              {/* Unit Filter Pills */}
+              <div className="flex items-center space-x-2 text-xs">
+                {(['all', 'unit_3', 'unit_4', 'unit_5'] as const).map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => setCurriculumUnitFilter(u)}
+                    className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                      curriculumUnitFilter === u
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'bg-[#1A1F2B] text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {u === 'all' ? 'All Units' : u === 'unit_3' ? 'Unit 3' : u === 'unit_4' ? 'Unit 4' : 'Unit 5'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search modules by title, code, or simulator type..."
+                value={curriculumSearch}
+                onChange={(e) => setCurriculumSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-[#1A1F2B] border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-[#1A1F2B] text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
+                  <tr>
+                    <th className="px-4 py-3 w-12 text-center">#</th>
+                    <th className="px-4 py-3">Code / ID</th>
+                    <th className="px-4 py-3">Module Title</th>
+                    <th className="px-4 py-3">Unit</th>
+                    <th className="px-4 py-3">Simulator</th>
+                    <th className="px-4 py-3">XP Reward</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-medium text-xs">
+                  {modules
+                    .filter((m) => {
+                      if (curriculumUnitFilter !== 'all' && (m.unitId as string).replace('-', '_') !== curriculumUnitFilter) {
+                        return false;
+                      }
+                      if (!curriculumSearch.trim()) return true;
+                      const q = curriculumSearch.toLowerCase();
+                      return (
+                        m.title.toLowerCase().includes(q) ||
+                        m.id.toLowerCase().includes(q) ||
+                        (m.code && m.code.toLowerCase().includes(q)) ||
+                        (m.simulatorType && m.simulatorType.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((mod, idx) => (
+                      <tr key={mod.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="px-4 py-3 text-center text-slate-500 font-mono">
+                          {idx + 1}
+                        </td>
+                        <td className="px-4 py-3 font-mono font-bold text-white">
+                          {mod.code || mod.id}
+                        </td>
+                        <td className="px-4 py-3 text-slate-200 font-semibold">
+                          {mod.title}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                            (mod.unitId as string).includes('3')
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              : (mod.unitId as string).includes('4')
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}>
+                            {(mod.unitId as string).replace('_', ' ').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-slate-400">
+                          {mod.simulatorType || 'standard'}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-amber-400">
+                          +{mod.xp} XP
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            Active
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
       {/* RESET CONFIRMATION MODAL */}
       {selectedStudentForReset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1515,6 +1765,24 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
           </div>
         </div>
       )}
+
+      {/* Add Module Modal */}
+      <AddModuleModal
+        isOpen={showAddModuleModal}
+        onClose={() => setShowAddModuleModal(false)}
+        onModuleAdded={(modId) => {
+          showToast(`Successfully created module (${modId}) and synced to Firestore!`);
+        }}
+      />
+
+      {/* Add Course Modal */}
+      <AddCourseModal
+        isOpen={showAddCourseModal}
+        onClose={() => setShowAddCourseModal(false)}
+        onCourseAdded={(cId) => {
+          showToast(`Successfully created course (${cId}) and synced to Firestore!`);
+        }}
+      />
 
     </div>
   );
