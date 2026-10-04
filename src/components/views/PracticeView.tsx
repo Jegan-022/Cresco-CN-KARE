@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NavTab } from '../../types';
 import { COURSE_UNITS, ALL_PRACTICE_QUESTIONS, QUICK_REFERENCE_FLASHCARDS } from '../../data/courseContent';
+import { curriculumCloudService, CloudFlashcardItem } from '../../services/curriculumCloudService';
 import { useAuth } from '../../context/AuthContext';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
 import { soundFx } from '../../utils/audio';
@@ -132,22 +133,41 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     }
   }, [initialTab]);
   
-  // Flashcard State derived from official quick reference & course practice drills
+  // Flashcard State derived from cloud storage / Firestore with local syllabus fallback
+  const [cloudFlashcards, setCloudFlashcards] = useState<CloudFlashcardItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    curriculumCloudService.getFlashcards().then((cards) => {
+      if (mounted && cards && cards.length > 0) {
+        setCloudFlashcards(cards);
+      }
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const flashcards = useMemo(() => {
+    if (cloudFlashcards.length > 0) {
+      return cloudFlashcards;
+    }
     const quick = (QUICK_REFERENCE_FLASHCARDS || []).map((q: any) => ({
+      id: 'quick_fallback',
       q: q.q,
       a: q.a,
       domain: 'Quick Reference',
       type: 'Key Fact'
     }));
     const drills = ALL_PRACTICE_QUESTIONS.map(p => ({
+      id: p.id,
       q: p.question,
       a: p.answer,
       domain: p.domain,
       type: p.type
     }));
     return [...quick, ...drills];
-  }, []);
+  }, [cloudFlashcards]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 

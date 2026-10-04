@@ -21,6 +21,27 @@ service cloud.firestore {
       allow write: if request.auth != null || (userId is string && userId.size() > 0);
     }
 
+    // Course units, modules, quizzes, and flashcards curriculum content
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /curriculum_modules/{moduleId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /flashcards/{cardId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Default authenticated access for user documents and quiz records
     match /{document=**} {
       allow read, write: if request.auth != null;

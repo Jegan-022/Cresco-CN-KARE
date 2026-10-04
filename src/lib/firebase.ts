@@ -12,6 +12,7 @@ import {
   disableNetwork,
   Firestore
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase App singleton
@@ -47,8 +48,8 @@ try {
   console.warn('[Firebase Firestore] Persistent local cache initialization fallback (instance may already exist):', error);
   firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 }
-
 export const db = firestoreDb;
+export const storage = getStorage(app);
 export { waitForPendingWrites, enableNetwork, disableNetwork };
 
 export enum OperationType {
