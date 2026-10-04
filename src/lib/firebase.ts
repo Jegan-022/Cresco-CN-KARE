@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 import { 
   getFirestore, 
@@ -29,6 +29,11 @@ export const analytics: Analytics | null = typeof window !== 'undefined' ? (() =
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);
+
+// Keep the auth session alive across refreshes and tabs
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn('[Firebase Auth] Failed to set persistence:', err);
+});
 
 // Initialize Firebase Firestore with multi-tab persistent IndexedDB local cache for offline resilience
 let firestoreDb: Firestore;
