@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CrescoMascot } from '../brand/CrescoMascot';
+import { ByteBot } from '../character/ByteBot';
 import { NetQuestLogo } from '../brand/NetQuestLogo';
 import { soundFx } from '../../utils/soundEffects';
 import { ArrowRight, Sparkles, Network, BookOpen, Compass } from 'lucide-react';
@@ -26,7 +26,7 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#F7F5F0] dark:bg-[#111827] text-[#172033] dark:text-[#F9FAFB] flex flex-col justify-between selection:bg-[#3157D5]/20 selection:text-[#3157D5] transition-colors duration-200">
+    <div className="min-h-screen w-full bg-[#F7F5F0] dark:bg-[#111827] text-[#172033] dark:text-[#F9FAFB] flex flex-col justify-between selection:bg-[#3157D5]/20 selection:text-[#3157D5] transition-colors duration-300">
       
       {/* Top Bar with Brand & Optional Sign In */}
       <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between z-10">
@@ -115,15 +115,13 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
               </div>
             </div>
 
-            {/* Mascot Network Octopus Standing Beside the Topology */}
-            <div className="mt-6 flex items-center justify-center gap-4 w-full">
-              <CrescoMascot
-                pose="front"
-                size="xl"
-                animation="float"
-                withGlow
-                speechText="Hi! I'm your Network Octopus. In Cresco CN, every concept you master adds a real connection to your network!"
-                speechPosition="top"
+            {/* Mascot Byte Standing Beside the Topology */}
+            <div className="mt-6 flex items-center gap-4 w-full">
+              <ByteBot
+                pose="explaining"
+                size="lg"
+                showSpeech={true}
+                speechText="Hi! I'm Byte. In Cresco CN, every concept you master adds a real connection to your network!"
               />
             </div>
           </div>
@@ -132,7 +130,7 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
         {/* Right Side: Editorial Storytelling & Action Buttons */}
         <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
           
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-[#1F2937] border border-[#E5E0D8] dark:border-slate-800 text-xs font-bold text-[#3157D5] dark:text-[#6D8CFF] shadow-xs mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-[#1F2937] border border-[#E5E0D8] dark:border-slate-800 text-xs font-bold text-[#3157D5] dark:text-[#6D8CFF]">
             <Sparkles size={14} className="text-[#F0A63A]" />
             <span>Duolingo-Inspired Network Mastery</span>
           </div>
@@ -153,7 +151,7 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
                 soundFx.playCorrect();
                 onStart();
               }}
-              className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-[#3157D5] hover:bg-[#2442B0] text-white font-black text-base tracking-wide shadow-[0_4px_0_0_#2442B0] active:translate-y-1 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-[#3157D5] hover:bg-[#2442B0] text-white font-black text-base tracking-wide shadow-[0_4px_0_0_#2442B0] active:translate-y-1 active:shadow-[0_0_0_0_#2442B0] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>LET'S START</span>
               <ArrowRight size={18} strokeWidth={2.5} />
@@ -164,7 +162,7 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
                 soundFx.playClick();
                 onKnowBasics();
               }}
-              className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-white dark:bg-[#1F2937] hover:bg-[#EFECE6] dark:hover:bg-slate-800 text-[#172033] dark:text-[#F9FAFB] font-extrabold text-base tracking-wide border-2 border-[#E5E0D8] dark:border-slate-700 shadow-[0_4px_0_0_#E5E0D8] dark:shadow-[0_4px_0_0_#374151] active:translate-y-1 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-white dark:bg-[#1F2937] hover:bg-[#EFECE6] dark:hover:bg-slate-800 text-[#172033] dark:text-[#F9FAFB] font-extrabold text-base tracking-wide border-2 border-[#E5E0D8] dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Compass size={18} className="text-[#3157D5] dark:text-[#6D8CFF]" />
               <span>I KNOW THE BASICS</span>
