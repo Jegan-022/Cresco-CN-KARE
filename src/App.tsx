@@ -72,9 +72,9 @@ function MainApp() {
   const { isOnline } = useNetworkStatus();
   const { isCharacterHubOpen, closeCharacterHub } = useCharacter();
 
-  // Navigation State - defaults to 'home'
-  const [currentTab, setCurrentTab] = useState<NavTab>('home');
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(['home']);
+  // Navigation State - defaults to the Cresco preview landing page before login
+  const [currentTab, setCurrentTab] = useState<NavTab>('landing');
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['landing']);
   const [userRole, setUserRole] = useState<UserRole>('student');
   const [authPortalMode, setAuthPortalMode] = useState<'login' | 'landing' | 'prelaunch'>('login');
   const [selectedPortal, setSelectedPortal] = useState<'student' | 'developer' | 'teacher'>('student');
@@ -108,6 +108,21 @@ function MainApp() {
     sectionTitle: string;
     bonusXp: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (currentUser && currentTab === 'landing') {
+      setCurrentTab('home');
+      setTabHistory(['home']);
+      return;
+    }
+
+    if (!currentUser && currentTab === 'home') {
+      setCurrentTab('landing');
+      setTabHistory(['landing']);
+    }
+  }, [currentUser, loading, currentTab]);
 
   // Global Ctrl + K search shortcut listener
   useEffect(() => {
@@ -226,7 +241,7 @@ function MainApp() {
       setTabHistory(updated);
       setCurrentTab(prevTab);
     } else {
-      setCurrentTab('home');
+      setCurrentTab('landing');
     }
   }, [tabHistory]);
 
@@ -255,6 +270,17 @@ function MainApp() {
     return <BootTerminal />;
   }
 
+  // Landing page preview -> login flow before an authenticated dashboard can load
+  if (currentTab === 'landing') {
+    return (
+      <WelcomeOnboardingView
+        onStart={() => setCurrentTab('login')}
+        onKnowBasics={() => setCurrentTab('learn-map')}
+        onSignIn={() => setCurrentTab('login')}
+      />
+    );
+  }
+
   // Dedicated Login & Student Registration Flow
   if (currentTab === 'login') {
     return (
@@ -263,13 +289,18 @@ function MainApp() {
           initialPortal={selectedPortal}
           onSuccess={() => {
             setCurrentTab('home');
+            setTabHistory(['home']);
           }}
-          onCancel={handleGoBack}
+          onCancel={() => {
+            setCurrentTab('landing');
+            setTabHistory(['landing']);
+          }}
         />
         <KluRegistrationModal
           isOpen={!!pendingRegistration}
           onSuccess={() => {
             setCurrentTab('home');
+            setTabHistory(['home']);
           }}
         />
       </>
@@ -280,12 +311,12 @@ function MainApp() {
   if (currentTab === 'welcome') {
     return (
       <WelcomeOnboardingView
-        onStart={() => setCurrentTab('home')}
+        onStart={() => setCurrentTab('login')}
         onKnowBasics={() => {
           setActiveSectionId(1);
           setCurrentTab('learn-map');
         }}
-        onSignIn={() => handleOpenAuth('login')}
+        onSignIn={() => setCurrentTab('login')}
       />
     );
   }
@@ -312,48 +343,37 @@ function MainApp() {
   }
 
   return (
-    <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-full bg-surface text-on-surface flex flex-col overflow-hidden font-sans selection:bg-primary/20 selection:text-primary transition-colors duration-300">
-        
-        {/* Subtle Network Topology Background Mesh (Sections 10 & 11) */}
-        <NetworkBackground mode={currentTab === 'exam' ? 'exam' : 'static'} />
+    <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-full bg-surface text-on-surface flex flex-col overflow-hidden font-sans selection:bg-primary/20 selection:text-primary transition-colors duration-200">
+      {/* Existing dashboard layout unchanged */}
+      <NetworkBackground mode={currentTab === 'exam' ? 'exam' : 'static'} />
 
-        {/* 1. Global Header Bar */}
-        <Header
-          currentTab={currentTab}
-          onNavigate={handleNavigate}
-          userStats={userStats}
-          onOpenStreak={() => setIsStreakModalOpen(true)}
-          onOpenLevel={() => setIsLevelModalOpen(true)}
-          onSearch={() => setIsSearchOpen(true)}
-        />
+      <Header
+        currentTab={currentTab}
+        onNavigate={handleNavigate}
+        userStats={userStats}
+        onOpenStreak={() => setIsStreakModalOpen(true)}
+        onOpenLevel={() => setIsLevelModalOpen(true)}
+        onSearch={() => setIsSearchOpen(true)}
+      />
 
-      {/* 2. Main Body: Left Sidebar + Independent Scrollable Content */}
       <div className="flex-1 flex flex-row min-w-0 min-h-0 overflow-hidden">
-        
-        {/* Sidebar */}
         <Sidebar
           activeTab={currentTab}
           onNavigate={handleNavigate}
           onSearch={() => setIsSearchOpen(true)}
         />
 
-        {/* Scrollable Center Area */}
         <div 
           id="main-scroll-container" 
           className="flex-1 flex flex-col min-w-0 h-full min-h-0 overflow-y-auto overflow-x-hidden"
         >
-          {/* Offline Persistence Banner */}
           <OfflinePersistenceBanner pendingSyncCount={pendingWritesCount} />
 
-          {/* Main Content Area */}
           <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-28 sm:pb-24 md:pb-16 py-4">
-            
-            {/* Screen 02: Home */}
             {currentTab === 'home' && (
               <HomeView onNavigate={handleNavigate} userStats={userStats} />
             )}
 
-            {/* Screen 03: The Signature Learning Map */}
             {(currentTab === 'learn-map' || currentTab === 'courses' || currentTab === 'learn') && (
               <LearningMapView
                 onSelectLesson={handleSelectLesson}
@@ -361,7 +381,6 @@ function MainApp() {
               />
             )}
 
-            {/* Screen 06: Drag & Drop Network Builder */}
             {currentTab === 'drag-drop' && (
               <DragDropNetworkView
                 onComplete={() => handleNavigate('learn-map')}
@@ -369,26 +388,22 @@ function MainApp() {
               />
             )}
 
-            {/* Screen 07: Packet Simulator */}
             {(currentTab === 'simulator' || currentTab === 'lab') && (
               <PacketSimulatorView
                 onBack={() => handleNavigate('home')}
               />
             )}
 
-            {/* Screen 08: Animated Learning */}
             {currentTab === 'animated-learning' && (
               <AnimatedLearningView
                 onNavigateHome={() => handleNavigate('home')}
               />
             )}
 
-            {/* Screen 10: Practice */}
             {(currentTab === 'practice' || currentTab === 'quiz-and-practice' || currentTab === 'quiz' || currentTab === 'exam' || currentTab === 'challenges' || currentTab === 'boss-challenge' || currentTab === 'daily-challenge') && (
               <PracticeView onNavigate={handleNavigate} initialTab="flashcards" />
             )}
 
-            {/* Screen 11: Notes & Study Material */}
             {currentTab === 'review' && (
               <SmartReviewView
                 onBack={handleGoBack}
@@ -397,17 +412,14 @@ function MainApp() {
               />
             )}
 
-            {/* Settings */}
             {currentTab === 'settings' && (
               <SettingsView onNavigate={handleNavigate} />
             )}
 
-            {/* Screen 15: Leaderboard / Network League */}
             {currentTab === 'leaderboard' && (
               <LeaderboardView />
             )}
 
-            {/* Screen 16: Profile */}
             {currentTab === 'profile' && (
               <ProfileView
                 primaryCourse={course}
@@ -416,12 +428,10 @@ function MainApp() {
               />
             )}
 
-            {/* Progress & Analytics Dashboard */}
             {currentTab === 'analytics' && (
               <AnalyticsView />
             )}
 
-            {/* Secondary Hubs */}
             {currentTab === 'my-learning' && (
               <MyLearningView
                 primaryCourse={course}
@@ -449,7 +459,6 @@ function MainApp() {
               <DeveloperDashboardView onNavigate={handleNavigate} />
             )}
 
-            {/* Dedicated 403 Offline Access Restricted Page */}
             {currentTab === '403' && (
               <Offline403Page
                 standalone
@@ -458,7 +467,6 @@ function MainApp() {
               />
             )}
 
-            {/* Dedicated 404 Server Crash / Route Not Found Page */}
             {currentTab === '404' && (
               <ServerCrash404Page
                 errorCode="404"
@@ -468,10 +476,8 @@ function MainApp() {
                 resetErrorBoundary={() => handleNavigate('home')}
               />
             )}
-
           </main>
 
-          {/* Clean Educational Footer */}
           <footer className="border-t border-[#E5E0D8] dark:border-slate-800/80 py-6 px-4 text-center text-xs text-[#64748B] dark:text-slate-400">
             <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="font-bold text-[#172033] dark:text-slate-300">
@@ -480,15 +486,11 @@ function MainApp() {
               <span>Gamified Computer Networks Platform</span>
             </div>
           </footer>
-
         </div>
-
       </div>
 
-      {/* Dedicated Mobile Responsive Bottom Navigation */}
       <BottomNav activeTab={currentTab} onNavigate={handleNavigate} />
 
-      {/* Screen 12: Streak Modal */}
       <StreakModal
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
@@ -499,7 +501,6 @@ function MainApp() {
         streakDays={userStats.streak}
       />
 
-      {/* Screen 13: XP / Level Progress Modal */}
       <LevelProgressModal
         isOpen={isLevelModalOpen}
         onClose={() => setIsLevelModalOpen(false)}
@@ -510,7 +511,6 @@ function MainApp() {
         currentXp={userStats.xp}
       />
 
-      {/* Global Modals */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -531,7 +531,6 @@ function MainApp() {
         onClose={() => setActivePracticeCategory(null)}
       />
 
-      {/* Firebase Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -540,15 +539,14 @@ function MainApp() {
         }}
       />
 
-      {/* Student Profile & Registration Wizard Modal */}
       <KluRegistrationModal
         isOpen={!!pendingRegistration}
         onSuccess={() => {
           setCurrentTab('home');
+          setTabHistory(['home']);
         }}
       />
 
-      {/* Section Completion Toast */}
       {sectionCompletionCelebration && (
         <SectionCompletionToast
           sectionTitle={sectionCompletionCelebration.sectionTitle}
@@ -556,8 +554,7 @@ function MainApp() {
           onClose={() => setSectionCompletionCelebration(null)}
         />
       )}
-
-      </div>
+    </div>
   );
 }
 
