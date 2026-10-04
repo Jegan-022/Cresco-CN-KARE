@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useAuth, GLOBAL_RESET_EPOCH } from '../../context/AuthContext';
 import { TOTAL_MODULES_COUNT } from '../../data/courseContent';
-import { STUDENT_CREDENTIALS } from '../../data/studentCredentials';
 import { isAuthorizedDeveloper } from '../../config/developers';
 import { LeaderboardStudent } from '../../types';
 import { CertificateModal } from '../modals/CertificateModal';
@@ -250,31 +249,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
   const [filterTab, setFilterTab] = useState<'all' | 'completed' | 'in-progress'>('all');
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
-  // Merge official KLU student roster, Firestore cloud entries, local storage, and current user
+  // Merge Firestore cloud entries, local storage, and current user
   const getMergedStudents = useCallback((firestoreStudents: FirestoreStudentEntry[]): FirestoreStudentEntry[] => {
     const map = new Map<string, FirestoreStudentEntry>();
 
-    // 1. Ingest official enrolled class roster as baseline (all 66 non-dev enrolled students)
-    STUDENT_CREDENTIALS.forEach((cred) => {
-      if (isDevAccount(cred.studentId, cred.email, cred.name, cred.role)) return;
-      const key = cred.studentId.trim().toLowerCase();
-      map.set(key, {
-        uid: `klu_${cred.studentId}`,
-        studentId: cred.studentId,
-        name: cred.name,
-        displayName: cred.name,
-        email: cred.email,
-        college: 'KLU',
-        totalXP: 0,
-        xp: 0,
-        overallProgress: 0,
-        modulesCompleted: 0,
-        completedModules: [],
-        role: 'student',
-      });
-    });
-
-    // 2. Ingest cloud Firestore students and overlay live verified progress
+    // Ingest cloud Firestore students and overlay live verified progress
     firestoreStudents.forEach((s) => {
       if (isDevAccount(s.studentId || s.uid, s.email, s.displayName || s.name, s.role)) return;
       const sId = (s.studentId || s.uid.replace(/^klu_/, '')).trim();

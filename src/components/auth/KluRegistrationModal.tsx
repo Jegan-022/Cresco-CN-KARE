@@ -18,6 +18,7 @@ import {
 import { useAuth, UserProfileData } from '../../context/AuthContext';
 import { Loader } from '../ui/Loader';
 import { soundFx } from '../../utils/soundEffects';
+import { findStudentCredential } from '../../data/studentCredentials';
 
 interface KluRegistrationModalProps {
   isOpen: boolean;
@@ -53,22 +54,31 @@ export const KluRegistrationModal: React.FC<KluRegistrationModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Initialize prefilled data from Google account
+  // Initialize prefilled data from Google account & official roster
   useEffect(() => {
     if (pendingRegistration) {
-      if (pendingRegistration.name) {
-        setFullName(pendingRegistration.name);
-      }
-      if (pendingRegistration.email) {
-        const prefix = pendingRegistration.email.split('@')[0];
-        // If prefix is numeric or contains ID, suggest it
-        if (/^\d+$/.test(prefix)) {
-          setStudentId(prefix);
-          setUsername(`klu_${prefix}`);
-        } else {
-          const cleanUser = prefix.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase().slice(0, 16);
-          setUsername(cleanUser);
+      const email = pendingRegistration.email || '';
+      const prefix = email.split('@')[0];
+      const roster = findStudentCredential(email) || findStudentCredential(prefix);
+
+      if (roster) {
+        if (roster.name) setFullName(roster.name);
+        if (roster.studentId) setStudentId(roster.studentId);
+        if (roster.department) setDepartment(roster.department);
+      } else {
+        if (pendingRegistration.name) {
+          setFullName(pendingRegistration.name);
         }
+        if (prefix) {
+          setStudentId(prefix);
+        }
+      }
+
+      if (/^\d+$/.test(prefix)) {
+        setUsername(`klu_${prefix}`);
+      } else {
+        const cleanUser = prefix.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase().slice(0, 16);
+        setUsername(cleanUser || 'student');
       }
     }
   }, [pendingRegistration]);

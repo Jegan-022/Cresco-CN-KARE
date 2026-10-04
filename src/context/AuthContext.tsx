@@ -14,7 +14,21 @@ import {
   getRedirectResult,
   deleteUser
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, increment, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  query, 
+  where, 
+  limit, 
+  collection, 
+  updateDoc, 
+  arrayUnion, 
+  increment, 
+  serverTimestamp, 
+  onSnapshot 
+} from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { AlertTriangle, X } from 'lucide-react';
 import { fetchWithAuth } from '../lib/api';
@@ -22,11 +36,11 @@ import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } f
 import { findStudentCredential, verifyStudentCredential } from '../data/studentCredentials';
 import { ALL_MODULES } from '../data/courseContent';
 
-// KLU email validation regex strictly mandated by requirements (accepts both @klu.ac.in and @kluniversity.in)
-export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@(klu\.ac\.in|kluniversity\.in)$/i;
+// KLU / KIID email validation regex strictly mandated by requirements (accepts @klu.ac.in, @kluniversity.in, and KIID domains)
+export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.)?(klu\.ac\.in|kluniversity\.in|kiid\.[a-z.]+|kiid\.ac\.in|kiid\.edu\.in|kiid\.in)$/i;
 
 export const extractStudentId = (email: string): string => {
-  const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@(klu\.ac\.in|kluniversity\.in)$/i);
+  const match = email.trim().match(/^([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.)?(klu\.ac\.in|kluniversity\.in|kiid\.[a-z.]+|kiid\.ac\.in|kiid\.edu\.in|kiid\.in)$/i);
   return match ? match[1] : email.split('@')[0];
 };
 
@@ -112,7 +126,7 @@ interface AuthContextType {
   authError: string | null;
   clearAuthError: () => void;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<{ isNewUser: boolean; profile: UserProfileData | null }>;
   loginWithStudentId: (studentIdOrEmail: string, password?: string, name?: string) => Promise<void>;
   resetStudentPassword: (studentIdOrEmail: string, newPassword: string) => Promise<void>;
   registerWithEmail: (email: string, pass: string, name: string, role?: 'student' | 'teacher') => Promise<void>;
@@ -204,8 +218,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const userDocUnsubRef = useRef<(() => void) | null>(null);
   const clearAuthError = () => setAuthError(null);
 
-  // Fetch current student's profile from Firestore with timeout resilience
-  const syncAndFetchProfile = async (user: User, fallbackName?: string, fallbackRole?: 'student' | 'teacher' | 'developer') => {
+  // Helper to reliably locate an existing student user profile across Firestore & cache
+  const findExistingUserProfile = async (
+    uid: string, 
+    email: string
+  ): Promise<{ docId: string; data: UserProfileData } | null> => {
+    const cleanEmail = email.toLowerCase().trim();
+    const studentId = extractStudentId(cleanEmail);
+
+    // 1. Direct match on students collection using the authenticated Google UID
+    try {
+      const snap = await getDoc(doc(db, 'students', uid));
+      if (snap.exists()) {
+        const d = snap.data() as any;
+        const hasCompleted = d && (
+          d.profileCompleted === true ||
+          (typeof d.username === 'string' && d.username.trim().length > 0) ||
+          (typeof d.portalPassword === 'string' && d.portalPassword.length > 0) ||
+          (d.totalXP || 0) > 0 ||
+          (d.completedModules && d.completedModules.length > 0)
+        );
+        if (hasCompleted) {
+          return { docId: uid, data: d };
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Direct UID lookup handled error:', e);
+    }
+
+    // 2. Match on candidate student docs (klu_${studentId} and ${studentId})
+    const candidateDocIds = [`klu_${studentId}`, studentId];
+    for (const cId of candidateDocIds) {
+      try {
+        const snap = await getDoc(doc(db, 'students', cId));
+        if (snap.exists()) {
+          const d = snap.data() as any;
+          const hasCompleted = d && (
+            d.profileCompleted === true ||
+            (typeof d.username === 'string' && d.username.trim().length > 0) ||
+            (typeof d.portalPassword === 'string' && d.portalPassword.length > 0) ||
+            (d.totalXP || 0) > 0 ||
+            (d.completedModules && d.completedModules.length > 0)
+          );
+          if (hasCompleted) {
+            return { docId: cId, data: d };
+          }
+        }
+      } catch (e) {
+        console.warn(`[Auth] Candidate ID (${cId}) lookup handled error:`, e);
+      }
+    }
+
+    // 3. Match from usernames collection by email
+    try {
+      const qUsernames = query(collection(db, 'usernames'), where('email', '==', cleanEmail), limit(1));
+      const uSnap = await getDocs(qUsernames);
+      if (!uSnap.empty) {
+        const uDoc = uSnap.docs[0].data();
+        const targetUid = uDoc.uid || uid;
+        const sSnap = await getDoc(doc(db, 'students', targetUid));
+        if (sSnap.exists()) {
+          return { docId: targetUid, data: sSnap.data() as any };
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Usernames email lookup handled error:', e);
+    }
+
+    // 4. Query students collection by email
+    try {
+      const qStudents = query(collection(db, 'students'), where('email', '==', cleanEmail), limit(1));
+      const sSnap = await getDocs(qStudents);
+      if (!sSnap.empty) {
+        const docSnap = sSnap.docs[0];
+        const d = docSnap.data() as any;
+        return { docId: docSnap.id, data: d };
+      }
+    } catch (e) {
+      console.warn('[Auth] Students collection email query handled error:', e);
+    }
+
+    // 5. Check local cache fallback
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(`klu_profile_${uid}`) || 
+                     localStorage.getItem(`klu_profile_${studentId}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && (parsed.profileCompleted || parsed.username || (parsed.totalXP || 0) > 0)) {
+            return { docId: uid, data: parsed };
+          }
+        } catch {}
+      }
+    }
+
+    return null;
+  };
+
+  // Fetch current student's profile from Firestore with timeout resilience and zero-data loss merging
+  const syncAndFetchProfile = async (
+    user: User, 
+    fallbackName?: string, 
+    fallbackRole?: 'student' | 'teacher' | 'developer',
+    prefetchedData?: any
+  ) => {
     let studentId = extractStudentId(user.email || '');
     if (user.uid.startsWith('dev_')) {
       const devCandidate = user.uid.replace(/^dev_/, '');
@@ -225,13 +341,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 1. Immediately load from localStorage if available so user is never blocked or reset
     const storageKey = isDev ? `klu_profile_${devProfileInfo?.id || studentId}` : `klu_profile_${studentId}`;
-    const localSaved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    const localSaved = typeof window !== 'undefined' ? (localStorage.getItem(storageKey) || localStorage.getItem(`klu_profile_${user.uid}`)) : null;
     let currentProfile: UserProfileData = zeroState;
     if (localSaved) {
       try {
         const parsed = JSON.parse(localSaved);
-        // Purge any stale mock/fake values or pre-reset epoch profiles
-        if (parsed.resetEpoch !== GLOBAL_RESET_EPOCH || (parsed.totalXP || 0) >= 9000 || parsed.completedUnits === 3 || (parsed.streak || 0) >= 90) {
+        if ((parsed.totalXP || 0) >= 9000 || parsed.completedUnits === 3 || (parsed.streak || 0) >= 90) {
           if (typeof window !== 'undefined') localStorage.removeItem(storageKey);
           currentProfile = zeroState;
         } else {
@@ -243,6 +358,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    if (prefetchedData) {
+      currentProfile = {
+        ...currentProfile,
+        ...prefetchedData,
+        uid: user.uid,
+        email: user.email || prefetchedData.email || currentProfile.email,
+        username: prefetchedData.username || currentProfile.username,
+        profileCompleted: prefetchedData.profileCompleted ?? currentProfile.profileCompleted ?? true,
+        portalPassword: prefetchedData.portalPassword || currentProfile.portalPassword,
+        department: prefetchedData.department || currentProfile.department || 'CSE',
+        year: prefetchedData.year || currentProfile.year || '3rd Year',
+      };
+    }
+
     // Immediately establish the active session, profile and user in state & local storage
     if (typeof window !== 'undefined') {
       if (isDev) {
@@ -251,19 +380,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('klu_active_student_id', studentId);
       }
       localStorage.setItem(storageKey, JSON.stringify(currentProfile));
+      localStorage.setItem(`klu_profile_${user.uid}`, JSON.stringify(currentProfile));
     }
     setCurrentUser(user);
     setUserProfile(currentProfile);
 
     try {
       const userRef = doc(db, 'students', user.uid);
-      const getDocPromise = getDoc(userRef);
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Firestore timeout')), 2500)
-      );
-      const snap = await Promise.race([getDocPromise, timeoutPromise]);
+      let remoteData: any = prefetchedData;
 
-      if (!snap.exists()) {
+      if (!remoteData) {
+        const getDocPromise = getDoc(userRef);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Firestore timeout')), 4500)
+        );
+        const snap = await Promise.race([getDocPromise, timeoutPromise]) as any;
+
+        if (snap && snap.exists && snap.exists()) {
+          remoteData = snap.data();
+        }
+      }
+
+      if (!remoteData) {
         setDoc(userRef, { 
           ...currentProfile, 
           uid: user.uid,
@@ -274,97 +412,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updatedAt: serverTimestamp() 
         }, { merge: true }).catch(() => {});
         setUserProfile(currentProfile);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(storageKey, JSON.stringify(currentProfile));
-        }
       } else {
-        const remoteData = snap.data() as any;
-        
-        // Reset if remote doc has pre-reset epoch or corrupted stats
-        const needsReset = 
-          remoteData.resetEpoch !== GLOBAL_RESET_EPOCH ||
-          (remoteData.totalXP || 0) >= 9000 || 
-          (remoteData.streak || 0) >= 90 || 
-          (remoteData.completedUnits >= 3 && (remoteData.completedModules || []).length === 0);
+        // Intelligently merge remote data with local cache while strictly preserving identity & credentials
+        const localModules = currentProfile.completedModules || [];
+        const remoteModules = remoteData.completedModules || [];
+        const mergedModules = Array.from(new Set([...localModules, ...remoteModules]));
+        const mergedXP = Math.max(
+          currentProfile.totalXP || 0, 
+          currentProfile.xp || 0,
+          remoteData.totalXP || 0, 
+          remoteData.xp || 0
+        );
 
-        if (needsReset) {
-          console.warn("Resetting student profile to scratch in Firestore:", user.uid);
-          await setDoc(userRef, {
-            ...zeroState,
-            uid: user.uid,
-            studentId,
-            role: isDev ? 'developer' : (remoteData.role || 'student'),
-            resetEpoch: GLOBAL_RESET_EPOCH,
-            updatedAt: serverTimestamp()
-          });
-          setUserProfile(zeroState);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, JSON.stringify(zeroState));
-          }
-        } else {
-          // Intelligently merge remote data with local cache
-          const localModules = currentProfile.completedModules || [];
-          const remoteModules = remoteData.completedModules || [];
-          const mergedModules = Array.from(new Set([...localModules, ...remoteModules]));
-          const mergedXP = Math.max(
-            currentProfile.totalXP || 0, 
-            currentProfile.xp || 0,
-            remoteData.totalXP || 0, 
-            remoteData.xp || 0
-          );
-
-          let calculatedCompletedUnits = remoteData.completedUnits || 0;
-          if (mergedModules.length === 0 && (remoteData.completedSteps || []).filter((s: string) => s.startsWith('quiz_')).length === 0) {
-            calculatedCompletedUnits = 0;
-          }
-
-          const isFinished = mergedModules.length >= (ALL_MODULES.length || 30);
-          const completionTime = remoteData.courseCompletedAt || currentProfile.courseCompletedAt || (isFinished ? (currentProfile.updatedAt || new Date().toISOString()) : undefined);
-
-          const profile: UserProfileData = {
-            ...zeroState,
-            ...remoteData,
-            ...currentProfile,
-            resetEpoch: GLOBAL_RESET_EPOCH,
-            role: isDev ? 'developer' : (remoteData.role || currentProfile.role || zeroState.role),
-            completedModules: mergedModules,
-            totalXP: mergedXP,
-            xp: mergedXP,
-            completedUnits: calculatedCompletedUnits,
-            modulesCompleted: mergedModules.length,
-            overallProgress: Math.min(100, Math.round((mergedModules.length / (ALL_MODULES.length || 30)) * 100)),
-            ...(completionTime ? { courseCompletedAt: completionTime } : {}),
-            updatedAt: new Date().toISOString()
-          };
-          
-          setUserProfile(profile);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, JSON.stringify(profile));
-            if (isDev) {
-              localStorage.setItem('klu_active_dev_id', studentId);
-            }
-          }
-
-          // Keep remote in sync with the merged state and set active presence
-          setDoc(userRef, {
-            name: profile.name || profile.displayName,
-            displayName: profile.displayName || profile.name,
-            email: profile.email,
-            studentId: profile.studentId,
-            college: profile.college || 'KLU',
-            role: isDev ? 'developer' : (profile.role || 'student'),
-            completedModules: mergedModules,
-            totalXP: profile.totalXP,
-            xp: profile.xp,
-            completedUnits: profile.completedUnits,
-            modulesCompleted: mergedModules.length,
-            overallProgress: profile.overallProgress,
-            ...(profile.courseCompletedAt ? { courseCompletedAt: profile.courseCompletedAt } : {}),
-            isOnline: true,
-            lastLogin: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          }, { merge: true }).catch(() => {});
+        let calculatedCompletedUnits = remoteData.completedUnits || currentProfile.completedUnits || 0;
+        if (mergedModules.length === 0 && (remoteData.completedSteps || []).filter((s: string) => s.startsWith('quiz_')).length === 0) {
+          calculatedCompletedUnits = 0;
         }
+
+        const isFinished = mergedModules.length >= (ALL_MODULES.length || 30);
+        const completionTime = remoteData.courseCompletedAt || currentProfile.courseCompletedAt || (isFinished ? (currentProfile.updatedAt || new Date().toISOString()) : undefined);
+        const mergedStreak = Math.max(currentProfile.streak || 0, remoteData.streak || 0);
+
+        const profile: UserProfileData = {
+          ...zeroState,
+          ...remoteData,
+          ...currentProfile,
+          uid: user.uid,
+          email: user.email || remoteData.email || currentProfile.email,
+          name: remoteData.name || currentProfile.name || zeroState.name,
+          displayName: remoteData.displayName || currentProfile.displayName || zeroState.displayName,
+          studentId: remoteData.studentId || currentProfile.studentId || studentId,
+          username: remoteData.username || currentProfile.username,
+          profileCompleted: Boolean(remoteData.profileCompleted || currentProfile.profileCompleted),
+          portalPassword: remoteData.portalPassword || currentProfile.portalPassword,
+          department: remoteData.department || currentProfile.department || 'CSE',
+          year: remoteData.year || currentProfile.year || '3rd Year',
+          college: remoteData.college || currentProfile.college || 'KLU',
+          role: isDev ? 'developer' : (remoteData.role || currentProfile.role || zeroState.role),
+          resetEpoch: GLOBAL_RESET_EPOCH,
+          completedModules: mergedModules,
+          totalXP: mergedXP,
+          xp: mergedXP,
+          streak: mergedStreak,
+          completedUnits: calculatedCompletedUnits,
+          modulesCompleted: mergedModules.length,
+          overallProgress: Math.min(100, Math.round((mergedModules.length / (ALL_MODULES.length || 30)) * 100)),
+          ...(completionTime ? { courseCompletedAt: completionTime } : {}),
+          updatedAt: new Date().toISOString()
+        };
+        
+        setUserProfile(profile);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, JSON.stringify(profile));
+          localStorage.setItem(`klu_profile_${user.uid}`, JSON.stringify(profile));
+          if (profile.username) {
+            localStorage.setItem(`klu_profile_${profile.username}`, JSON.stringify(profile));
+          }
+          if (isDev) {
+            localStorage.setItem('klu_active_dev_id', studentId);
+          }
+        }
+
+        // Keep remote in sync with the merged state and set active presence
+        setDoc(userRef, {
+          uid: user.uid,
+          name: profile.name || profile.displayName,
+          displayName: profile.displayName || profile.name,
+          email: profile.email,
+          studentId: profile.studentId,
+          username: profile.username || null,
+          profileCompleted: profile.profileCompleted ?? true,
+          department: profile.department || 'CSE',
+          year: profile.year || '3rd Year',
+          college: profile.college || 'KLU',
+          role: isDev ? 'developer' : (profile.role || 'student'),
+          completedModules: mergedModules,
+          totalXP: profile.totalXP,
+          xp: profile.xp,
+          streak: profile.streak,
+          completedUnits: profile.completedUnits,
+          modulesCompleted: mergedModules.length,
+          overallProgress: profile.overallProgress,
+          ...(profile.portalPassword ? { portalPassword: profile.portalPassword } : {}),
+          ...(profile.courseCompletedAt ? { courseCompletedAt: profile.courseCompletedAt } : {}),
+          resetEpoch: GLOBAL_RESET_EPOCH,
+          isOnline: true,
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true }).catch(() => {});
       }
 
       // Attach real-time snapshot listener on the active user doc
@@ -381,7 +516,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (liveData.completedUnits >= 3 && (!liveData.completedModules || liveData.completedModules.length === 0)) {
               liveData.completedUnits = 0;
             }
-            setUserProfile((prev) => prev ? { ...prev, ...liveData } : liveData);
+            setUserProfile((prev) => prev ? { 
+              ...prev, 
+              ...liveData,
+              username: liveData.username || prev.username,
+              profileCompleted: liveData.profileCompleted ?? prev.profileCompleted,
+              portalPassword: liveData.portalPassword || prev.portalPassword,
+            } : liveData);
           }
         }, (err) => {
           console.warn('[Firestore] Profile onSnapshot handled error (offline cache fallback):', err);
@@ -405,7 +546,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const keysToClean: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
-          if (k && (k.startsWith('klu_profile_') || k.startsWith('quiz_') || k.startsWith('netquest_progress_') || k.startsWith('klu_completed_'))) {
+          if (k && (k.startsWith('quiz_') || k.startsWith('netquest_progress_') || k.startsWith('klu_completed_'))) {
             keysToClean.push(k);
           }
         }
@@ -437,7 +578,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedDevProfile) {
         try {
           const parsed = JSON.parse(savedDevProfile);
-          if (parsed.resetEpoch === GLOBAL_RESET_EPOCH && (parsed.totalXP || 0) < 9000 && parsed.completedUnits !== 3 && (parsed.streak || 0) < 90) {
+          if ((parsed.totalXP || 0) < 9000 && parsed.completedUnits !== 3 && (parsed.streak || 0) < 90) {
             devProfile = { ...zeroDev, ...parsed, role: 'developer' };
           } else {
             localStorage.removeItem(`klu_profile_${devInfo.id}`);
@@ -462,21 +603,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (saved) {
         try {
           const profile = JSON.parse(saved);
-          if (profile.resetEpoch !== GLOBAL_RESET_EPOCH) {
-            localStorage.removeItem(`klu_profile_${activeStudentId}`);
-            localStorage.removeItem('klu_active_student_id');
-          } else {
-            const syntheticUser: any = {
-              uid: profile.uid,
-              email: profile.email,
-              displayName: profile.name || profile.displayName,
-              emailVerified: true,
-              getIdToken: async () => `token_${profile.uid}`,
-            };
-            setCurrentUser(syntheticUser);
-            setUserProfile(profile);
-            setLoading(false);
-          }
+          const syntheticUser: any = {
+            uid: profile.uid || `klu_${activeStudentId}`,
+            email: profile.email,
+            displayName: profile.name || profile.displayName,
+            emailVerified: true,
+            getIdToken: async () => `token_${profile.uid || activeStudentId}`,
+          };
+          setCurrentUser(syntheticUser);
+          setUserProfile(profile);
+          setLoading(false);
+          // Sync in background to ensure latest stats
+          syncAndFetchProfile(syntheticUser, profile.name, 'student', profile);
         } catch (e) {
           console.error('Failed to restore local student profile:', e);
         }
@@ -488,13 +626,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(async (result) => {
         if (result?.user) {
           const email = (result.user.email || '').toLowerCase().trim();
-          if (!KLU_EMAIL_REGEX.test(email)) {
+          if (!KLU_EMAIL_REGEX.test(email) && !isAuthorizedDeveloper(email)) {
             await signOut(auth);
             setShowDomainError(true);
-            setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
+            setAuthError('Access restricted: Only official KLU / KIID email addresses (@klu.ac.in, @kluniversity.in) are allowed.');
             return;
           }
-          await syncAndFetchProfile(result.user);
+          const existing = await findExistingUserProfile(result.user.uid, email);
+          if (existing) {
+            setPendingRegistration(null);
+            if (existing.docId !== result.user.uid) {
+              setDoc(doc(db, 'students', result.user.uid), {
+                ...existing.data,
+                uid: result.user.uid,
+                email,
+                profileCompleted: true,
+                updatedAt: serverTimestamp(),
+              }, { merge: true }).catch(() => {});
+            }
+            setCurrentUser(result.user);
+            await syncAndFetchProfile(result.user, undefined, undefined, existing.data);
+          } else {
+            setPendingRegistration({
+              uid: result.user.uid,
+              email: result.user.email || '',
+              name: result.user.displayName || '',
+              photoURL: result.user.photoURL || undefined,
+            });
+            setLoading(false);
+          }
         }
       })
       .catch((err) => {
@@ -505,24 +665,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         const email = (user.email || '').toLowerCase().trim();
         const isGoogle = user.providerData?.some((p) => p.providerId === 'google.com');
-        if (isGoogle && !KLU_EMAIL_REGEX.test(email)) {
+        if (isGoogle && !KLU_EMAIL_REGEX.test(email) && !isAuthorizedDeveloper(email)) {
           await signOut(auth);
           setShowDomainError(true);
-          setAuthError('Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.');
+          setAuthError('Access restricted: Only official KLU / KIID email addresses (@klu.ac.in, @kluniversity.in) are allowed.');
           return;
         }
+
         try {
-          const userRef = doc(db, 'students', user.uid);
-          const snap = await getDoc(userRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data && (data.profileCompleted === true || data.username)) {
-              setCurrentUser(user);
-              syncAndFetchProfile(user);
-              return;
+          const existing = await findExistingUserProfile(user.uid, email);
+          if (existing) {
+            setPendingRegistration(null);
+            if (existing.docId !== user.uid) {
+              setDoc(doc(db, 'students', user.uid), {
+                ...existing.data,
+                uid: user.uid,
+                email,
+                profileCompleted: true,
+                updatedAt: serverTimestamp(),
+              }, { merge: true }).catch(() => {});
             }
+            setCurrentUser(user);
+            await syncAndFetchProfile(user, undefined, undefined, existing.data);
+            return;
           }
+
           if (isGoogle) {
+            // Only genuinely new Google users without any prior record
             setPendingRegistration({
               uid: user.uid,
               email: user.email || '',
@@ -544,15 +713,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!hasDev && !hasLocal) {
           setCurrentUser(null);
           setUserProfile(null);
+          setPendingRegistration(null);
         }
         setLoading(false);
       }
     });
 
-    // Safety timeout: ensure BootTerminal never hangs longer than 2.5 seconds
+    // Safety timeout: ensure loading state resolves swiftly
     const safetyTimer = setTimeout(() => {
       setLoading(false);
-    }, 2500);
+    }, 1800);
 
     return () => {
       clearTimeout(safetyTimer);
@@ -567,6 +737,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setCurrentUser(null);
     setUserProfile(null);
+    setLoading(false);
   };
 
   const checkUsernameAvailable = async (username: string): Promise<boolean> => {
@@ -581,8 +752,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const snap = await getDoc(usernameDocRef);
       if (snap.exists()) {
         const data = snap.data();
-        if (pendingRegistration && data?.uid === pendingRegistration.uid) {
-          return true;
+        if (pendingRegistration) {
+          if (data?.uid === pendingRegistration.uid) return true;
+          if (data?.email && pendingRegistration.email && data.email.toLowerCase() === pendingRegistration.email.toLowerCase()) return true;
         }
         return false;
       }
@@ -631,20 +803,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usernameDocRef = doc(db, 'usernames', cleanUser);
     try {
       const userSnap = await getDoc(usernameDocRef);
-      if (userSnap.exists() && userSnap.data()?.uid !== pendingRegistration.uid) {
-        throw new Error('This username is already taken. Please choose another username.');
+      if (userSnap.exists()) {
+        const uData = userSnap.data();
+        const isSelf = uData?.uid === pendingRegistration.uid || 
+          (uData?.email && pendingRegistration.email && uData.email.toLowerCase() === pendingRegistration.email.toLowerCase());
+        if (!isSelf) {
+          throw new Error('This username is already taken. Please choose another username.');
+        }
       }
     } catch (err: any) {
       if (err?.message?.includes('already taken')) throw err;
     }
 
     const uid = pendingRegistration.uid;
-    const email = pendingRegistration.email;
+    const email = pendingRegistration.email.toLowerCase().trim();
     const now = new Date().toISOString();
 
     const zeroState = createZeroStudentState(uid, email, cleanName, 'student');
     const profile: UserProfileData = {
       ...zeroState,
+      uid,
+      email,
       username: cleanUser,
       name: cleanName,
       displayName: cleanName,
@@ -653,6 +832,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       year: year || '3rd Year',
       profileCompleted: true,
       portalPassword: cleanPass,
+      resetEpoch: GLOBAL_RESET_EPOCH,
       updatedAt: now,
     };
 
@@ -669,7 +849,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firestore username claim write warning:', e);
     }
 
-    // 2. Write student profile in Firestore
+    // 2. Write student profile in Firestore under primary Google UID
     try {
       const studentDocRef = doc(db, 'students', uid);
       await setDoc(studentDocRef, {
@@ -682,9 +862,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firestore student profile write warning:', e);
     }
 
-    // 3. Cache locally
+    // 3. Write alias document under klu_${cleanId} to guarantee single unified identity
+    try {
+      const aliasDocRef = doc(db, 'students', `klu_${cleanId}`);
+      await setDoc(aliasDocRef, {
+        ...profile,
+        uid, // Points to Google UID
+        lastLogin: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore student alias write warning:', e);
+    }
+
+    // 4. Cache locally
     if (typeof window !== 'undefined') {
       localStorage.setItem(`klu_profile_${cleanId}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${cleanUser}`, JSON.stringify(profile));
       localStorage.setItem(`klu_pwd_${cleanId}`, cleanPass);
       localStorage.setItem(`klu_pwd_${cleanUser}`, cleanPass);
@@ -692,7 +887,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('klu_active_student_id', cleanId);
     }
 
-    // 4. Finalize login
+    // 5. Finalize login
     const syntheticUser: any = auth.currentUser || {
       uid,
       email,
@@ -705,6 +900,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserProfile(profile);
     setPendingRegistration(null);
     setLoading(false);
+    syncAndFetchProfile(syntheticUser, cleanName, 'student', profile);
 
     return profile;
   };
@@ -812,7 +1008,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {}
     }
 
-    // 3. Fallback: check local storage cache
+    // 3. If still not matched, check by email in students collection
+    if (!matchedUid && !matchedData && !matchedPassword && cleanInput.includes('@')) {
+      try {
+        const qByEmail = query(collection(db, 'students'), where('email', '==', cleanInput.toLowerCase()), limit(1));
+        const snap = await getDocs(qByEmail);
+        if (!snap.empty) {
+          const docSnap = snap.docs[0];
+          matchedUid = docSnap.id;
+          matchedData = docSnap.data();
+          matchedStudentId = matchedData.studentId || cleanInput;
+          matchedEmail = matchedData.email;
+          matchedName = matchedData.name || matchedData.displayName;
+          matchedPassword = matchedData.portalPassword;
+        }
+      } catch {}
+    }
+
+    // 4. Fallback: check local storage cache
     if (!matchedPassword && typeof window !== 'undefined') {
       const localPwd = localStorage.getItem(`klu_pwd_${cleanInput}`) || 
                        (matchedStudentId ? localStorage.getItem(`klu_pwd_${matchedStudentId}`) : null);
@@ -821,7 +1034,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 4. Fallback: check legacy student credentials CSV/roster
+    // 5. Fallback: check legacy student credentials CSV/roster
     const rosterStudent = findStudentCredential(cleanInput);
     if (rosterStudent) {
       matchedStudentId = rosterStudent.studentId;
@@ -832,7 +1045,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Default 992400xxxxx pattern fallback for unmigrated roster accounts
+    // 6. Default 992400xxxxx pattern fallback for unmigrated roster accounts
     const isFormat = /^992400\d{5}(@klu\.ac\.in)?$/i.test(cleanInput);
     if (isFormat && !matchedPassword) {
       const cleanId = cleanInput.split('@')[0];
@@ -849,7 +1062,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(msg);
     }
 
-    // 6. Verify password
+    // 7. Verify password
     const studentId = matchedStudentId || cleanInput;
     const last5 = studentId.slice(-5);
     const expectedLegacyPassword = `sid@${last5}`;
@@ -896,12 +1109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('klu_active_student_id', studentId);
       localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
       localStorage.setItem(storageKey, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
     }
 
     setCurrentUser(syntheticUser);
     setUserProfile(profile);
 
-    // Sync Firestore in background
+    // Sync Firestore in background & attach live listener
     try {
       const userRef = doc(db, 'students', uid);
       await setDoc(userRef, {
@@ -909,16 +1123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastLogin: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
+      syncAndFetchProfile(syntheticUser, name, 'student', profile);
     } catch {}
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<{ isNewUser: boolean; profile: UserProfileData | null }> => {
     setAuthError(null);
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ 
         prompt: 'select_account',
-        
       });
       
       let user: User | null = null;
@@ -930,7 +1144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
           console.info('Sign-in popup was blocked or cancelled, falling back to signInWithRedirect...');
           await signInWithRedirect(auth, provider);
-          return;
+          return { isNewUser: false, profile: null };
         }
         throw popupErr;
       }
@@ -940,41 +1154,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const email = user.email.toLowerCase().trim();
-      if (!KLU_EMAIL_REGEX.test(email)) {
+      if (!KLU_EMAIL_REGEX.test(email) && !isAuthorizedDeveloper(email)) {
         await signOut(auth);
         setShowDomainError(true);
-        const domainMsg = 'Access restricted: Only official KLU email addresses (@klu.ac.in) are allowed.';
+        const domainMsg = 'Access restricted: Only official KLU / KIID email addresses (@klu.ac.in, @kluniversity.in) are allowed.';
         setAuthError(domainMsg);
         throw new Error(domainMsg);
       }
       
-      // Check if student profile is already completed in Firestore
-      const userRef = doc(db, 'students', user.uid);
-      let isCompleted = false;
-      try {
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data && (data.profileCompleted === true || (data.username && data.username.trim().length > 0))) {
-            isCompleted = true;
+      // Robustly check if student profile already exists anywhere in Firestore or cache
+      const existing = await findExistingUserProfile(user.uid, email);
+
+      if (existing) {
+        setPendingRegistration(null);
+        if (existing.docId !== user.uid) {
+          try {
+            await setDoc(doc(db, 'students', user.uid), {
+              ...existing.data,
+              uid: user.uid,
+              email,
+              profileCompleted: true,
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+          } catch (e) {
+            console.warn('Error mirroring existing student profile to uid:', e);
           }
         }
-      } catch (e) {
-        console.warn('Firestore profile check warning:', e);
+        await syncAndFetchProfile(user, undefined, undefined, existing.data);
+        return { isNewUser: false, profile: existing.data };
       }
 
-      if (!isCompleted) {
-        setPendingRegistration({
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName || '',
-          photoURL: user.photoURL || undefined,
-        });
-        return;
-      }
-
-      // Sync and establish profile immediately
-      await syncAndFetchProfile(user);
+      // Genuinely NEW user: trigger the "Create Username & Password" setup screen
+      setPendingRegistration({
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName || '',
+        photoURL: user.photoURL || undefined,
+      });
+      return { isNewUser: true, profile: null };
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         throw new Error('SIGN_IN_CANCELLED');

@@ -119,12 +119,12 @@ function MainApp() {
       return;
     }
 
-    if (!currentUser && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome') {
+    if (!currentUser && !pendingRegistration && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome') {
       initialRedirectDoneRef.current = false;
       setCurrentTab('landing');
       setTabHistory(['landing']);
     }
-  }, [currentUser, loading, currentTab]);
+  }, [currentUser, pendingRegistration, loading, currentTab]);
 
   // Global Ctrl + K search shortcut listener
   useEffect(() => {

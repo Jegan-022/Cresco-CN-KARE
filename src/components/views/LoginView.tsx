@@ -57,11 +57,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setLocalError(null);
     setGoogleLoading(true);
     try {
-      await loginWithGoogle();
-      if (onSuccess) onSuccess();
+      const res = await loginWithGoogle();
+      if (!res?.isNewUser) {
+        if (onSuccess) onSuccess();
+      }
     } catch (err: any) {
       if (err.message !== 'SIGN_IN_CANCELLED') {
-        setLocalError(err.message || 'Google sign-in failed. Please verify your @klu.ac.in account.');
+        setLocalError(err.message || 'Google sign-in failed. Please verify your official KLU / KIID account.');
       }
     } finally {
       setGoogleLoading(false);
