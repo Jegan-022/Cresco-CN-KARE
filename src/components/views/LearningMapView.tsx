@@ -562,85 +562,6 @@ function NodeModal({
   );
 }
 
-function HUD({
-  userXp,
-  completedCount,
-  currentLevelNumber,
-}: {
-  userXp: number;
-  completedCount: number;
-  currentLevelNumber: number;
-}) {
-  const targetXp = 1500;
-  const levelProgress = Math.min(100, Math.round((userXp / targetXp) * 100));
-
-  const rankTitle =
-    currentLevelNumber <= 2
-      ? "Novice"
-      : currentLevelNumber <= 4
-      ? "Scout"
-      : currentLevelNumber <= 7
-      ? "Ranger"
-      : currentLevelNumber <= 11
-      ? "Navigator"
-      : currentLevelNumber <= 16
-      ? "Commander"
-      : currentLevelNumber <= 20
-      ? "Architect"
-      : "Overlord";
-
-  return (
-    <div className="absolute top-[14px] right-[14px] z-10 bg-[#0a1428]/80 backdrop-blur-sm border-2 border-[#ffc229]/40 border-solid rounded-[14px] px-4 py-3 flex flex-col gap-2 min-w-[160px]">
-      <div className="flex items-center gap-2">
-        <div className="size-[32px] rounded-full bg-[#ffc229] border-2 border-[#0a1428] border-solid flex items-center justify-center">
-          <span className="font-['Sora:ExtraBold'] font-extrabold text-[12px] text-[#0a1428]">
-            {currentLevelNumber}
-          </span>
-        </div>
-        <div>
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[11px] text-white/60 uppercase tracking-wider leading-none">
-            Level
-          </p>
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[14px] text-white leading-tight">
-            {rankTitle}
-          </p>
-        </div>
-      </div>
-      <div>
-        <div className="flex justify-between mb-1">
-          <span className="font-['Inter:Bold'] font-bold text-[9px] text-white/50 uppercase">XP</span>
-          <span className="font-['Inter:Bold'] font-bold text-[9px] text-[#ffc229]">
-            {userXp}/{targetXp}
-          </span>
-        </div>
-        <div className="h-[6px] bg-white/10 rounded-full overflow-hidden">
-          <div className="h-full bg-[#ffc229] rounded-full transition-all duration-500" style={{ width: `${levelProgress}%` }} />
-        </div>
-      </div>
-      <div className="flex justify-between pt-1 border-t border-white/10">
-        <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#4cd15b] leading-none">
-            {completedCount}
-          </p>
-          <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Done</p>
-        </div>
-        <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-[#ffc229] leading-none">
-            {Math.max(0, 21 - completedCount)}
-          </p>
-          <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Left</p>
-        </div>
-        <div className="text-center">
-          <p className="font-['Sora:ExtraBold'] font-extrabold text-[16px] text-white leading-none">
-            21
-          </p>
-          <p className="font-['Inter:Bold'] font-bold text-[8px] text-white/40 uppercase">Total</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export const LearningMapView: React.FC<LearningMapViewProps> = ({
   onSelectLesson,
   onNavigate,
@@ -650,7 +571,6 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
 
   // Derive student's live progression from Firebase userProfile
   const completedList = useMemo(() => userProfile?.completedModules || [], [userProfile?.completedModules]);
-  const userXp = useMemo(() => userProfile?.totalXP || userProfile?.xp || 0, [userProfile?.totalXP, userProfile?.xp]);
 
   // Helper to check whether a level node is completed
   const isLevelCompleted = useCallback(
@@ -695,12 +615,6 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
     });
   }, [isLevelCompleted]);
 
-  const completedCount = useMemo(() => nodes.filter((n) => n.status === "completed").length, [nodes]);
-  const currentLevelNumber = useMemo(() => {
-    const currentNode = nodes.find((n) => n.status === "current" || n.status === "in-progress");
-    return currentNode ? currentNode.id : Math.min(21, completedCount + 1);
-  }, [nodes, completedCount]);
-
   // Handle Play Action: launch actual interactive lesson player
   const handlePlay = useCallback(
     (node: LevelNode) => {
@@ -735,13 +649,6 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
 
       {/* Map scroll area */}
       <div className="flex-1 map-scroll relative overflow-auto">
-        {/* Fixed HUD overlay */}
-        <HUD
-          userXp={userXp}
-          completedCount={completedCount}
-          currentLevelNumber={currentLevelNumber}
-        />
-
         {/* Archipelago Adventures label */}
         <div className="absolute top-[60px] left-[20px] z-10 pointer-events-none">
           <p

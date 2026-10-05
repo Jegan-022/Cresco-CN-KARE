@@ -68,9 +68,8 @@ const ACADEMIC_YEARS = [
 ];
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ primaryCourse, onNavigate }) => {
-  const { currentUser, userProfile, logout, resetStudentCourse, updateStudentProfile } = useAuth();
+  const { currentUser, userProfile, logout, updateStudentProfile } = useAuth();
   
-  const [isResetting, setIsResetting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -292,34 +291,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ primaryCourse, onNavig
           >
             {isEditing ? <X size={14} /> : <Edit3 size={14} />}
             <span>{isEditing ? 'Close Editor' : 'Edit Profile'}</span>
-          </button>
-
-          <button
-            disabled={isResetting}
-            onClick={async () => {
-              const targetId = userProfile?.studentId ? `klu_${userProfile.studentId}` : (currentUser?.uid || '');
-              if (!targetId) return;
-              if (window.confirm("Reset your learning progress back to clean 0 baseline (0 XP, 0 Streak, 0 Completed Modules)? Your personal profile details will remain safe.")) {
-                setIsResetting(true);
-                soundFx.playClick();
-                try {
-                  await resetStudentCourse(targetId, { resetXP: true });
-                  if (userProfile?.studentId) {
-                    localStorage.removeItem(`klu_profile_${userProfile.studentId}`);
-                  }
-                  window.location.reload();
-                } catch (e: any) {
-                  alert("Failed to reset: " + (e?.message || e));
-                } finally {
-                  setIsResetting(false);
-                }
-              }
-            }}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 border border-amber-500/30 transition-all cursor-pointer"
-            title="Reset progress to 0 baseline"
-          >
-            <RotateCcw size={13} className={isResetting ? 'animate-spin' : ''} />
-            <span>{isResetting ? 'Resetting...' : 'Reset to 0'}</span>
           </button>
 
           {(currentUser || userProfile) && (
