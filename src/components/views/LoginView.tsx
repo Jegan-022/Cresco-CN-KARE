@@ -5,16 +5,13 @@ import {
   Info,
   ExternalLink,
   Globe,
-  Sparkles,
   Key,
-  Mail,
   Lock,
   Eye,
   EyeOff,
-  UserCheck,
+  User,
   ShieldCheck,
-  CheckCircle2,
-  GraduationCap
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { LiquidLines } from '../ui/LiquidLines';
@@ -29,7 +26,6 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ 
-  initialMode = 'login',
   onSuccess, 
   onCancel 
 }) => {
@@ -40,12 +36,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     clearAuthError 
   } = useAuth();
   
-  // Differentiated flow mode: 'login' for returning students, 'signup' for first-time KLU mail users
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(
-    initialMode === 'signup' ? 'signup' : 'login'
-  );
-
-  // Student credentials
+  // Student ID / Register Number & Password state
   const [studentIdInput, setStudentIdInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -53,6 +44,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showForgotHint, setShowForgotHint] = useState(false);
+  const [showFirstTimeInfo, setShowFirstTimeInfo] = useState(false);
 
   const displayError = localError || authError;
 
@@ -67,8 +59,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onCancel]);
 
-  // Google sign in with @klu.ac.in restriction for whole college
-  const handleGoogleLogin = async () => {
+  // First-time signup with Google to fix Register Number and Password
+  const handleFirstTimeGoogleSignup = async () => {
     clearAuthError();
     setLocalError(null);
     setGoogleLoading(true);
@@ -77,25 +69,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
       if (onSuccess) onSuccess();
     } catch (err: any) {
       if (err.message !== 'SIGN_IN_CANCELLED') {
-        setLocalError(err.message || 'Google sign-in failed. Please verify your official KLU / KIID account.');
+        setLocalError(err.message || 'Google verification failed. Please verify your official KLU account.');
       }
     } finally {
       setGoogleLoading(false);
     }
   };
 
-  // Student ID / Username login
-  const handleStudentIdLogin = async (e?: React.FormEvent) => {
+  // Strictly Username & Password Login (for subsequent visits)
+  const handleStudentLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const id = studentIdInput.trim();
     const pwd = passwordInput.trim();
 
     if (!id) {
-      setLocalError('Please enter your Username, KLU Mail ID, or Student ID.');
+      setLocalError('Please enter your Register Number (Username).');
       return;
     }
     if (!pwd) {
-      setLocalError('Please enter your portal password.');
+      setLocalError('Please enter your password.');
       return;
     }
 
@@ -109,7 +101,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       await loginWithStudentId(id, pwd);
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setLocalError(err.message || 'Login failed. Please verify your credentials or sign in with Google.');
+      setLocalError(err.message || 'Login failed. Please verify your Register Number and Password.');
     } finally {
       setLoading(false);
     }
@@ -155,13 +147,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
       {/* Atmospheric vignette */}
       <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#070D18]/30 to-[#070D18]/80 pointer-events-none z-0" />
 
-      {/* Login / Sign Up Card Container */}
+      {/* Login Card Container */}
       <div className="uiverse-login-card relative z-10 my-6 sm:my-8 max-w-full">
         <style>{`
           .uiverse-login-card .container {
             display: flex;
-            width: 580px;
-            min-height: 560px;
+            width: 560px;
+            min-height: 520px;
             max-width: 95vw;
             align-items: stretch;
             justify-content: center;
@@ -180,7 +172,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px 0;
+            padding: 24px 0;
             position: relative;
             z-index: 2;
           }
@@ -214,165 +206,31 @@ export const LoginView: React.FC<LoginViewProps> = ({
             align-items: center;
             justify-content: center;
           }
-
-          .uiverse-login-card .input,
-          .uiverse-login-card button.submit-btn,
-          .uiverse-login-card button.google-login-btn {
-            background: rgba(253, 253, 253, 0);
-            outline: none;
-            border: 1px solid rgba(255, 0, 0, 0);
-            border-radius: 0.6rem;
-            padding: 10px 14px;
-            margin: 7px auto;
-            width: 86%;
-            display: block;
-            color: #f1f5f9;
-            font-weight: 500;
-            font-size: 0.9em;
-          }
-
-          .uiverse-login-card .input-block {
-            position: relative;
-            width: 100%;
-          }
-
-          .uiverse-login-card .input {
-            background: rgba(11, 18, 32, 0.75);
-            border: 1px solid rgba(56, 189, 248, 0.28);
-            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), 0 0 10px rgba(6, 200, 217, 0.06);
-            color: #ffffff;
-            font-family: inherit;
-            transition: all 0.2s ease;
-          }
-
-          .uiverse-login-card .input:focus {
-            border-color: #38bdf8;
-            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.35);
-          }
-
-          .uiverse-login-card button.submit-btn {
-            background-color: #0284c7;
-            color: white;
-            font-size: 0.88rem;
-            font-weight: 700;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-          }
-
-          .uiverse-login-card button.submit-btn:hover {
-            background-color: #0369a1;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
-            transform: translateY(-1px);
-          }
-
-          .uiverse-login-card button.google-login-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            color: #ffffff;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 6px;
-          }
-
-          .uiverse-login-card button.google-login-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: #38bdf8;
-            transform: translateY(-1px);
-          }
         `}</style>
 
         <div className="container">
           <div className="left">
             <div>
               
-              {/* Differentiated Mode Tabs Switcher */}
-              <div className="px-6 pt-2 pb-3">
-                <div className="p-1 rounded-xl bg-slate-900/90 border border-slate-700/80 flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearAuthError();
-                      setLocalError(null);
-                      setActiveTab('login');
-                    }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      activeTab === 'login'
-                        ? 'bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-md shadow-cyan-600/30'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Key size={13} className={activeTab === 'login' ? 'text-white' : 'text-slate-400'} />
+              {/* Header Title */}
+              <div className="px-6 pb-3 text-left">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <Key size={18} className="text-cyan-400" />
                     <span>Student Login</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearAuthError();
-                      setLocalError(null);
-                      setActiveTab('signup');
-                    }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      activeTab === 'signup'
-                        ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Sparkles size={13} className={activeTab === 'signup' ? 'text-white' : 'text-emerald-400'} />
-                    <span>Sign Up with KLU</span>
-                  </button>
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold">
+                    KLU
+                  </span>
                 </div>
-              </div>
-
-              {/* Header Title based on Active Tab */}
-              <div className="px-6 pb-2 text-left">
-                {activeTab === 'login' ? (
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Portal Login</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold">
-                          KLU
-                        </span>
-                      </h3>
-                      <span className="text-[10px] text-cyan-400 font-mono">2-Way Access</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Log in using your assigned <strong>Username</strong> or <strong>KLU Mail</strong> &amp; password.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>First-Time Sign Up</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">
-                          Whole College
-                        </span>
-                      </h3>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Open to all KLU students &amp; faculty. Sign in once with Google to activate your portal account.
-                    </p>
-                  </div>
-                )}
+                <p className="text-xs text-slate-400 mt-1">
+                  Enter your <strong>Register Number (Username)</strong> &amp; <strong>Password</strong> to access your portal.
+                </p>
               </div>
 
               {/* Error Alert Display */}
               {displayError && (
-                <div className="mx-6 mb-2 p-2.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] flex flex-col gap-1.5 leading-snug">
+                <div className="mx-6 mb-3 p-2.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] flex flex-col gap-1.5 leading-snug">
                   <div className="flex items-start gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" />
                     <span className="flex-1">{displayError}</span>
@@ -406,213 +264,125 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               )}
 
-              {/* FLOW 1: RETURNING STUDENT LOGIN (Username & Password) */}
-              {activeTab === 'login' ? (
-                <form onSubmit={handleStudentIdLogin} className="px-6 space-y-2">
-                  
-                  {showForgotHint && (
-                    <div className="p-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] flex items-start gap-1.5 leading-snug animate-in fade-in">
-                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
-                      <span>
-                        Default student password is <strong className="font-mono text-cyan-300">stu@sid</strong>. If you customized it, sign in with your KLU Google account or reset it in Settings.
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Username / KLU Email Input */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                      <Mail size={12} className="text-cyan-400" />
-                      <span>Username / KLU Mail ID</span>
-                    </label>
-                    <input 
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
-                      type="text" 
-                      id="username-input" 
-                      value={studentIdInput}
-                      onChange={(e) => setStudentIdInput(e.target.value)}
-                      placeholder="e.g. name@klu.ac.in or username"
-                      required 
-                      autoFocus
-                    />
-                  </div>
-
-                  {/* Password Input */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                        <Lock size={12} className="text-cyan-400" />
-                        <span>Portal Password</span>
-                      </label>
-                      <button 
-                        type="button" 
-                        onClick={() => setShowForgotHint(!showForgotHint)}
-                        className="text-[10px] text-cyan-400 hover:text-cyan-300 underline bg-transparent border-0 cursor-pointer"
-                      >
-                        Forgot Password?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input 
-                        className="w-full px-3.5 pr-9 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
-                        type={showPassword ? 'text' : 'password'} 
-                        id="password-input" 
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="Enter password (default: stu@sid)"
-                        required 
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
-                      >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button 
-                    type="submit" 
-                    className="w-full py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
-                    disabled={loading || googleLoading}
-                  >
-                    {loading ? (
-                      <Loader size="1.25em" />
-                    ) : (
-                      <>
-                        <Key size={14} />
-                        <span>Log In with Password</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Divider */}
-                  <div className="relative my-2 text-center">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800" /></div>
-                    <span className="relative px-2 bg-[#0E1626] text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-                      or fast-track with
+              {/* STRICTLY USERNAME & PASSWORD LOGIN FORM */}
+              <form onSubmit={handleStudentLogin} className="px-6 space-y-3">
+                
+                {showForgotHint && (
+                  <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] flex items-start gap-1.5 leading-snug animate-in fade-in">
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
+                    <span>
+                      Default student password is <strong className="font-mono text-cyan-300">stu@sid</strong>. If you customized your password, sign in with your KLU Google account below to enter or reset it in Settings.
                     </span>
                   </div>
+                )}
 
-                  {/* Quick Google Sign In */}
-                  <button 
-                    type="button" 
-                    onClick={handleGoogleLogin} 
-                    disabled={loading || googleLoading}
-                    className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-cyan-500/30 hover:border-cyan-400/50 text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {googleLoading ? (
-                      <Loader size="1.25em" />
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                        </svg>
-                        <span>Continue with KLU Google</span>
-                      </>
-                    )}
-                  </button>
-
-                </form>
-              ) : (
-
-                /* FLOW 2: FIRST-TIME REGISTRATION (WHOLE COLLEGE KLU MAIL ACTIVATION) */
-                <div className="px-6 space-y-3">
-                  
-                  {/* Step-by-Step Info Box */}
-                  <div className="p-3.5 rounded-2xl bg-teal-950/30 border border-teal-500/30 space-y-2">
-                    <div className="flex items-center gap-2 text-teal-300 font-bold text-xs">
-                      <GraduationCap className="w-4 h-4 text-teal-400 shrink-0" />
-                      <span>How Whole-College Activation Works:</span>
-                    </div>
-
-                    <div className="space-y-1.5 text-[11px] text-slate-300">
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                        <span>Sign up with your official <strong>@klu.ac.in</strong> or <strong>@kluniversity.in</strong> Google mail.</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                        <span>The system automatically assigns your <strong>KLU Mail as your Username</strong>.</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                        <span>Set your password (or keep <code className="text-teal-300 font-mono font-bold">stu@sid</code>) for subsequent <strong>Username &amp; Password</strong> logins.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Primary Call to Action Button */}
-                  <button 
-                    type="button" 
-                    onClick={handleGoogleLogin} 
-                    disabled={loading || googleLoading}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:via-emerald-500 hover:to-cyan-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-teal-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                  >
-                    {googleLoading ? (
-                      <Loader size="1.25em" />
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                          <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                        </svg>
-                        <span>Sign Up with Official KLU Mail</span>
-                        <Sparkles size={14} className="text-yellow-300" />
-                      </>
-                    )}
-                  </button>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-center text-[10px] text-slate-400 font-mono">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline mr-1" />
-                    <span>Domain check: Only @klu.ac.in &amp; @kluniversity.in eligible</span>
-                  </div>
-
+                {/* Username Input (Strictly Register Number) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+                    <User size={13} className="text-cyan-400" />
+                    <span>Register Number (Username)</span>
+                  </label>
+                  <input 
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                    type="text" 
+                    id="username-input" 
+                    value={studentIdInput}
+                    onChange={(e) => setStudentIdInput(e.target.value)}
+                    placeholder="e.g. 992400xxxxx"
+                    required 
+                    autoFocus
+                  />
                 </div>
-              )}
+
+                {/* Password Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <Lock size={13} className="text-cyan-400" />
+                      <span>Password</span>
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowForgotHint(!showForgotHint)}
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 underline bg-transparent border-0 cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      className="w-full px-3.5 pr-9 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                      type={showPassword ? 'text' : 'password'} 
+                      id="password-input" 
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Enter password (default: stu@sid)"
+                      required 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Primary Submit Button: Strictly Username & Password */}
+                <button 
+                  type="submit" 
+                  className="w-full py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                  disabled={loading || googleLoading}
+                >
+                  {loading ? (
+                    <Loader size="1.25em" />
+                  ) : (
+                    <>
+                      <Key size={14} />
+                      <span>Log In with Password</span>
+                    </>
+                  )}
+                </button>
+
+              </form>
 
             </div>
 
-            {/* Bottom Differentiating Switcher */}
-            <div className="px-6 pt-3 border-t border-slate-800/80 text-center">
-              {activeTab === 'login' ? (
-                <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-                  <span>First time visiting Cresco CN?</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearAuthError();
-                      setLocalError(null);
-                      setActiveTab('signup');
-                    }}
-                    className="text-cyan-400 hover:text-cyan-300 font-bold underline bg-transparent border-0 cursor-pointer"
-                  >
-                    Sign Up with KLU Mail →
-                  </button>
+            {/* FIRST-TIME SETUP CALLOUT (Only for brand new users) */}
+            <div className="px-6 pt-3 border-t border-slate-800/80 space-y-2">
+              <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/25 flex items-center justify-between gap-3">
+                <div className="text-left">
+                  <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
+                    <Sparkles size={13} className="text-cyan-400 shrink-0" />
+                    <span>First-time KLU Student?</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Sign up with your KLU mail to fix your Register Number &amp; Password.
+                  </p>
                 </div>
-              ) : (
-                <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-                  <span>Already activated your account?</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearAuthError();
-                      setLocalError(null);
-                      setActiveTab('login');
-                    }}
-                    className="text-emerald-400 hover:text-emerald-300 font-bold underline bg-transparent border-0 cursor-pointer"
-                  >
-                    Log In with Username &amp; Password →
-                  </button>
-                </div>
-              )}
+
+                <button
+                  type="button"
+                  onClick={handleFirstTimeGoogleSignup}
+                  disabled={loading || googleLoading}
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white text-[11px] font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                  title="First-time one-click activation with official KLU mail"
+                >
+                  {googleLoading ? (
+                    <Loader size="1.1em" />
+                  ) : (
+                    <>
+                      <ShieldCheck size={13} />
+                      <span>KLU Sign Up</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="text-center text-[10px] text-slate-500 font-mono">
+                Subsequent logins: strictly Register Number &amp; Password
+              </div>
             </div>
 
           </div>

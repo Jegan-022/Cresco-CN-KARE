@@ -188,10 +188,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-slate-700 dark:text-slate-300">
               <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
-                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 1: Username / KLU Mail + Password</strong>
+                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5 flex items-center gap-1">
+                  <Lock size={12} className="text-cyan-500" />
+                  <span>Fixed Login Username: Register Number</span>
+                </strong>
                 <span>Username: <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{studentRegNo}</code></span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span>Password:</span>
+                  <span>Current Password:</span>
                   <code className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
                     {showCurrentPassword ? currentPortalPwd : '••••••••'}
                   </code>
@@ -209,8 +212,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
-                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 2: Google SSO</strong>
-                <span>Click &quot;Continue with Google&quot; on login and select your official <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{email}</code></span>
+                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Registered KLU Email</strong>
+                <span className="text-slate-600 dark:text-slate-300">Verified Account: <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{email}</code></span>
+                <span className="block text-[10px] text-slate-400 mt-1">Use your Register Number &amp; Password for daily logins.</span>
               </div>
             </div>
           </div>

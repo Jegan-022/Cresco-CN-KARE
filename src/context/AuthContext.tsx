@@ -670,15 +670,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
           const existing = await withTimeout(findExistingUserProfile(result.user.uid, email), 2500, null);
-          const hasCompletedCredentials = existing && existing.data && (
-            existing.data.profileCompleted === true &&
-            Boolean(existing.data.portalPassword) &&
-            Boolean(existing.data.username)
+          const isRegisteredLocally = typeof window !== 'undefined' && (
+            localStorage.getItem(`klu_registered_done_${result.user.uid}`) === 'true' ||
+            localStorage.getItem(`klu_registered_done_${email}`) === 'true' ||
+            Boolean(localStorage.getItem(`klu_profile_${result.user.uid}`))
           );
+          const hasCompletedCredentials = isRegisteredLocally || (existing && existing.data && (
+            existing.data.profileCompleted === true ||
+            Boolean(existing.data.username) ||
+            Boolean(existing.data.studentId) ||
+            (existing.data.totalXP || 0) > 0
+          ));
 
           if (hasCompletedCredentials) {
             setPendingRegistration(null);
-            if (existing.docId !== result.user.uid) {
+            if (existing && existing.docId !== result.user.uid) {
               setDoc(doc(db, 'students', result.user.uid), {
                 ...existing.data,
                 uid: result.user.uid,
@@ -688,7 +694,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }, { merge: true }).catch(() => {});
             }
             setCurrentUser(result.user);
-            await syncAndFetchProfile(result.user, undefined, undefined, existing.data);
+            await syncAndFetchProfile(result.user, undefined, undefined, existing?.data);
           } else {
             const roster = findStudentCredential(email) || findStudentCredential(extractStudentId(email));
             const studentName = roster?.name || result.user.displayName || 'Student';
@@ -719,15 +725,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
           const existing = await withTimeout(findExistingUserProfile(user.uid, email), 2500, null);
-          const hasCompletedCredentials = existing && existing.data && (
-            existing.data.profileCompleted === true &&
-            Boolean(existing.data.portalPassword) &&
-            Boolean(existing.data.username)
+          const isRegisteredLocally = typeof window !== 'undefined' && (
+            localStorage.getItem(`klu_registered_done_${user.uid}`) === 'true' ||
+            localStorage.getItem(`klu_registered_done_${email}`) === 'true' ||
+            Boolean(localStorage.getItem(`klu_profile_${user.uid}`))
           );
+          const hasCompletedCredentials = isRegisteredLocally || (existing && existing.data && (
+            existing.data.profileCompleted === true ||
+            Boolean(existing.data.username) ||
+            Boolean(existing.data.studentId) ||
+            (existing.data.totalXP || 0) > 0
+          ));
 
           if (hasCompletedCredentials) {
             setPendingRegistration(null);
-            if (existing.docId !== user.uid) {
+            if (existing && existing.docId !== user.uid) {
               setDoc(doc(db, 'students', user.uid), {
                 ...existing.data,
                 uid: user.uid,
@@ -737,7 +749,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }, { merge: true }).catch(() => {});
             }
             setCurrentUser(user);
-            await syncAndFetchProfile(user, undefined, undefined, existing.data);
+            await syncAndFetchProfile(user, undefined, undefined, existing?.data);
             return;
           }
 
@@ -841,18 +853,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const email = pendingRegistration.email.toLowerCase().trim();
-    const emailPrefix = email.split('@')[0].toLowerCase();
-    // System automatically assigns student's KLU mail as username
-    const cleanUser = (username.trim() || email).toLowerCase();
+    // Strictly enforce KLU Register Number as username (e.g. 10 or 11 digits)
+    const cleanRegNo = (username.trim() || studentId.trim()).replace(/\D/g, '');
+    if (!cleanRegNo || cleanRegNo.length < 10 || cleanRegNo.length > 11) {
+      throw new Error('Username must strictly be your 10 or 11 digit KLU Register Number (e.g. 992400xxxxx).');
+    }
     const cleanPass = password.trim() || 'stu@sid';
     if (cleanPass.length < 4) {
       throw new Error('Password must be at least 4 characters.');
     }
-    const cleanName = name.trim() || pendingRegistration.name || 'Student';
-    const cleanId = (studentId.trim() || emailPrefix || cleanUser).toLowerCase();
+    const cleanName = name.trim() || pendingRegistration.name || `Student (${cleanRegNo})`;
+    const cleanId = cleanRegNo;
 
     // Verify username availability with timeout so offline or slow Firestore never hangs
-    const usernameDocRef = doc(db, 'usernames', cleanUser);
+    const usernameDocRef = doc(db, 'usernames', cleanRegNo);
     try {
       const userSnap = await withTimeout(getDoc(usernameDocRef), 1200, null);
       if (userSnap && userSnap.exists()) {
@@ -860,7 +874,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isSelf = uData?.uid === pendingRegistration.uid || 
           (uData?.email && pendingRegistration.email && uData.email.toLowerCase() === pendingRegistration.email.toLowerCase());
         if (!isSelf) {
-          throw new Error('This account / username is already registered. Please sign in directly.');
+          throw new Error('This Register Number is already registered. Please sign in directly with your password.');
         }
       }
     } catch (err: any) {
@@ -876,12 +890,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...zeroState,
       uid,
       email,
-      username: email, // Official KLU mail assigned as username
+      username: cleanRegNo, // Strictly KLU Register Number fixed as username
       name: cleanName,
       displayName: cleanName,
       studentId: cleanId,
       department: department || 'CSE',
-      year: year || '3rd Year',
+      year: year || '3rd Year (UG)',
       profileCompleted: true,
       portalPassword: cleanPass,
       resetEpoch: GLOBAL_RESET_EPOCH,
@@ -900,20 +914,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Cache locally immediately so the user can access their session without waiting
+    // 2. Cache locally immediately so the user is NEVER asked for details again
     if (typeof window !== 'undefined') {
+      localStorage.setItem(`klu_registered_done_${uid}`, 'true');
+      localStorage.setItem(`klu_registered_done_${email}`, 'true');
+      localStorage.setItem(`klu_registered_done_${cleanRegNo}`, 'true');
       localStorage.setItem(`klu_profile_${cleanId}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
-      localStorage.setItem(`klu_profile_${cleanUser}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${cleanRegNo}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${email}`, JSON.stringify(profile));
-      localStorage.setItem(`klu_profile_${emailPrefix}`, JSON.stringify(profile));
       localStorage.setItem(`klu_pwd_${cleanId}`, cleanPass);
-      localStorage.setItem(`klu_pwd_${cleanUser}`, cleanPass);
+      localStorage.setItem(`klu_pwd_${cleanRegNo}`, cleanPass);
       localStorage.setItem(`klu_pwd_${email}`, cleanPass);
-      localStorage.setItem(`klu_pwd_${emailPrefix}`, cleanPass);
-      localStorage.setItem(`klu_user_claim_${cleanUser}`, uid);
+      localStorage.setItem(`klu_user_claim_${cleanRegNo}`, uid);
       localStorage.setItem(`klu_user_claim_${email}`, uid);
-      localStorage.setItem(`klu_user_claim_${emailPrefix}`, uid);
       localStorage.setItem('klu_active_student_id', cleanId);
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: profile }));
     }
@@ -921,20 +935,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 3. Save profile and mappings in Firestore in parallel with timeout
     const credentialPayload = {
       uid,
-      username: email,
+      username: cleanRegNo,
       email,
       studentId: cleanId,
       name: cleanName,
       department: department || 'CSE',
-      year: year || '3rd Year',
+      year: year || '3rd Year (UG)',
       portalPassword: cleanPass,
+      profileCompleted: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
     const writeTasks = [
+      setDoc(doc(db, 'usernames', cleanRegNo), credentialPayload, { merge: true }),
       setDoc(doc(db, 'usernames', email), credentialPayload, { merge: true }),
-      setDoc(doc(db, 'usernames', emailPrefix), credentialPayload, { merge: true }),
       setDoc(doc(db, 'users', uid), credentialPayload, { merge: true }),
       setDoc(doc(db, 'students', uid), {
         ...profile,
@@ -950,12 +965,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedAt: serverTimestamp(),
       }, { merge: true }),
     ];
-
-    if (cleanUser !== email && cleanUser !== emailPrefix) {
-      writeTasks.push(
-        setDoc(doc(db, 'usernames', cleanUser), credentialPayload, { merge: true })
-      );
-    }
 
     withTimeout(Promise.allSettled(writeTasks), 2000, null).catch(e => {
       console.warn('Firestore parallel profile write background warning:', e);
@@ -1353,18 +1362,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if user already exists with completed credentials
       const existing = await withTimeout(findExistingUserProfile(user.uid, email), 2500, null);
       
-      const hasCompletedCredentials = existing && existing.data && (
-        existing.data.profileCompleted === true &&
-        Boolean(existing.data.portalPassword) &&
-        Boolean(existing.data.username)
+      const isRegisteredLocally = typeof window !== 'undefined' && (
+        localStorage.getItem(`klu_registered_done_${user.uid}`) === 'true' ||
+        localStorage.getItem(`klu_registered_done_${email}`) === 'true' ||
+        Boolean(localStorage.getItem(`klu_profile_${user.uid}`))
       );
+      const hasCompletedCredentials = isRegisteredLocally || (existing && existing.data && (
+        existing.data.profileCompleted === true ||
+        Boolean(existing.data.username) ||
+        Boolean(existing.data.studentId) ||
+        (existing.data.totalXP || 0) > 0
+      ));
 
       if (hasCompletedCredentials) {
         setPendingRegistration(null);
         setCurrentUser(user);
-        setUserProfile(existing.data);
-        await syncAndFetchProfile(user, existing.data.name, 'student', existing.data);
-        return { isNewUser: false, profile: existing.data };
+        setUserProfile(existing?.data || null);
+        await syncAndFetchProfile(user, existing?.data?.name, 'student', existing?.data);
+        return { isNewUser: false, profile: existing?.data || null };
       }
 
       // FIRST-TIME USER:

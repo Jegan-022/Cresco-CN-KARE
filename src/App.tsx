@@ -359,7 +359,11 @@ function MainApp() {
           }}
         />
         <KluRegistrationModal
-          isOpen={!!pendingRegistration}
+          isOpen={
+            Boolean(pendingRegistration) && 
+            !userProfile?.profileCompleted && 
+            (typeof window === 'undefined' || !localStorage.getItem(`klu_registered_done_${pendingRegistration?.uid}`))
+          }
           onSuccess={() => {
             setCurrentTab('home');
             setTabHistory(['home']);
