@@ -69,9 +69,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
   };
 
   const displayName = userProfile?.displayName || userProfile?.name || 'Network Explorer';
-  const email = currentUser?.email || 'student@klu.ac.in';
-  const studentRegNo = userProfile?.username || userProfile?.studentId || (email ? email.split('@')[0].replace(/\D/g, '') : '') || '992400xxxxx';
-  const currentPortalPwd = userProfile?.portalPassword || (typeof window !== 'undefined' ? (localStorage.getItem(`klu_pwd_${studentRegNo}`) || localStorage.getItem(`klu_pwd_${email.split('@')[0]}`)) : null) || 'stu@sid';
+  const email = currentUser?.email || userProfile?.email || 'student@klu.ac.in';
+  const studentRegNo = userProfile?.username || email || userProfile?.studentId || 'student@klu.ac.in';
+  const currentPortalPwd = userProfile?.portalPassword || (typeof window !== 'undefined' ? (localStorage.getItem(`klu_pwd_${studentRegNo}`) || localStorage.getItem(`klu_pwd_${email}`) || localStorage.getItem(`klu_pwd_${email.split('@')[0]}`)) : null) || 'stu@sid';
   const currentPasswordStatus = currentPortalPwd === 'stu@sid' ? 'default' : 'custom';
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -94,7 +94,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
       await resetStudentPassword(studentRegNo, clean);
       soundFx.playSuccess();
       setPasswordMsg({
-        text: `Password successfully updated to "${clean}"! You can now log in using your Register Number (${studentRegNo}) and this new password.`,
+        text: `Password successfully updated! You can now log in using your Username / KLU Mail (${studentRegNo}) and this password.`,
         type: 'success'
       });
       setNewPassword('');
@@ -188,7 +188,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-slate-700 dark:text-slate-300">
               <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
-                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 1: Register No. + Password</strong>
+                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 1: Username / KLU Mail + Password</strong>
                 <span>Username: <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{studentRegNo}</code></span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span>Password:</span>

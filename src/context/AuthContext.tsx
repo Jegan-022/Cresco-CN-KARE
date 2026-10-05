@@ -794,8 +794,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkUsernameAvailable = async (username: string): Promise<boolean> => {
     const clean = username.trim().toLowerCase();
-    if (!clean || clean.length < 3 || clean.length > 20) return false;
-    if (!/^[a-z0-9_]+$/.test(clean)) return false;
+    if (!clean || clean.length < 3 || clean.length > 80) return false;
+    // Allow valid email address or alphanumeric/underscore/dot username
+    const isEmail = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(clean);
+    const isAlphanumeric = /^[a-z0-9_.-]+$/i.test(clean);
+    if (!isEmail && !isAlphanumeric) return false;
     const reserved = ['admin', 'root', 'developer', 'teacher', 'cresco', 'support', 'test', 'guest'];
     if (reserved.includes(clean)) return false;
 
@@ -837,16 +840,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('No pending registration session found.');
     }
 
-    const cleanUser = username.trim().toLowerCase();
-    if (!cleanUser || cleanUser.length < 3) {
-      throw new Error('Register Number / Username must be at least 3 characters.');
-    }
+    const email = pendingRegistration.email.toLowerCase().trim();
+    const emailPrefix = email.split('@')[0].toLowerCase();
+    // System automatically assigns student's KLU mail as username
+    const cleanUser = (username.trim() || email).toLowerCase();
     const cleanPass = password.trim() || 'stu@sid';
     if (cleanPass.length < 4) {
       throw new Error('Password must be at least 4 characters.');
     }
     const cleanName = name.trim() || pendingRegistration.name || 'Student';
-    const cleanId = studentId.trim() || cleanUser;
+    const cleanId = (studentId.trim() || emailPrefix || cleanUser).toLowerCase();
 
     // Verify username availability with timeout so offline or slow Firestore never hangs
     const usernameDocRef = doc(db, 'usernames', cleanUser);
@@ -857,7 +860,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isSelf = uData?.uid === pendingRegistration.uid || 
           (uData?.email && pendingRegistration.email && uData.email.toLowerCase() === pendingRegistration.email.toLowerCase());
         if (!isSelf) {
-          throw new Error('This Register Number is already registered. Please choose another username or sign in directly.');
+          throw new Error('This account / username is already registered. Please sign in directly.');
         }
       }
     } catch (err: any) {
@@ -866,7 +869,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const uid = pendingRegistration.uid;
-    const email = pendingRegistration.email.toLowerCase().trim();
     const now = new Date().toISOString();
 
     const zeroState = createZeroStudentState(uid, email, cleanName, 'student');
@@ -874,7 +876,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...zeroState,
       uid,
       email,
-      username: cleanUser,
+      username: email, // Official KLU mail assigned as username
       name: cleanName,
       displayName: cleanName,
       studentId: cleanId,
@@ -903,36 +905,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(`klu_profile_${cleanId}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${cleanUser}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${email}`, JSON.stringify(profile));
+      localStorage.setItem(`klu_profile_${emailPrefix}`, JSON.stringify(profile));
       localStorage.setItem(`klu_pwd_${cleanId}`, cleanPass);
       localStorage.setItem(`klu_pwd_${cleanUser}`, cleanPass);
+      localStorage.setItem(`klu_pwd_${email}`, cleanPass);
+      localStorage.setItem(`klu_pwd_${emailPrefix}`, cleanPass);
       localStorage.setItem(`klu_user_claim_${cleanUser}`, uid);
+      localStorage.setItem(`klu_user_claim_${email}`, uid);
+      localStorage.setItem(`klu_user_claim_${emailPrefix}`, uid);
       localStorage.setItem('klu_active_student_id', cleanId);
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: profile }));
     }
 
     // 3. Save profile and mappings in Firestore in parallel with timeout
+    const credentialPayload = {
+      uid,
+      username: email,
+      email,
+      studentId: cleanId,
+      name: cleanName,
+      department: department || 'CSE',
+      year: year || '3rd Year',
+      portalPassword: cleanPass,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
     const writeTasks = [
-      setDoc(usernameDocRef, {
-        uid,
-        username: cleanUser,
-        email,
-        studentId: cleanId,
-        name: cleanName,
-        portalPassword: cleanPass,
-        createdAt: serverTimestamp(),
-      }),
-      setDoc(doc(db, 'users', uid), {
-        username: cleanUser,
-        email,
-        uid,
-        studentId: cleanId,
-        name: cleanName,
-        department: department || 'CSE',
-        year: year || '3rd Year',
-        portalPassword: cleanPass,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }, { merge: true }),
+      setDoc(doc(db, 'usernames', email), credentialPayload, { merge: true }),
+      setDoc(doc(db, 'usernames', emailPrefix), credentialPayload, { merge: true }),
+      setDoc(doc(db, 'users', uid), credentialPayload, { merge: true }),
       setDoc(doc(db, 'students', uid), {
         ...profile,
         lastLogin: serverTimestamp(),
@@ -947,6 +950,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedAt: serverTimestamp(),
       }, { merge: true }),
     ];
+
+    if (cleanUser !== email && cleanUser !== emailPrefix) {
+      writeTasks.push(
+        setDoc(doc(db, 'usernames', cleanUser), credentialPayload, { merge: true })
+      );
+    }
 
     withTimeout(Promise.allSettled(writeTasks), 2000, null).catch(e => {
       console.warn('Firestore parallel profile write background warning:', e);
@@ -972,9 +981,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetStudentPassword = async (idOrEmail: string, newPassword: string) => {
     setAuthError(null);
-    const cleanInput = idOrEmail.trim();
+    const cleanInput = idOrEmail.trim().toLowerCase();
     if (!cleanInput) {
-      const msg = 'Please enter your KLU Student ID, Register Number, or Email.';
+      const msg = 'Please enter your KLU Username, Email, or Student ID.';
       setAuthError(msg);
       throw new Error(msg);
     }
@@ -987,14 +996,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const rosterStudent = findStudentCredential(cleanInput);
     const studentId = rosterStudent 
       ? rosterStudent.studentId 
-      : (userProfile?.studentId || userProfile?.username || (cleanInput.includes('@') ? extractStudentId(cleanInput) : cleanInput.replace(/\D/g, '')) || cleanInput);
-    const username = userProfile?.username || cleanInput.replace(/\D/g, '') || studentId;
+      : (userProfile?.studentId || (cleanInput.includes('@') ? extractStudentId(cleanInput) : cleanInput.replace(/\D/g, '')) || cleanInput);
+    const username = (userProfile?.username || cleanInput).toLowerCase();
+    const userEmail = (userProfile?.email || (cleanInput.includes('@') ? cleanInput : `${studentId}@klu.ac.in`)).toLowerCase();
+    const emailPrefix = userEmail.split('@')[0].toLowerCase();
     const uid = currentUser?.uid || userProfile?.uid || `klu_${studentId}`;
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
       localStorage.setItem(`klu_pwd_${username}`, cleanPassword);
-      localStorage.setItem(`klu_pwd_${cleanInput.toLowerCase()}`, cleanPassword);
+      localStorage.setItem(`klu_pwd_${userEmail}`, cleanPassword);
+      localStorage.setItem(`klu_pwd_${emailPrefix}`, cleanPassword);
+      localStorage.setItem(`klu_pwd_${cleanInput}`, cleanPassword);
       if (currentUser?.uid) {
         localStorage.setItem(`klu_pwd_${currentUser.uid}`, cleanPassword);
       }
@@ -1002,11 +1015,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updated = { 
           ...userProfile, 
           portalPassword: cleanPassword, 
-          username: userProfile.username || username,
+          username: userProfile.username || username || userEmail,
           studentId: userProfile.studentId || studentId,
           updatedAt: new Date().toISOString() 
         };
         localStorage.setItem(`klu_profile_${studentId}`, JSON.stringify(updated));
+        localStorage.setItem(`klu_profile_${username}`, JSON.stringify(updated));
+        localStorage.setItem(`klu_profile_${userEmail}`, JSON.stringify(updated));
         if (currentUser?.uid) {
           localStorage.setItem(`klu_profile_${currentUser.uid}`, JSON.stringify(updated));
         }
@@ -1016,8 +1031,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUserProfile(prev => prev ? { 
       ...prev, 
-      portalPassword: cleanPassword,
-      username: prev.username || username,
+      portalPassword: cleanPassword, 
+      username: prev.username || username || userEmail,
       studentId: prev.studentId || studentId,
       updatedAt: new Date().toISOString()
     } : null);
@@ -1027,25 +1042,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         portalPassword: cleanPassword, 
         username,
         studentId,
+        email: userEmail,
         updatedAt: serverTimestamp() 
       };
       const targets = [
         setDoc(doc(db, 'students', uid), updateData, { merge: true }),
         setDoc(doc(db, 'students', `klu_${studentId}`), updateData, { merge: true }),
-        setDoc(doc(db, 'usernames', username.toLowerCase()), { 
-          portalPassword: cleanPassword, 
-          studentId, 
-          uid,
-          updatedAt: serverTimestamp() 
-        }, { merge: true }),
+        setDoc(doc(db, 'usernames', username), { ...updateData, uid }, { merge: true }),
+        setDoc(doc(db, 'usernames', userEmail), { ...updateData, uid }, { merge: true }),
+        setDoc(doc(db, 'usernames', emailPrefix), { ...updateData, uid }, { merge: true }),
       ];
-      if (studentId && studentId.toLowerCase() !== username.toLowerCase()) {
-        targets.push(setDoc(doc(db, 'usernames', studentId.toLowerCase()), { 
-          portalPassword: cleanPassword, 
-          studentId, 
-          uid,
-          updatedAt: serverTimestamp() 
-        }, { merge: true }));
+      if (studentId && studentId !== username && studentId !== emailPrefix) {
+        targets.push(setDoc(doc(db, 'usernames', studentId.toLowerCase()), { ...updateData, uid }, { merge: true }));
       }
       if (currentUser?.uid && currentUser.uid !== uid) {
         targets.push(setDoc(doc(db, 'students', currentUser.uid), updateData, { merge: true }));
@@ -1071,9 +1079,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithStudentId = async (idOrEmail: string, password?: string, studentName?: string) => {
     setAuthError(null);
-    const cleanInput = idOrEmail.trim();
+    const cleanInput = idOrEmail.trim().toLowerCase();
     if (!cleanInput) {
-      const msg = 'Please enter your Username, Student ID, or KLU Email.';
+      const msg = 'Please enter your Username, KLU Mail ID, or Student ID.';
       setAuthError(msg);
       throw new Error(msg);
     }
@@ -1098,38 +1106,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let matchedPassword: string | null = null;
     let matchedData: any = null;
 
-    // 1. Subsequent Login (Username -> Password Flow)
-    // Look up the username to retrieve their profile and portal password from Firestore:
-    try {
-      const usernameDoc = await withTimeout(getDoc(doc(db, 'usernames', cleanInput.toLowerCase())), 2000, null);
-      if (usernameDoc && usernameDoc.exists()) {
-        const uData = usernameDoc.data() as { email?: string; uid?: string; studentId?: string; portalPassword?: string; name?: string };
-        matchedUid = uData?.uid || null;
-        matchedStudentId = uData?.studentId || cleanInput;
-        matchedEmail = uData?.email || null;
-        matchedName = uData?.name || null;
-        if (uData?.portalPassword) {
-          matchedPassword = uData.portalPassword;
+    // 1. Subsequent Login: Username lookup from 'usernames' collection
+    // Check cleanInput directly (handles both user@klu.ac.in and username prefix)
+    const candidateKeys = [cleanInput];
+    if (!cleanInput.includes('@')) {
+      candidateKeys.push(`${cleanInput}@klu.ac.in`);
+      candidateKeys.push(`${cleanInput}@kluniversity.in`);
+    } else {
+      candidateKeys.push(cleanInput.split('@')[0]);
+    }
+
+    for (const key of candidateKeys) {
+      try {
+        const usernameDoc = await withTimeout(getDoc(doc(db, 'usernames', key)), 1800, null);
+        if (usernameDoc && usernameDoc.exists()) {
+          const uData = usernameDoc.data() as any;
+          matchedUid = uData?.uid || null;
+          matchedStudentId = uData?.studentId || key;
+          matchedEmail = uData?.email || (key.includes('@') ? key : null);
+          matchedName = uData?.name || null;
+          if (uData?.portalPassword) {
+            matchedPassword = uData.portalPassword;
+          }
+          break;
         }
+      } catch (e) {
+        console.warn('Firestore username lookup fallback note:', e);
       }
-    } catch (e) {
-      console.warn('Firestore username lookup fallback:', e);
     }
 
     // Direct email authentication if input is an email (non-blocking fallback)
     if (cleanInput.includes('@')) {
       try {
-        const cred = await signInWithEmailAndPassword(auth, cleanInput.toLowerCase(), cleanPassword);
+        const cred = await signInWithEmailAndPassword(auth, cleanInput, cleanPassword);
         await syncAndFetchProfile(cred.user);
         return;
       } catch (fbErr: any) {
         console.warn('Direct email signInWithEmailAndPassword fallback notice:', fbErr?.code);
-        // Do not throw here yet; verify against student profile in Firestore / local cache
       }
     }
 
-    // 2. If not found by username, check students collection by direct UID or cleanInput
-    if (!matchedUid) {
+    // 2. Query 'users' collection by email or username if not yet resolved
+    if (!matchedUid || !matchedPassword) {
+      try {
+        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanInput), limit(1));
+        const uSnap = await withTimeout(getDocs(emailQuery), 1500, null as any);
+        if (uSnap && !uSnap.empty) {
+          const uDoc = uSnap.docs[0].data();
+          matchedUid = uDoc.uid || uSnap.docs[0].id;
+          matchedStudentId = uDoc.studentId || cleanInput;
+          matchedEmail = uDoc.email;
+          matchedName = uDoc.name;
+          if (uDoc.portalPassword) matchedPassword = uDoc.portalPassword;
+        }
+      } catch {}
+    }
+
+    // 3. Query 'students' collection by email or direct UID
+    if (!matchedUid || !matchedPassword) {
       const candidateUids = [`klu_${cleanInput}`, cleanInput];
       for (const cUid of candidateUids) {
         try {
@@ -1140,26 +1174,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             matchedStudentId = matchedData.studentId || cleanInput;
             matchedEmail = matchedData.email;
             matchedName = matchedData.name || matchedData.displayName;
-            matchedPassword = matchedData.portalPassword;
+            if (matchedData.portalPassword) matchedPassword = matchedData.portalPassword;
             break;
           }
         } catch {}
       }
-    } else {
-      try {
-        const sSnap = await getDoc(doc(db, 'students', matchedUid));
-        if (sSnap.exists()) {
-          matchedData = sSnap.data();
-          matchedName = matchedData.name || matchedData.displayName;
-          matchedPassword = matchedData.portalPassword;
-        }
-      } catch {}
     }
 
-    // 3. If still not matched, check by email in students collection
-    if (!matchedUid && !matchedData && !matchedPassword && cleanInput.includes('@')) {
+    if (!matchedUid && cleanInput.includes('@')) {
       try {
-        const qByEmail = query(collection(db, 'students'), where('email', '==', cleanInput.toLowerCase()), limit(1));
+        const qByEmail = query(collection(db, 'students'), where('email', '==', cleanInput), limit(1));
         const snap = await getDocs(qByEmail);
         if (!snap.empty) {
           const docSnap = snap.docs[0];
@@ -1168,7 +1192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           matchedStudentId = matchedData.studentId || cleanInput;
           matchedEmail = matchedData.email;
           matchedName = matchedData.name || matchedData.displayName;
-          matchedPassword = matchedData.portalPassword;
+          if (matchedData.portalPassword) matchedPassword = matchedData.portalPassword;
         }
       } catch {}
     }
@@ -1176,7 +1200,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 4. Fallback: check local storage cache
     if (!matchedPassword && typeof window !== 'undefined') {
       const localPwd = localStorage.getItem(`klu_pwd_${cleanInput}`) || 
-                       (matchedStudentId ? localStorage.getItem(`klu_pwd_${matchedStudentId}`) : null);
+                       (matchedStudentId ? localStorage.getItem(`klu_pwd_${matchedStudentId}`) : null) ||
+                       (matchedEmail ? localStorage.getItem(`klu_pwd_${matchedEmail}`) : null);
       if (localPwd) {
         matchedPassword = localPwd;
       }
@@ -1193,32 +1218,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 6. Default 992400xxxxx pattern fallback for unmigrated roster accounts
-    const isFormat = /^992400\d{5}(@klu\.ac\.in)?$/i.test(cleanInput);
-    // 6. 10 or 11 digit register number pattern (e.g. 992400xxxxx)
+    // 6. Default fallback for whole-college KLU accounts
     const isRegisterFormat = /^992400\d{4,5}(@klu\.ac\.in)?$/i.test(cleanInput) || /^\d{10,11}$/.test(cleanInput.replace(/\D/g, ''));
-    if (isRegisterFormat && !matchedPassword) {
-      const cleanId = cleanInput.split('@')[0].replace(/\D/g, '');
+    if (!matchedPassword && (isRegisterFormat || KLU_EMAIL_REGEX.test(cleanInput))) {
       matchedPassword = 'stu@sid';
-      matchedStudentId = cleanId;
-      matchedEmail = `${cleanId}@klu.ac.in`;
+      if (!matchedStudentId) matchedStudentId = cleanInput.split('@')[0];
+      if (!matchedEmail) matchedEmail = cleanInput.includes('@') ? cleanInput : `${matchedStudentId}@klu.ac.in`;
     }
 
     // If still no student identified
-    if (!matchedUid && !rosterStudent && !isRegisterFormat && !matchedData && !matchedPassword) {
-      const msg = 'Account not found. First-time student? Please sign in with your official KLU Google account below to activate your account.';
+    if (!matchedUid && !rosterStudent && !matchedPassword && !matchedData) {
+      const msg = 'Account not found. First-time student? Please sign up with your official KLU Google account to activate your portal account.';
       setAuthError(msg);
       throw new Error(msg);
     }
 
-    const studentId = matchedStudentId || cleanInput;
+    const studentId = matchedStudentId || cleanInput.split('@')[0] || cleanInput;
     const last5 = studentId.slice(-5);
     const expectedLegacyPassword = `sid@${last5}`;
 
     const localCachedPwd = typeof window !== 'undefined'
-      ? (localStorage.getItem(`klu_pwd_${cleanInput.toLowerCase()}`) || 
-         localStorage.getItem(`klu_pwd_${studentId}`) || 
-         localStorage.getItem(`klu_pwd_${cleanInput}`))
+      ? (localStorage.getItem(`klu_pwd_${cleanInput}`) || 
+         localStorage.getItem(`klu_pwd_${studentId}`) ||
+         (matchedEmail ? localStorage.getItem(`klu_pwd_${matchedEmail}`) : null))
       : null;
 
     const isMatch = (matchedPassword && cleanPassword === matchedPassword) ||
@@ -1228,7 +1250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     (rosterStudent && rosterStudent.password.toLowerCase() === cleanPassword.toLowerCase());
 
     if (!isMatch) {
-      const msg = 'Invalid password. (Default is stu@sid, or sign in with Google).';
+      const msg = 'Invalid password. (Default is stu@sid, or sign in with your official KLU Google account).';
       setAuthError(msg);
       throw new Error(msg);
     }

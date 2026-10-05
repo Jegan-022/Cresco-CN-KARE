@@ -105,6 +105,7 @@ function MainApp() {
   const [activePracticeCategory, setActivePracticeCategory] = useState<PracticeCategory | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login');
   const [pendingWritesCount, setPendingWritesCount] = useState(0);
   const [sectionCompletionCelebration, setSectionCompletionCelebration] = useState<{
     sectionTitle: string;
@@ -312,6 +313,7 @@ function MainApp() {
   }
 
   // Dedicated Landing Page (Default for Visitors: Visitor → Cresco CN Landing/Home → Sign Up / Sign In)
+  // Landing page routing
   if (currentTab === 'landing') {
     return (
       <LandingView
@@ -320,6 +322,7 @@ function MainApp() {
           if (currentUser) {
             handleNavigate('home');
           } else {
+            setLoginMode('login');
             handleNavigate('login');
           }
         }}
@@ -327,6 +330,7 @@ function MainApp() {
           if (currentUser) {
             handleNavigate('home');
           } else {
+            setLoginMode('signup');
             handleNavigate('login');
           }
         }}
@@ -343,6 +347,7 @@ function MainApp() {
     return (
       <>
         <LoginView
+          initialMode={loginMode}
           initialPortal={selectedPortal}
           onSuccess={() => {
             setCurrentTab('home');
