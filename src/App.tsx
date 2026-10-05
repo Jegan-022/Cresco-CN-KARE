@@ -114,7 +114,7 @@ function MainApp() {
   useEffect(() => {
     if (loading) return;
 
-    if (currentUser && currentTab === 'landing') {
+    if (currentUser && (currentTab === 'landing' || currentTab === 'login')) {
       setCurrentTab('home');
       setTabHistory(['home']);
       return;
@@ -295,6 +295,16 @@ function MainApp() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [handleGoBack]);
+
+  // Automatically route authenticated students from landing/login screens straight to Dashboard & Learning Path
+  useEffect(() => {
+    if (currentUser && userProfile && !pendingRegistration) {
+      if (currentTab === 'login' || currentTab === 'landing' || currentTab === 'welcome') {
+        setCurrentTab('home');
+        setTabHistory(['home']);
+      }
+    }
+  }, [currentUser, userProfile, pendingRegistration, currentTab]);
 
   // Loading State while Firebase resolves
   if (loading) {

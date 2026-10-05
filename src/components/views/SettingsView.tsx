@@ -19,7 +19,15 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Palette
+  Palette,
+  Lock,
+  Key,
+  Hash,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -27,7 +35,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
-  const { currentUser, userProfile, logout } = useAuth();
+  const { currentUser, userProfile, logout, resetStudentPassword } = useAuth();
   const { theme, setTheme } = useTheme();
   const { 
     activeCharacter, 
@@ -46,6 +54,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
   // Language
   const [language, setLanguage] = useState('en');
 
+  // Password Management State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
   const handleToggleSoundEffects = () => {
     soundFx.playClick();
     const isMuted = soundFx.toggleMute();
@@ -54,6 +70,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
 
   const displayName = userProfile?.displayName || userProfile?.name || 'Network Explorer';
   const email = currentUser?.email || 'student@klu.ac.in';
+  const studentRegNo = userProfile?.username || userProfile?.studentId || (email ? email.split('@')[0].replace(/\D/g, '') : '') || '992400xxxxx';
+  const currentPortalPwd = userProfile?.portalPassword || (typeof window !== 'undefined' ? (localStorage.getItem(`klu_pwd_${studentRegNo}`) || localStorage.getItem(`klu_pwd_${email.split('@')[0]}`)) : null) || 'stu@sid';
+  const currentPasswordStatus = currentPortalPwd === 'stu@sid' ? 'default' : 'custom';
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+
+    const clean = newPassword.trim();
+    if (!clean || clean.length < 4) {
+      setPasswordMsg({ text: 'Password must be at least 4 characters long.', type: 'error' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ text: 'New passwords do not match. Please re-enter carefully.', type: 'error' });
+      return;
+    }
+
+    setPasswordUpdating(true);
+    try {
+      await resetStudentPassword(studentRegNo, clean);
+      soundFx.playSuccess();
+      setPasswordMsg({
+        text: `Password successfully updated to "${clean}"! You can now log in using your Register Number (${studentRegNo}) and this new password.`,
+        type: 'success'
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordMsg({
+        text: err?.message || 'Failed to update password. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setPasswordUpdating(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
@@ -69,31 +123,183 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
             Settings
           </h1>
           <p className="text-xs sm:text-sm font-medium text-[#64748B] dark:text-slate-400 mt-0.5">
-            Manage your student account, voice accessibility, audio synthesizer, and interface appearance.
+            Manage your student account, 2-way credentials, voice accessibility, audio synthesizer, and interface appearance.
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
         
-        {/* SECTION 1: ACCOUNT */}
-        <section className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-[#EFECE6] dark:border-slate-800">
-            <User size={18} className="text-[#3157D5] dark:text-[#6D8CFF]" />
-            <h2 className="font-extrabold text-base text-[#172033] dark:text-[#F9FAFB]">Account Information</h2>
+        {/* SECTION 1: ACCOUNT & CREDENTIALS */}
+        <section className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#EFECE6] dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <User size={18} className="text-[#3157D5] dark:text-[#6D8CFF]" />
+              <h2 className="font-extrabold text-base text-[#172033] dark:text-[#F9FAFB]">Account &amp; Student Profile</h2>
+            </div>
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+              KLU Verified
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+            <div className="p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
               <span className="text-[#64748B] dark:text-slate-400 font-medium block">Student Name</span>
-              <span className="font-black text-sm text-[#172033] dark:text-[#F9FAFB] mt-0.5 block">{displayName}</span>
+              <span className="font-black text-sm text-[#172033] dark:text-[#F9FAFB] mt-0.5 block truncate">{displayName}</span>
             </div>
 
-            <div>
+            <div className="p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
               <span className="text-[#64748B] dark:text-slate-400 font-medium block">Institutional Email</span>
-              <span className="font-mono text-sm font-bold text-[#172033] dark:text-[#F9FAFB] mt-0.5 block">{email}</span>
+              <span className="font-mono text-sm font-bold text-[#172033] dark:text-[#F9FAFB] mt-0.5 block truncate">{email}</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
+              <span className="text-[#64748B] dark:text-slate-400 font-medium block">Register Number (Username)</span>
+              <span className="font-mono text-sm font-black text-[#3157D5] dark:text-[#6D8CFF] mt-0.5 block tracking-wider">{studentRegNo}</span>
             </div>
           </div>
+        </section>
+
+        {/* SECTION 2: PORTAL LOGIN CREDENTIALS & 2-WAY AUTHENTICATION */}
+        <section className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#EFECE6] dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <Key size={18} className="text-[#0EA5E9]" />
+              <h2 className="font-extrabold text-base text-[#172033] dark:text-[#F9FAFB]">Portal Login Credentials (2-Way Login)</h2>
+            </div>
+            {currentPasswordStatus === 'default' ? (
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold">
+                Default Password (stu@sid)
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                Custom Password Active
+              </span>
+            )}
+          </div>
+
+          {/* 2-Way Sign-in Infobox */}
+          <div className="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/50 text-xs space-y-2">
+            <div className="flex items-center gap-2 text-cyan-800 dark:text-cyan-300 font-bold">
+              <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+              <span>You have 2 ways to log in to Cresco CN:</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-slate-700 dark:text-slate-300">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
+                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 1: Register No. + Password</strong>
+                <span>Username: <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{studentRegNo}</code></span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span>Password:</span>
+                  <code className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                    {showCurrentPassword ? currentPortalPwd : '••••••••'}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={showCurrentPassword ? 'Hide current password' : 'View current password'}
+                  >
+                    {showCurrentPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                  </button>
+                  {currentPasswordStatus === 'default' && (
+                    <span className="text-[9px] text-amber-500 font-bold">(Default)</span>
+                  )}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
+                <strong className="text-cyan-700 dark:text-cyan-300 block mb-0.5">Way 2: Google SSO</strong>
+                <span>Click &quot;Continue with Google&quot; on login and select your official <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{email}</code></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Change Password Form */}
+          <form onSubmit={handlePasswordChange} className="space-y-4 pt-1">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[#3157D5] dark:text-[#6D8CFF]" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#172033] dark:text-[#F9FAFB]">
+                Change Portal Password
+              </h3>
+            </div>
+
+            {passwordMsg && (
+              <div
+                className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                  passwordMsg.type === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800 text-red-800 dark:text-red-300'
+                }`}
+              >
+                {passwordMsg.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                )}
+                <span>{passwordMsg.text}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-[#172033] dark:text-[#F9FAFB] mb-1.5">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min. 4 chars)"
+                    className="w-full px-3.5 pr-10 py-2.5 rounded-xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800 text-[#172033] dark:text-[#F9FAFB] text-xs outline-none focus:border-[#3157D5] dark:focus:border-[#6D8CFF] transition-all font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#172033] dark:text-[#F9FAFB] mb-1.5">
+                  Confirm New Password
+                </label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800 text-[#172033] dark:text-[#F9FAFB] text-xs outline-none focus:border-[#3157D5] dark:focus:border-[#6D8CFF] transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-[#64748B] dark:text-slate-400">
+                Default password for all KLU students is <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">stu@sid</code>.
+              </span>
+              <button
+                type="submit"
+                disabled={passwordUpdating || !newPassword}
+                className="px-5 py-2.5 rounded-xl bg-[#3157D5] hover:bg-[#2545B8] text-white text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {passwordUpdating ? (
+                  <span>Saving...</span>
+                ) : (
+                  <>
+                    <Key size={14} />
+                    <span>Update Password</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </section>
 
         {/* SECTION 2: VOICE SETTINGS */}

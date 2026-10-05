@@ -61,10 +61,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     
     try {
-      const res = await loginWithGoogle();
-      if (!res?.isNewUser) {
-        if (onSuccess) onSuccess();
-      }
+      await loginWithGoogle();
+      if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
       if (err.message === 'SIGN_IN_CANCELLED') {
