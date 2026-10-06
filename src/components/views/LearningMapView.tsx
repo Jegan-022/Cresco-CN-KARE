@@ -629,7 +629,7 @@ export const LearningMapView: React.FC<LearningMapViewProps> = ({
 
       // Launch full gamified lesson view
       if (onSelectLesson) {
-        onSelectLesson(node.lessonId, node.unitIndex);
+        onSelectLesson(`level-${node.id}`, node.unitIndex);
       }
     },
     [onSelectLesson, onNavigate]

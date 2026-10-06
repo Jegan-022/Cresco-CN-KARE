@@ -36,6 +36,7 @@ import { WelcomeOnboardingView } from './components/views/WelcomeOnboardingView'
 import { HomeView } from './components/views/HomeView';
 import { LearningMapView } from './components/views/LearningMapView';
 import { GamifiedLessonView } from './components/views/GamifiedLessonView';
+import { LevelView } from './components/learn/LevelView';
 import { DragDropNetworkView } from './components/views/DragDropNetworkView';
 import { PacketSimulatorView } from './components/views/PacketSimulatorView';
 import { BossChallengeView } from './components/views/BossChallengeView';
@@ -74,9 +75,25 @@ function MainApp() {
   const { isOnline } = useNetworkStatus();
   const { isCharacterHubOpen, closeCharacterHub } = useCharacter();
 
-  // Navigation State - defaults to 'landing' for visitors
-  const [currentTab, setCurrentTab] = useState<NavTab>('landing');
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(['landing']);
+  // Check URL on startup for /learn/level-X or other routes
+  const getInitialRoute = () => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/learn/')) {
+        const slug = path.replace('/learn/', '').replace(/\/$/, '');
+        if (slug) {
+          return { tab: 'lesson-player' as NavTab, lessonId: slug };
+        }
+      }
+    }
+    return { tab: 'landing' as NavTab, lessonId: 'level-1' };
+  };
+
+  const initialRoute = getInitialRoute();
+
+  // Navigation State - defaults to 'landing' for visitors or URL route
+  const [currentTab, setCurrentTab] = useState<NavTab>(initialRoute.tab);
+  const [tabHistory, setTabHistory] = useState<NavTab[]>([initialRoute.tab]);
   const [userRole, setUserRole] = useState<UserRole>('student');
   const [authPortalMode, setAuthPortalMode] = useState<'login' | 'landing' | 'prelaunch'>('login');
   const [selectedPortal, setSelectedPortal] = useState<'student' | 'developer' | 'teacher'>('student');
@@ -88,8 +105,8 @@ function MainApp() {
     hearts: 5,
   });
 
-  // Active Lesson Pointer - starts at Unit 3 Module 1
-  const [activeLessonId, setActiveLessonId] = useState<string>('u3_m01');
+  // Active Lesson Pointer - starts at Unit 3 Module 1 or URL level
+  const [activeLessonId, setActiveLessonId] = useState<string>(initialRoute.lessonId);
   const [activeSectionId, setActiveSectionId] = useState<number>(3);
 
   // Curriculum State
@@ -112,6 +129,27 @@ function MainApp() {
     bonusXp: number;
   } | null>(null);
 
+  // Browser History & URL route synchronization
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/learn/')) {
+        const slug = path.replace('/learn/', '').replace(/\/$/, '');
+        if (slug) {
+          setActiveLessonId(slug);
+          setCurrentTab('lesson-player');
+          return;
+        }
+      }
+      if (path === '/' || path === '') {
+        setCurrentTab(currentUser ? 'home' : 'landing');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentUser]);
+
   useEffect(() => {
     if (loading) return;
 
@@ -121,7 +159,7 @@ function MainApp() {
       return;
     }
 
-    if (!currentUser && !pendingRegistration && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome') {
+    if (!currentUser && !pendingRegistration && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome' && currentTab !== 'lesson-player') {
       initialRedirectDoneRef.current = false;
       setCurrentTab('landing');
       setTabHistory(['landing']);
@@ -220,6 +258,12 @@ function MainApp() {
     setActiveLessonId(lessonId);
     setActiveSectionId(sectionId);
     setCurrentTab('lesson-player');
+    if (typeof window !== 'undefined') {
+      const targetPath = `/learn/${lessonId}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ lessonId }, '', targetPath);
+      }
+    }
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'instant' });
     window.scrollTo({ top: 0, behavior: 'instant' });
   };

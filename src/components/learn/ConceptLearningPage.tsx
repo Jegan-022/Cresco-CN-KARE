@@ -1,345 +1,256 @@
 import React, { useState } from 'react';
+import { LevelDefinition, ConceptTabContent } from '../../levels/types';
 import { 
+  BookOpen, 
+  CheckCircle2, 
   ArrowRight, 
   ArrowLeft, 
-  CheckCircle2, 
-  Monitor, 
-  Router, 
-  Server, 
+  Download, 
   Sparkles, 
-  BookOpen, 
-  HelpCircle,
+  Laptop, 
+  Server, 
+  Router, 
   Lightbulb,
   FileText,
   Share2
 } from 'lucide-react';
-import { ModularLesson } from '../../data/lessons/lessonModel';
 import { soundFx } from '../../utils/soundEffects';
 
 interface ConceptLearningPageProps {
-  lesson: ModularLesson;
+  level: LevelDefinition;
   onNext: () => void;
-  onPrev: () => void;
+  onPrev?: () => void;
+  onSelectTab?: (tabId: string) => void;
 }
 
-type ConceptSubTab = 'overview' | 'keyConcepts' | 'analogy' | 'examples' | 'quickNotes';
-
 export const ConceptLearningPage: React.FC<ConceptLearningPageProps> = ({
-  lesson,
+  level,
   onNext,
-  onPrev
+  onPrev,
 }) => {
-  const [activeTab, setActiveTab] = useState<ConceptSubTab>('overview');
+  const tabs = level.concept.tabs;
+  const [activeTabId, setActiveTabId] = useState<string>(tabs[0]?.id || 'overview');
 
-  const tabs: { key: ConceptSubTab; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'keyConcepts', label: 'Key Concepts' },
-    { key: 'analogy', label: 'Real World Analogy' },
-    { key: 'examples', label: 'Examples' },
-    { key: 'quickNotes', label: 'Quick Notes' }
-  ];
+  const currentTab: ConceptTabContent = 
+    tabs.find((t) => t.id === activeTabId) || tabs[0];
+
+  const handleDownloadNotes = () => {
+    soundFx.playClick();
+    const notesText = `# ${level.title} - Notes\nUnit: ${level.unitTitle} (Lesson ${level.lessonNumber})\n\n${currentTab.title}\n\n${currentTab.content.join('\n\n')}\n\nKey Takeaways:\n${currentTab.keyTakeaways.map(t => `- ${t}`).join('\n')}`;
+    const blob = new Blob([notesText], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${level.slug}-notes.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="flex-1 flex flex-col gap-6 animate-fadeIn">
-      
-      {/* ========================================================================= */}
-      {/* 1. HERO BANNER WITH OCTO MASCOT                                           */}
-      {/* ========================================================================= */}
-      <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-[#EFF6FF] via-[#F5F3FF] to-[#FAF5FF] dark:from-[#1E293B] dark:via-[#1A2035] dark:to-[#171B2F] border border-[#DBEAFE] dark:border-[#334155] shadow-xs overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+    <div className="flex flex-col gap-6 w-full animate-fadeIn">
+      {/* Lesson Hero Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-500/10 border border-white/20">
+        <div className="absolute -right-6 -bottom-6 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
         
-        {/* Decorative background glow */}
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-blue-400/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-400/10 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Left Column: Lesson Title & Meta */}
-        <div className="flex-1 z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/10 dark:bg-blue-400/15 text-blue-600 dark:text-blue-400 font-extrabold text-[11px] uppercase tracking-wider mb-2">
-            <span>LESSON {lesson.lessonNumber} OF {lesson.totalLessonsInUnit}</span>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-black uppercase tracking-wider mb-3 text-amber-300">
+              <Sparkles size={13} className="animate-spin" />
+              Lesson {level.lessonNumber} of {level.totalLessonsInUnit}
+            </div>
+            
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white mb-2 leading-tight">
+              {level.title}
+            </h1>
+            
+            <p className="text-sm sm:text-base text-blue-100 font-medium leading-relaxed">
+              {level.subtitle}
+            </p>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            {lesson.title}
-          </h1>
-
-          <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300 mt-2 max-w-2xl leading-relaxed">
-            {lesson.subtitle}
-          </p>
-        </div>
-
-        {/* Right Column: Octo Mascot with Cap & Speech Bubble */}
-        <div className="relative flex items-center justify-center shrink-0 z-10">
-          {/* Speech Bubble */}
-          <div className="hidden sm:block absolute -top-8 right-24 bg-white dark:bg-[#111C44] border-2 border-blue-500/30 rounded-2xl px-3.5 py-2 shadow-md text-xs font-extrabold text-slate-800 dark:text-slate-100 max-w-[200px] leading-tight animate-bounce-up">
-            <span>{lesson.octoConceptSpeech}</span>
-            {/* Bubble arrow */}
-            <div className="absolute -bottom-2 right-6 w-3 h-3 bg-white dark:bg-[#111C44] border-r-2 border-b-2 border-blue-500/30 rotate-45" />
-          </div>
-
-          {/* Friendly Mascot Image */}
-          <div className="relative size-28 sm:size-32">
-            <img
-              src="/assets/mascot/cresco-mascot.png"
-              alt="Octo Mascot Tutor"
-              className="size-full object-contain filter drop-shadow-md animate-octo-float"
-            />
+          {/* Octo Guide Mascot Speech Bubble */}
+          <div className="flex items-center gap-3 bg-white/15 backdrop-blur-md border border-white/25 rounded-2xl p-3 sm:p-4 shrink-0 shadow-lg max-w-sm">
+            <div className="relative size-14 sm:size-16 shrink-0 flex items-center justify-center">
+              <img
+                src="/assets/mascot/cresco-mascot.png"
+                alt="Guide Mascot"
+                className="w-full h-full object-contain filter drop-shadow-md animate-bounce-up"
+              />
+            </div>
+            <div className="text-xs sm:text-sm text-white font-medium leading-snug">
+              <p className="font-bold text-amber-300 mb-0.5 flex items-center gap-1">
+                <span>Octo Guide</span>
+                <span className="text-[10px] bg-amber-400/20 px-1.5 py-0.2 rounded text-amber-200">Tips</span>
+              </p>
+              {level.mascotQuote}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. SUB-NAVIGATION TABS                                                    */}
-      {/* ========================================================================= */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* Concept Navigation Sub-Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-b border-slate-200 dark:border-slate-800">
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
+          const isActive = tab.id === activeTabId;
           return (
             <button
-              key={tab.key}
+              key={tab.id}
               onClick={() => {
                 soundFx.playClick();
-                setActiveTab(tab.key);
+                setActiveTabId(tab.id);
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-[#111C44] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ========================================================================= */}
-      {/* 3. ACTIVE TAB CONTENT                                                     */}
-      {/* ========================================================================= */}
-      <div className="flex-1">
-        
-        {/* TAB 1: OVERVIEW (Matching Image 1) */}
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fadeIn">
-            
-            {/* Left Card: Core Concept Definition & Visual Diagram */}
-            <div className="lg:col-span-7 bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-extrabold text-base mb-3">
-                  <span className="text-xl">🚀</span>
-                  <h3>{lesson.concept.overview.heading}</h3>
-                </div>
-
-                <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {lesson.concept.overview.body}
-                </p>
-              </div>
-
-              {/* Visual Architectural Diagram: Source -> Network Layer -> Destination */}
-              <div className="mt-6 p-5 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 dark:from-slate-800/60 dark:to-indigo-950/40 border border-blue-100 dark:border-slate-700/60 flex items-center justify-around gap-2">
-                
-                {/* Source Host */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="size-12 rounded-2xl bg-white dark:bg-slate-700 border-2 border-blue-400 shadow-xs flex items-center justify-center text-blue-600 dark:text-blue-300">
-                    <Monitor size={22} />
-                  </div>
-                  <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 text-center">
-                    {lesson.concept.overview.sourceLabel || 'Source'}
-                  </span>
-                </div>
-
-                {/* Arrow 1 */}
-                <div className="flex-1 max-w-[60px] flex items-center justify-center">
-                  <div className="h-0.5 w-full bg-blue-300 dark:bg-blue-600 relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 border-solid border-l-blue-400 border-l-[6px] border-y-transparent border-y-[4px] border-r-0" />
-                  </div>
-                </div>
-
-                {/* Network Layer Router */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="size-16 rounded-2xl bg-blue-600 text-white shadow-md flex flex-col items-center justify-center gap-1 border-2 border-blue-400 animate-pulse">
-                    <Router size={24} />
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest">Route</span>
-                  </div>
-                  <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 text-center">
-                    {lesson.concept.overview.layerLabel || 'Network Layer'}
-                  </span>
-                </div>
-
-                {/* Arrow 2 */}
-                <div className="flex-1 max-w-[60px] flex items-center justify-center">
-                  <div className="h-0.5 w-full bg-blue-300 dark:bg-blue-600 relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 border-solid border-l-blue-400 border-l-[6px] border-y-transparent border-y-[4px] border-r-0" />
-                  </div>
-                </div>
-
-                {/* Destination Host */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="size-12 rounded-2xl bg-white dark:bg-slate-700 border-2 border-blue-400 shadow-xs flex items-center justify-center text-blue-600 dark:text-blue-300">
-                    <Monitor size={22} />
-                  </div>
-                  <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 text-center">
-                    {lesson.concept.overview.destinationLabel || 'Destination'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Card: Key Takeaways */}
-            <div className="lg:col-span-5 bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col">
-              <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-base mb-4">
-                <span className="text-xl">📌</span>
-                <h3>Key Takeaways</h3>
-              </div>
-
-              <div className="space-y-3.5 flex-1">
-                {lesson.concept.overview.takeaways.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="size-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <CheckCircle2 size={14} className="stroke-[3]" />
-                    </div>
-                    <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-snug">
-                      {item}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-                <span>Core Pillar: OSI Layer 3</span>
-                <span className="text-blue-600 dark:text-blue-400 font-extrabold">Host-to-Host Protocol</span>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* TAB 2: KEY CONCEPTS */}
-        {activeTab === 'keyConcepts' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fadeIn">
-            {lesson.concept.keyConcepts.points.map((pt, idx) => (
-              <div
-                key={idx}
-                className="bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:border-blue-300 dark:hover:border-blue-500 transition-all"
-              >
-                <div>
-                  <div className="inline-block px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider mb-3">
-                    {pt.badge || `Concept ${idx + 1}`}
-                  </div>
-                  <h4 className="text-base font-black text-slate-900 dark:text-white mb-2">
-                    {pt.title}
-                  </h4>
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {pt.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* TAB 3: REAL WORLD ANALOGY */}
-        {activeTab === 'analogy' && (
-          <div className="bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs animate-fadeIn space-y-6">
+      {/* Main Concept Content Card */}
+      <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Explanatory Content & Architecture Diagram */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xl">
-                📬
+              <div className="size-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                <Lightbulb size={20} />
               </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {lesson.concept.analogy.heading}
-                </h3>
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  How computer networking mirrors everyday real-world systems
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+                {currentTab.title}
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-4 text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+              {currentTab.content.map((paragraph, idx) => (
+                <p key={idx} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                  {paragraph}
                 </p>
-              </div>
+              ))}
             </div>
 
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed bg-amber-500/5 border border-amber-500/15 p-4 rounded-2xl">
-              {lesson.concept.analogy.story}
-            </p>
+            {/* Architecture Diagram Visualization */}
+            <div className="bg-gradient-to-br from-slate-50 to-blue-50/40 dark:from-slate-800/60 dark:to-slate-800/20 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 flex flex-col items-center gap-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Network Architecture Pipeline
+              </p>
 
-            <div className="space-y-2">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Direct Comparison</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {lesson.concept.analogy.comparison.map((item, idx) => (
-                  <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col gap-1">
-                    <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400">🌍 Real World: {item.realWorld}</span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">⚡ Networking: {item.networking}</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-lg py-2">
+                {/* Source Node */}
+                <div className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs w-28 text-center">
+                  <div className="size-10 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Laptop size={20} />
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Source</span>
+                </div>
 
-        {/* TAB 4: EXAMPLES */}
-        {activeTab === 'examples' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-fadeIn">
-            {lesson.concept.examples.items.map((ex, idx) => (
-              <div key={idx} className="bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
-                <div>
-                  <span className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase">Case Study {idx + 1}</span>
-                  <h4 className="text-base font-black text-slate-900 dark:text-white mt-1 mb-2">{ex.title}</h4>
-                  <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10 mb-3">
-                    <span className="text-[11px] font-bold text-slate-500 block mb-0.5">Scenario:</span>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{ex.scenario}</p>
+                <div className="text-blue-500 dark:text-blue-400 font-bold hidden sm:block">
+                  <ArrowRight size={22} className="animate-pulse" />
+                </div>
+
+                {/* Central Layer Router Node */}
+                <div className="flex flex-col items-center gap-2 p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/25 w-36 text-center transform scale-105 border-2 border-white/20">
+                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Router size={22} />
                   </div>
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-500 block mb-0.5">How it Works:</span>
-                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{ex.howItWorks}</p>
+                  <span className="text-xs font-black tracking-wide uppercase">
+                    {level.unitTitle.split(':')[1]?.trim() || 'Network Layer'}
+                  </span>
+                  <span className="text-[10px] text-blue-200">Routing & Forwarding</span>
+                </div>
+
+                <div className="text-blue-500 dark:text-blue-400 font-bold hidden sm:block">
+                  <ArrowRight size={22} className="animate-pulse" />
+                </div>
+
+                {/* Destination Node */}
+                <div className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs w-28 text-center">
+                  <div className="size-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <Server size={20} />
                   </div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Destination</span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* TAB 5: QUICK NOTES */}
-        {activeTab === 'quickNotes' && (
-          <div className="bg-white dark:bg-[#111C44] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs animate-fadeIn space-y-4">
-            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <FileText size={18} className="text-blue-600" />
-              <span>Exam & Revision Cheat Sheet</span>
-            </h3>
-            <ul className="space-y-2.5">
-              {lesson.concept.quickNotes.map((note, idx) => (
-                <li key={idx} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  <span className="size-2 rounded-full bg-blue-600 shrink-0" />
-                  <span>{note}</span>
-                </li>
+              <span className="text-xs text-slate-500 dark:text-slate-400 italic">
+                {currentTab.diagram?.caption || 'End-to-End Packet Routing across Autonomous Systems'}
+              </span>
+            </div>
+          </div>
+
+          {/* Right Column: Key Takeaways Card */}
+          <div className="lg:col-span-5 flex flex-col gap-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-3xl p-6">
+            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-base">
+              <CheckCircle2 size={20} className="text-emerald-500" />
+              <span>Key Takeaways</span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {currentTab.keyTakeaways.map((takeaway, index) => (
+                <div 
+                  key={index}
+                  className="flex items-start gap-3 bg-white/80 dark:bg-slate-900/80 p-3.5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 shadow-2xs"
+                >
+                  <div className="size-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 size={13} />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                    {takeaway}
+                  </span>
+                </div>
               ))}
-            </ul>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-emerald-200/50 dark:border-emerald-800/30 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
+              <span className="font-semibold">Quick Review</span>
+              <span className="bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold">
+                Level {level.id}
+              </span>
+            </div>
           </div>
-        )}
-
+        </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 4. BOTTOM ACTION BAR                                                      */}
-      {/* ========================================================================= */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+      {/* Bottom Action Controls */}
+      <div className="flex items-center justify-between pt-2">
         <button
-          onClick={() => {
-            soundFx.playClick();
-            onPrev();
-          }}
-          className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2"
+          onClick={handleDownloadNotes}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
         >
-          <ArrowLeft size={14} />
-          <span>Previous</span>
+          <Download size={15} />
+          <span>Download Notes</span>
         </button>
 
-        <button
-          onClick={() => {
-            soundFx.playClick();
-            onNext();
-          }}
-          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black tracking-wide shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
-        >
-          <span>Next: Interactive Simulation</span>
-          <ArrowRight size={14} />
-        </button>
+        <div className="flex items-center gap-3">
+          {onPrev && (
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                onPrev();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <ArrowLeft size={15} />
+              <span>Previous</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              soundFx.playClick();
+              onNext();
+            }}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold transition-all transform hover:scale-102 active:scale-98 shadow-md shadow-blue-500/25 cursor-pointer"
+          >
+            <span>Next: Interactive Simulation</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
       </div>
-
     </div>
   );
 };
