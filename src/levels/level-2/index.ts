@@ -10,12 +10,28 @@ export const level2Data: LevelDefinition = {
   totalLessonsInUnit: 8,
   title: 'Routing Algorithms — Shortest Path & Link State',
   subtitle: 'Master graph representation of networks, Dijkstra shortest path, Distance Vector (Bellman-Ford), and Link State algorithms.',
+  description: 'Shortest path routing, graph traversal, Distance Vector vs Link State principles, and network metrics.',
+  objectives: [
+    'Model network topologies mathematically as weighted graphs G=(V,E)',
+    'Compute least-cost paths using Dijkstra algorithm',
+    'Examine Distance Vector routing and the count-to-infinity problem',
+    'Understand Link State flooding and OSPF area convergence'
+  ],
   estimatedDuration: '5–6 min',
   mascotQuote: 'Let us see how routers find the fastest path through complex networks!',
   mascotTip: 'Watch how distance vectors converge across neighboring nodes!',
   xpReward: 120,
   prevLevelSlug: 'level-1',
   nextLevelSlug: 'level-3',
+  completionState: {
+    isCompleted: false,
+    minScore: 70,
+  },
+  animatedLearning: {
+    diagramType: 'routing-topology',
+    animationTopicId: 'dijkstra-convergence',
+    description: 'Dynamic graph traversal showing shortest path discovery from source to destination.'
+  },
 
   concept: {
     tabs: [

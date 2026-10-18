@@ -60,7 +60,7 @@ export const LevelView: React.FC<LevelViewProps> = ({
   }, [levelIdentifier]);
 
   // Real or fallback student metrics
-  const streak = userProfile?.streakCount ?? 12;
+  const streak = userProfile?.streak ?? 12;
   const xp = userProfile?.totalXP ?? userProfile?.xp ?? 850;
 
   // List of all lessons in this unit for the left sidebar

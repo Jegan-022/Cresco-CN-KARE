@@ -95,9 +95,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setLocalError(null);
     setLoading(true);
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`klu_pwd_${id.toLowerCase()}`, pwd);
-      }
       await loginWithStudentId(id, pwd);
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -271,7 +268,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] flex items-start gap-1.5 leading-snug animate-in fade-in">
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
                     <span>
-                      Default student password is <strong className="font-mono text-cyan-300">stu@sid</strong>. If you customized your password, sign in with your KLU Google account below to enter or reset it in Settings.
+                      If you have not configured a portal password or forgot it, sign in with your official KLU Google account below ('KLU Sign Up') to activate your account or configure a password in Settings.
                     </span>
                   </div>
                 )}
@@ -316,7 +313,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       id="password-input" 
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
-                      placeholder="Enter password (default: stu@sid)"
+                      placeholder="Enter your portal password"
                       required 
                     />
                     <button

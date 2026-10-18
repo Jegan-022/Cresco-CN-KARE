@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Layer Need and Issues – CRESCO CN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--a1:#4f46e5;--a2:#0891b2;--a3:#be185d}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit;cursor:pointer}
+.aurora{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.27;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--a1);left:-15vmax;top:-20vmax}.aurora i:nth-child(2){background:var(--a2);right:-18vmax;top:10vmax;animation-duration:32s}
+.aurora i:nth-child(3){background:var(--a3);left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;height:100vh;display:flex;flex-direction:column}
+.topbar{padding:12px 18px}.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;font-size:19px;box-shadow:0 6px 24px -6px var(--a1)}
+.crumbs{color:var(--muted);font-size:12px}.crumbs b{color:var(--ink)}.crumbs span{margin:0 6px;opacity:.5}
+h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}.title p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:0 18px 18px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px)}
+.card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:13px 15px}
+.stage{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.13),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+.hud{display:flex;gap:8px;flex-wrap:wrap;padding:12px 12px 0}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);min-width:96px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.stat b{font:700 15px var(--mono)}
+.vp{flex:1;position:relative;min-height:300px}#svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px}.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;min-height:0;padding-right:4px}.side>*{flex:none}
+.idea{font-size:12.5px;line-height:1.55;color:#c3cde6}.idea b{color:#fff}
+select{background:#0d1426;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:600;font-size:12.5px}#scn{width:100%}
+.ctl{display:flex;gap:8px;margin-top:10px}.btn{padding:8px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;transition:.2s}.btn:hover{background:rgba(255,255,255,.12)}
+.btn.pri{background:linear-gradient(135deg,var(--a1),var(--a2));border:0;flex:1}
+.narr{border-left:3px solid var(--a2)}.narr.ok{border-left-color:#34d399}.narr.deny{border-left-color:#fb7185}.narr.warn{border-left-color:#fbbf24}
+.narr h3{color:var(--ink);font-size:12px;letter-spacing:.04em;text-transform:none}.narr p{margin:0;font-size:12.5px;line-height:1.55;color:#c3cde6}
+.tbl{display:grid;gap:5px;font:12px var(--mono)}.row{display:flex;justify-content:space-between;gap:10px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.04);transition:.3s}.row span{color:var(--muted)}.row.hl{background:rgba(52,211,153,.18);outline:1px solid #34d399}
+ol{margin:0;padding:0;list-style:none;display:grid;gap:4px}li{display:flex;gap:9px;align-items:center;padding:5px 8px;border-radius:9px;font-size:12px;color:var(--dim);transition:.3s}
+li i{font:700 10px var(--mono);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-style:normal}
+li.done{color:var(--muted)}li.done i{background:#34d399;color:#04281c;border:0}li.on{color:#fff;background:rgba(255,255,255,.08)}li.on i{background:var(--a2);color:#001;border:0}
+/* svg */
+.lk{stroke:#1f2a44;stroke-width:5;stroke-linecap:round}
+.body{fill:#0e1628;stroke-width:3}.halo{fill:none;stroke-width:2;opacity:.25}.em{font-size:28px;text-anchor:middle;dominant-baseline:central}
+.nl{font:700 13px Inter;fill:#fff;text-anchor:middle}.ns{font:500 10px Inter;fill:var(--muted);text-anchor:middle}.ct{font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}.chip{transition:opacity .3s}
+.pl{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.wm{font:700 11px Inter;letter-spacing:.2em;text-anchor:middle;opacity:.65}.big{font-size:13px}
+.rip{fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:rip 1.1s ease-out forwards}
+@keyframes rip{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.fl{animation:fl 14s linear infinite}@keyframes fl{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-380px);opacity:0}}
+.scan{animation:scan 2.4s ease-in-out infinite alternate}@keyframes scan{to{transform:translateX(14px)}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.barrier{transform-origin:500px 270px;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+svg[data-gate=open] .barrier{transform:rotate(88deg)}svg[data-gate=deny] .barrier,svg[data-gate=deny] .door{animation:shake .25s 3}
+.lamp{fill:#fb7185;transition:.4s;filter:drop-shadow(0 0 6px currentColor)}svg[data-gate=open] .lamp{fill:#34d399}
+.door{transition:transform .9s cubic-bezier(.3,1.2,.5,1)}svg[data-gate=open] .door{transform:translateY(-92px)}
+.lko{opacity:0}svg[data-gate=open] .lko{opacity:1}svg[data-gate=open] .lkc{opacity:0}.cband{opacity:.35;transition:.6s}svg[data-gate=open] .cband{opacity:1}
+.lc{font:700 11px var(--mono);fill:#cfd8ee;text-anchor:middle;dominant-baseline:central}.lk{transition:stroke .4s}
+@media(max-width:900px){body{overflow:auto}.app{height:auto}.layout{grid-template-columns:1fr}.side{overflow:visible}}
+</style></head><body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar"><div class="brand"><div class="logo" id="logo"></div><div class="title"><div class="crumbs">CRESCO CN<span>›</span>Unit III · Network Layer<span>›</span><b id="cr"></b></div><h1 id="h1"></h1><p id="sub"></p></div></div></header>
+<main class="layout">
+<section class="card stage"><div class="hud" id="hud"></div><div class="vp"><svg id="svg" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg></div><div class="legend" id="lg"></div></section>
+<aside class="side">
+<div class="card pad"><h3>Key idea</h3><div class="idea" id="idea"></div></div>
+<div class="card pad"><h3>Scenario</h3><select id="scn"></select><div class="ctl"><button class="btn pri" id="play"></button><button class="btn" id="step">⏭ Step</button><button class="btn" id="rst">↺</button><select id="spd"><option value=".6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select></div></div>
+<div class="card pad narr" id="narr"><h3 id="nt"></h3><p id="nx"></p></div>
+<div class="card pad"><h3 id="tt"></h3><div class="tbl" id="tb"></div></div>
+<div class="card pad"><h3>Event timeline</h3><ol id="tl"></ol></div>
+</aside></main></div>
+<script>
+const C='#22d3ee',G='#34d399',X='#fb7185',A='#fbbf24',V='#a78bfa',P='#f472b6',D='#5b6785';
+const hop=(from,to,label,color,title,text,x={})=>({from,to,label,color,title,text,...x});
+
+const hopT=(tbl,ttl,x={})=>({tbl,tele:ttl?{TTL:ttl}:{},...x});
+const NT={'IP dst':'—','MAC dst':'—',Route:'—'};
+const CFG={topic:'Network Layer · Need & Issues',title:'Network Layer — Need and Issues',sub:'Internet City · why hosts on different networks need a layer of their own',icon:'🌐',a:['#0d9488','#2563eb','#7c3aed'],
+ idea:'The <b>network layer</b> delivers packets host-to-host across many networks. It needs <b>logical addressing</b> and <b>routing / forwarding</b>, and must cope with <b>fragmentation</b> (MTU limits) and <b>congestion</b>. To the transport layer it offers connectionless (datagram) or connection-oriented (virtual-circuit) service.',
+ tblTitle:'Packet header & router state',legend:[[C,'IP packet'],[P,'Fragment'],[A,'Control / lookup'],[G,'Delivered'],[X,'Dropped / failed']],tele:{TTL:'64'},
+ nodes:[{id:'A',x:90,y:130,i:'💻',l:'Host A',s:'10.1.0.5',c:C},{id:'C',x:90,y:340,i:'📱',l:'Host C',s:'10.1.0.9',c:C},{id:'R1',x:280,y:235,i:'🔀',l:'Router R1',s:'default gateway',c:'#60a5fa'},
+  {id:'R2',x:470,y:130,i:'🔀',l:'Router R2',s:'core',c:'#60a5fa'},{id:'R3',x:470,y:340,i:'🔀',l:'Router R3',s:'backup path',c:'#60a5fa'},{id:'R4',x:615,y:235,i:'🔀',l:'Router R4',s:'gateway',c:'#60a5fa'},{id:'B',x:730,y:235,i:'🖥️',l:'Host B',s:'192.168.5.20',c:G}],
+ links:[['A','R1','LAN'],['C','R1','LAN'],['R1','R2','WAN'],['R1','R3','WAN'],['R2','R4','MTU 1000'],['R3','R4','WAN'],['R4','B','LAN']],
+ sc:{
+ need:{name:'Why a network layer? (addressing + routing)',tbl:{...NT},init:{},intro:'Host A wants to talk to Host B on another network. Press <b>Play</b> to follow one packet across the city.',steps:[
+  {title:'Two networks, one conversation',text:'Host A (10.1.0.5) must reach Host B (192.168.5.20) on a <b>different network</b>. Data-link addresses only work inside one LAN, so something must connect networks end to end: the <b>network layer</b>.',pulse:'A',pc:C,set:{A:['wants → B',C]}},
+  {title:'Logical addressing',text:'A MAC address says nothing about <b>where</b> a host is. An <b>IP address</b> has a network part and a host part, so routers can reason about location.',pulse:'A',pc:A,tbl:{'IP dst':'192.168.5.20','MAC dst':'R1'},set:{A:['dst 192.168.5.20',A]}},
+  hop('A','R1','IP A→B',C,'Hop 1 · host to gateway','A sends the packet to its default gateway. The frame is addressed to <b>R1\u2019s MAC</b>, while the IP destination stays B.',{set:{R1:['received',C]}}),
+  {title:'Routing decision',text:'R1 looks up 192.168.5.0/24 in its routing table and chooses the next hop <b>R2</b>.',pulse:'R1',pc:A,tbl:{Route:'192.168.5.0/24 → R2'},hl:'Route',set:{R1:['next hop R2',A]}},
+  hop('R1','R2','IP A→B',C,'Hop 2 · across the core','New frame with new MAC addresses (R1→R2), but the <b>same IP packet</b>. TTL drops by one.',hopT({'MAC dst':'R2'},'63')),
+  hop('R2','R4','IP A→B',C,'Hop 3','Each router repeats the lookup and forwards. This is <b>forwarding</b> hop by hop.',hopT({'MAC dst':'R4'},'62')),
+  hop('R4','B','IP A→B',G,'Delivered','R4 is directly connected to B\u2019s network, so it finds B\u2019s MAC (ARP) and delivers. The MAC changed at every hop, the IP never did.',hopT({'MAC dst':'B'},'61',{set:{B:['received ✓',G]},end:'ok'}))]},
+ route:{name:'Issue · route failure and rerouting',tbl:{'R1 next hop':'R2','Link R2–R4':'UP'},init:{},intro:'What if a link on the chosen route dies? Press <b>Play</b>.',steps:[
+  {title:'Normal route',text:'Traffic for network 2 normally follows R1 → R2 → R4.',lk:[['R1','R2','#c084fc'],['R2','R4','#c084fc']],tele:{TTL:'64'}},
+  {title:'Link R2–R4 fails',text:'A cable is cut and the link is <b>down</b>, but R1 does not know yet.',lk:[['R2','R4',X,true,'✗']],set:{R2:['link down',X]},tbl:{'Link R2–R4':'DOWN'},hl:'Link R2–R4'},
+  hop('A','R4','IP A→B',X,'Packet is lost','With a fixed route, the packet is sent into the dead end and dropped.',{via:['R1','R2'],bounce:true}),
+  hop('R2','R1','UPDATE · R4 unreachable',A,'Routers exchange updates','A dynamic routing protocol spreads the news so other routers can recompute.',{set:{R1:['recomputing',A]}}),
+  {title:'Alternate path chosen',text:'R1 now prefers the backup path through <b>R3</b>.',lkReset:true,lk:[['R2','R4',X,true,'✗'],['R1','R3','#c084fc'],['R3','R4','#c084fc']],tbl:{'R1 next hop':'R3'},hl:'R1 next hop',set:{R1:['next hop R3',G]}},
+  hop('A','B','IP A→B',G,'Delivered via backup','The next packet reaches B over the new route. Good routing adapts to failures.',{via:['R1','R3','R4'],end:'ok',set:{B:['received ✓',G]}})]},
+ frag:{name:'Issue · fragmentation (MTU mismatch)',tbl:{Datagram:'—','Link MTU':'—',Fragments:'—'},init:{},intro:'Different links allow different packet sizes. Press <b>Play</b> to see a datagram get fragmented.',steps:[
+  {title:'A big datagram',text:'A builds a 1500-byte IP datagram (20 B header + 1480 B data).',pulse:'A',pc:C,tbl:{Datagram:'1500 B'}},
+  hop('A','R2','IP · 1500 B',C,'Fits so far','The first links have an MTU of 1500 B, so the datagram passes unchanged.',{via:'R1',tbl:{'Link MTU':'1500 · OK'}}),
+  {title:'MTU mismatch at R2',text:'The next link, R2–R4, has an <b>MTU of 1000 B</b>. R2 must <b>fragment</b> the datagram.',pulse:'R2',pc:X,lk:[['R2','R4',A]],tbl:{'Link MTU':'1000 < 1500'},hl:'Link MTU',set:{R2:['fragmenting',A]}},
+  hop('R2','B','F1 · 996 B · MF=1',P,'Fragment 1','Header 20 B + 976 B data, offset 0. MF=1 means more fragments follow.',{via:'R4',tbl:{Fragments:'F1 sent'}}),
+  hop('R2','B','F2 · 524 B · MF=0',P,'Fragment 2','Header 20 B + 504 B data, offset 122 (×8 B). MF=0 marks the last fragment.',{via:'R4',tbl:{Fragments:'F1 + F2 sent'}}),
+  {title:'Reassembly at the destination',text:'Only <b>B</b> reassembles, using the ID and offset fields. Routers in between stay fast and simple.',pulse:'B',pc:G,set:{B:['rebuilt 1500 B ✓',G],R2:['done',D]},tbl:{Fragments:'reassembled'},end:'ok'}]},
+ cong:{name:'Issue · congestion at a router',tbl:{'R1 queue':'0 / 6','Input rate':'normal'},init:{R1:['queue 0/6',G]},intro:'Two hosts share one WAN link through R1. Press <b>Play</b> and watch the queue.',steps:[
+  hop('A','R1','PKT',C,'Light load','Packets arrive slower than R1 can forward them. The queue stays short.',{tbl:{'R1 queue':'1 / 6'},set:{R1:['queue 1/6',G]},tele:{TTL:'64'}}),
+  hop('C','R1','PKT',C,'Load builds','Host C starts sending too. Packets are now arriving faster than the single outgoing link can carry.',{tbl:{'R1 queue':'3 / 6','Input rate':'rising'},set:{R1:['queue 3/6',A]}}),
+  hop('A','R1','PKT',C,'Both hosts burst','The queue grows, and so does the <b>delay</b> of every packet.',{tbl:{'R1 queue':'5 / 6','Input rate':'high'},set:{R1:['queue 5/6',A]}}),
+  hop('C','R1','PKT',X,'Queue full: packet dropped','The buffer is full, so new packets are <b>dropped</b>. Retransmissions would make things even worse.',{bounce:true,tbl:{'R1 queue':'6 / 6 FULL'},hl:'R1 queue',set:{R1:['FULL · dropping',X]}}),
+  hop('R1',['A','C'],'SLOW DOWN',A,'Congestion signal','R1 signals the sources (e.g. ICMP source quench or ECN marking) to reduce their sending rate.',{set:{A:['got signal',A],C:['got signal',A]}}),
+  {title:'Rates reduced, queue drains',text:'Sources slow down, the queue empties and delay returns to normal. This is <b>congestion control</b>.',pulse:'R1',pc:G,set:{A:['rate ↓',G],C:['rate ↓',G],R1:['queue 2/6',G]},tbl:{'R1 queue':'2 / 6','Input rate':'reduced'},end:'ok'}]}},
+ world:()=>{const sk=Array.from({length:38},(_,i)=>{const h=10+Math.abs(Math.sin(i*1.7))*24;return `<rect x="${12+i*20.5}" y="${458-h}" width="15" height="${h}" fill="rgba(45,212,191,.07)"/>`}).join('');
+  const d=(x,w,c,t)=>`<rect x="${x}" y="64" width="${w}" height="356" rx="22" fill="rgba(${c},.045)" stroke="rgba(${c},.22)"/><text x="${x+w/2}" y="82" class="wm" style="font-size:9.5px;letter-spacing:.1em" fill="rgb(${c})">${t}</text>`;
+  return sk+d(24,330,'45,212,191','NETWORK 1 · 10.1.0.0/16')+d(398,142,'96,165,250','INTERNET CORE')+d(566,214,'167,139,250','NETWORK 2 · 192.168.5.0/24')+'<text x="400" y="38" class="wm big" fill="#2dd4bf">INTERNET CITY</text>'}};
+
+const NS='http://www.w3.org/2000/svg',$=s=>document.querySelector(s),svg=$('#svg');
+let LK={},SC,idx=0,busy=false,playing=false,speed=1,tok=0,pos={},count=0,TELE={},TBL={},HL='',layer;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/speed));
+const el=(t,a={},p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+const mv=(g,p,q,ms,t)=>new Promise(res=>{const s=performance.now(),d=ms/speed;(function f(n){if(t!==tok)return res();const u=Math.min(1,(n-s)/d),e=ease(u);g.setAttribute('transform',`translate(${p.x+(q.x-p.x)*e},${p.y+(q.y-p.y)*e})`);u<1?requestAnimationFrame(f):res()})(s)});
+async function fly(pts,labels,cols,bounce,t){
+  const pick=(v,i)=>Array.isArray(v)?v[Math.min(i,v.length-1)]:v;
+  const g=el('g',{},layer),r=el('rect',{y:-11,height:22,rx:11,fill:'#0b1222','stroke-width':1.8},g),tx=el('text',{class:'pl'},g);
+  g.setAttribute('transform',`translate(${pts[0].x},${pts[0].y})`);
+  const label=(l,c)=>{tx.textContent=l;const w=l.length*6.8+20;r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',c);g.style.filter=`drop-shadow(0 0 7px ${c})`};
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],last=i===pts.length-1;label(pick(labels,i-1),pick(cols,i-1));
+    if(last&&bounce){const m={x:a.x+(b.x-a.x)*.74,y:a.y+(b.y-a.y)*.74};await mv(g,a,m,750,t);if(t!==tok)return g.remove();label(pick(labels,i-1)+' ✗',X);await sleep(350);await mv(g,m,a,600,t)}
+    else await mv(g,a,b,750,t);
+    if(t!==tok)return g.remove();
+  }
+  g.style.transition='opacity .25s';g.style.opacity=0;await sleep(250);g.remove();
+}
+function pulse(id,c){const n=pos[id],e=el('circle',{cx:n.x,cy:n.y,r:36,class:'rip',stroke:c||n.c},layer);setTimeout(()=>e.remove(),1200)}
+function stat(id,txt,col){const g=$('#n_'+id+' .chip');if(!txt){g.style.opacity=0;return}g.style.opacity=1;const t=g.querySelector('text'),r=g.querySelector('rect'),w=txt.length*6.5+20;t.textContent=txt;t.setAttribute('fill',col);r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',col)}
+function lit(a,b,col,dash,txt){const k=LK[a+'|'+b];if(!k)return;const s=k.l.style;s.stroke=col||'';s.strokeWidth=col?7:'';s.strokeDasharray=dash?'3 9':'';s.filter=col?`drop-shadow(0 0 7px ${col})`:'';if(k.r)k.r.setAttribute('stroke',col||'#33405f');if(txt!=null&&k.t)k.t.textContent=txt}
+function build(){
+  svg.innerHTML='<defs><pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#fbbf24"/><rect x="6" width="6" height="12" fill="#1a1a1a"/></pattern></defs>';
+  svg.insertAdjacentHTML('beforeend',CFG.world());
+  LK={};CFG.links.forEach(([a,b])=>{LK[a+'|'+b]=LK[b+'|'+a]={l:el('line',{x1:pos[a].x,y1:pos[a].y,x2:pos[b].x,y2:pos[b].y,class:'lk'})}});
+  CFG.links.forEach(([a,b,w])=>{if(w==null)return;const g=el('g',{transform:`translate(${(pos[a].x+pos[b].x)/2},${(pos[a].y+pos[b].y)/2})`}),ww=String(w).length*7.4+14,k=LK[a+'|'+b];
+   k.r=el('rect',{x:-ww/2,y:-10,width:ww,height:20,rx:7,fill:'#0b1222',stroke:'#33405f','stroke-width':1.3},g);k.t=el('text',{class:'lc'},g);k.t.textContent=w});
+  CFG.nodes.forEach(n=>{const g=el('g',{id:'n_'+n.id,transform:`translate(${n.x},${n.y})`});
+    el('circle',{r:42,class:'halo',stroke:n.c},g);el('circle',{r:32,class:'body',stroke:n.c},g);
+    el('text',{class:'em'},g).textContent=n.i;el('text',{class:'nl',y:52},g).textContent=n.l;el('text',{class:'ns',y:65},g).textContent=n.s;
+    const c=el('g',{class:'chip',transform:'translate(0,86)'},g);el('rect',{y:-10,height:20,rx:10,fill:'#0b1222','stroke-width':1.4},c);el('text',{class:'ct'},c)});
+  layer=el('g');
+}
+function hud(){const s=[['STEP',`${idx}/${SC.steps.length}`],['FRAMES',count],...Object.entries(TELE)];$('#hud').innerHTML=s.map(([k,v])=>`<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('')}
+function tbl(){$('#tb').innerHTML=Object.entries(TBL).map(([k,v])=>`<div class="row${k===HL?' hl':''}"><span>${k}</span><b>${v}</b></div>`).join('')}
+function narr(t,x,cls=''){$('#nt').textContent=t;$('#nx').innerHTML=x;$('#narr').className='card pad narr '+cls}
+function btn(){$('#play').textContent=playing?'⏸ Pause':idx>=SC.steps.length?'↻ Replay':'▶ Play'}
+function reset(){
+  tok++;busy=false;playing=false;idx=0;count=0;TELE={...CFG.tele};TBL={...SC.tbl};HL='';build();
+  svg.dataset.gate=SC.gate||'closed';CFG.nodes.forEach(n=>stat(n.id,''));for(const k in SC.init)stat(k,...SC.init[k]);
+  $('#tl').innerHTML=SC.steps.map((s,i)=>`<li id="t${i}"><i>${i+1}</i>${s.title}</li>`).join('');
+  narr('Ready',SC.intro);hud();tbl();btn();
+}
+async function run(s,t){
+  const li=$('#t'+idx);li.className='on';narr(s.title,s.text);
+  if(s.lkReset)CFG.links.forEach(([a,b,w])=>lit(a,b,'',0,w));for(const e of s.lk||[])lit(...e);
+  if(s.pulse)pulse(s.pulse,s.pc);
+  if(s.from){const tos=[].concat(s.to);await Promise.all(tos.map(to=>fly([pos[s.from],...[].concat(s.via||[]).map(v=>pos[v]),pos[to]],s.label,s.color,s.bounce,t)));count+=tos.length}
+  else await sleep(1000);
+  if(t!==tok)return false;
+  for(const k in s.set)stat(k,...s.set[k]);Object.assign(TELE,s.tele||{});Object.assign(TBL,s.tbl||{});HL=s.hl||'';
+  if(s.gate)svg.dataset.gate=s.gate;if(s.end)narr(s.title,s.text,s.end);
+  li.className='done';await sleep(450);return t===tok;
+}
+async function next(){if(busy||idx>=SC.steps.length)return;busy=true;const t=tok;if(!await run(SC.steps[idx],t))return;busy=false;idx++;hud();tbl();btn()}
+$('#play').onclick=async()=>{if(playing){playing=false;btn();return}if(idx>=SC.steps.length)reset();playing=true;btn();while(playing&&idx<SC.steps.length)await next();if(tok)playing=false;btn()};
+$('#step').onclick=()=>{playing=false;btn();next()};$('#rst').onclick=reset;
+$('#spd').onchange=e=>speed=+e.target.value;
+$('#scn').onchange=e=>{SC=CFG.sc[e.target.value];reset()};
+CFG.nodes.forEach(n=>pos[n.id]=n);
+['--a1','--a2','--a3'].forEach((v,i)=>document.documentElement.style.setProperty(v,CFG.a[i]));
+$('#logo').textContent=CFG.icon;$('#cr').textContent=CFG.topic;$('#h1').textContent=CFG.title;$('#sub').textContent=CFG.sub;$('#idea').innerHTML=CFG.idea;$('#tt').textContent=CFG.tblTitle;
+$('#lg').innerHTML=CFG.legend.map(([c,t])=>`<div class="lg"><i style="background:${c}"></i>${t}</div>`).join('');
+$('#scn').innerHTML=Object.entries(CFG.sc).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+SC=Object.values(CFG.sc)[0];reset();
+</script></body></html>

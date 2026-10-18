@@ -71,8 +71,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
   const displayName = userProfile?.displayName || userProfile?.name || 'Network Explorer';
   const email = currentUser?.email || userProfile?.email || 'student@klu.ac.in';
   const studentRegNo = userProfile?.username || email || userProfile?.studentId || 'student@klu.ac.in';
-  const currentPortalPwd = userProfile?.portalPassword || (typeof window !== 'undefined' ? (localStorage.getItem(`klu_pwd_${studentRegNo}`) || localStorage.getItem(`klu_pwd_${email}`) || localStorage.getItem(`klu_pwd_${email.split('@')[0]}`)) : null) || 'stu@sid';
-  const currentPasswordStatus = currentPortalPwd === 'stu@sid' ? 'default' : 'custom';
+  const hasPasswordAuth = Boolean(currentUser?.providerData?.some(p => p.providerId === 'password'));
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,14 +167,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
               <Key size={18} className="text-[#0EA5E9]" />
               <h2 className="font-extrabold text-base text-[#172033] dark:text-[#F9FAFB]">Portal Login Credentials (2-Way Login)</h2>
             </div>
-            {currentPasswordStatus === 'default' ? (
-              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold">
-                Default Password (stu@sid)
-              </span>
-            ) : (
+            {hasPasswordAuth ? (
               <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
-                Custom Password Active
+                Portal Password Active
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-bold">
+                Google OAuth Linked
               </span>
             )}
           </div>
@@ -194,21 +193,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
                 </strong>
                 <span>Username: <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{studentRegNo}</code></span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span>Current Password:</span>
-                  <code className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
-                    {showCurrentPassword ? currentPortalPwd : '••••••••'}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    title={showCurrentPassword ? 'Hide current password' : 'View current password'}
-                  >
-                    {showCurrentPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                  </button>
-                  {currentPasswordStatus === 'default' && (
-                    <span className="text-[9px] text-amber-500 font-bold">(Default)</span>
-                  )}
+                  <span>Portal Password:</span>
+                  <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                    {hasPasswordAuth ? 'Configured (Active)' : 'Not Set (Google Linked)'}
+                  </span>
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-cyan-100 dark:border-cyan-900/50">
@@ -286,7 +274,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onNavigate }) => {
 
             <div className="flex items-center justify-between pt-1">
               <span className="text-[11px] text-[#64748B] dark:text-slate-400">
-                Default password for all KLU students is <code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">stu@sid</code>.
+                Configure a portal password to enable login using your Register Number (<code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{studentRegNo}</code>).
               </span>
               <button
                 type="submit"

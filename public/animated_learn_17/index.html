@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARP – CRESCO CN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--card:rgba(255,255,255,.045);--cyan:#22d3ee;--blue:#60a5fa;--amber:#fbbf24;--green:#34d399;--violet:#a78bfa;--pink:#f472b6;--red:#fb7185;--indigo:#818cf8;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}button:disabled{opacity:.35;cursor:not-allowed}
+.aurora{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.28;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:#4f46e5;left:-15vmax;top:-20vmax}
+.aurora i:nth-child(2){background:#0891b2;right:-18vmax;top:10vmax;animation-duration:32s;animation-delay:-8s}
+.aurora i:nth-child(3){background:#be185d;left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s;animation-delay:-14s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#22d3ee);display:grid;place-items:center;font-weight:800;box-shadow:0 6px 24px -6px #6366f1}
+.crumbs{color:var(--muted);font-size:12px;font-weight:500}.crumbs b{color:var(--ink);font-weight:600}.crumbs span{margin:0 6px;opacity:.5}
+.title h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+.tbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.tbtn:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:14px;padding:0 18px 18px}
+.stage-col{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;min-height:0}.side>*{flex:none}
+.side::-webkit-scrollbar{width:7px}.side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.card h3{margin:0 0 10px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:14px 16px}
+.stage{flex:1;min-height:340px;position:relative;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.14),transparent 70%),radial-gradient(circle,rgba(255,255,255,.075) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+#svg{position:absolute;inset:0;width:100%;height:100%;user-select:none}
+.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;z-index:3;pointer-events:none}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.pill b{color:var(--ink);font-size:12.5px;letter-spacing:0;text-transform:none}
+.dot{width:8px;height:8px;border-radius:50%}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);min-width:92px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stat b{font:700 17px var(--mono);letter-spacing:-.02em}.stat em{font-style:normal;font-size:10px;color:var(--dim);margin-left:4px}
+.legend{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:3;max-width:75%}
+.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted);font-weight:500}
+.lg i{width:10px;height:10px;border-radius:50%;border:2px solid}
+.hint{position:absolute;right:14px;bottom:14px;z-index:3;font-size:11px;color:var(--dim);text-align:right;line-height:1.5;pointer-events:none}
+.hint kbd{font:600 10px var(--mono);padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--muted)}
+.dock{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dock-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.06);transition:.2s}
+.ib:hover:not(:disabled){background:rgba(255,255,255,.14);transform:translateY(-1px)}
+.ib svg,.play svg{width:19px;height:19px}
+.play{height:44px;padding:0 22px;border-radius:14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#6366f1,#06b6d4);box-shadow:0 8px 28px -8px #6366f1;transition:.25s;min-width:116px;justify-content:center}
+.play:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.play.on{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 28px -8px #f59e0b}
+.cbtn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.cbtn:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.cbtn.glow{border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.16);color:#f0e1ff;animation:glowbtn 1.8s ease-in-out infinite}
+.cbtn.red{border-color:rgba(251,113,133,.6);background:rgba(251,113,133,.14);color:#fecdd3}
+@keyframes glowbtn{50%{box-shadow:0 0 22px -2px rgba(168,85,247,.7)}}
+.speed{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;font-weight:600}
+.speed output{font:600 12px var(--mono);color:var(--ink);min-width:38px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.14);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+.timeline{height:30px;cursor:pointer;touch-action:none;border-radius:8px;outline:none}.timeline:focus-visible{box-shadow:0 0 0 2px var(--indigo)}
+.ticks{display:flex;gap:3px;height:100%;align-items:flex-end}
+.tick{flex:1;min-width:2px;border-radius:3px;opacity:.28;transition:opacity .2s;height:60%}
+.tick.past{opacity:.95}.tick.on{opacity:1;height:100%;box-shadow:0 0 0 1.5px #fff,0 0 14px currentColor}
+.tl-key{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);align-items:center;margin-top:5px}
+.tl-key span{display:flex;align-items:center;gap:5px}.tl-key i{width:8px;height:8px;border-radius:3px}
+.tl-key .ctr{margin-left:auto;font:600 12px var(--mono);color:var(--ink)}
+.sw{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+.sw input{display:none}.knob{width:34px;height:20px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;transition:.25s}
+.knob::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
+.sw input:checked+.knob{background:linear-gradient(135deg,#6366f1,#06b6d4)}.sw input:checked+.knob::after{transform:translateX(14px)}
+.narr{position:relative;overflow:hidden}
+.narr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--nc,var(--cyan));box-shadow:0 0 22px var(--nc,var(--cyan))}
+.narr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nbadge{padding:3px 10px;border-radius:99px;font:800 10px Inter;letter-spacing:.12em;text-transform:uppercase;color:#05101c;background:var(--nc,var(--cyan))}
+.nstep{font:600 11px var(--mono);color:var(--muted)}
+.narr h2{margin:0 0 6px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.narr p{margin:0;line-height:1.62;color:#cdd6ec;font-size:13.5px}.narr p b{color:#fff}
+.tipbox{margin-top:11px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.14);font-size:12px;line-height:1.5;color:var(--muted)}.tipbox b{color:var(--amber)}
+.swap-in{animation:swapin .35s ease-out}@keyframes swapin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.kvs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.kv small{display:block;font:700 9.5px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.kv b{font:700 13.5px var(--mono)}
+.jbar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:10px}
+.jbar i{display:block;height:100%;background:linear-gradient(90deg,#f472b6,#a78bfa);box-shadow:0 0 12px #c084fc;transition:width .5s}
+.hops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hop{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);opacity:.45;transition:.35s}
+.hop .hn{font-weight:800}.hop .ha{color:var(--dim);font:500 11px var(--mono)}.hop .hc{margin-left:auto;font:700 12px var(--mono);color:var(--amber)}
+.hop.active{opacity:1;border-color:var(--amber);background:rgba(251,191,36,.1)}.hop.lit{opacity:1;border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.14)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td{padding:7px 6px;border-top:1px solid rgba(255,255,255,.06);font-family:var(--mono)}td:first-child{font:700 12px Inter;color:var(--muted)}
+details summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+details summary::-webkit-details-marker{display:none}details summary::after{content:'+';font:600 16px var(--mono)}details[open] summary::after{content:'–'}details[open] summary{margin-bottom:10px}
+.log{max-height:170px;overflow-y:auto;font:12px/1.5 var(--mono);display:flex;flex-direction:column;gap:5px}.log div{display:flex;gap:8px;color:#aab6d3}.log .cur{color:#fff}
+.vocab{display:grid;gap:9px}.vocab div{font-size:12.5px;line-height:1.5;color:#b9c4de}.vocab b{color:#fff}
+.pop{animation:rip .9s ease-out forwards;fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center}
+@keyframes rip{from{transform:scale(.8);opacity:.95}to{transform:scale(2.8);opacity:0}}
+@keyframes flow{to{stroke-dashoffset:-30}}
+@media (max-width:1100px){body{overflow:auto}.app{height:auto;min-height:100vh}.layout{grid-template-columns:minmax(0,1fr)}.stage{flex:none;height:64vh;min-height:380px}.side{overflow:visible}.hint{display:none}.legend{max-width:100%;bottom:8px}}
+@media (max-width:560px){.stat{min-width:0;padding:5px 9px}.stat b{font-size:14px}.cbtn span.lbl{display:none}}
+@media (prefers-reduced-motion:reduce){.aurora i{animation:none}}
+
+.lk .track{stroke:#1f2a44;stroke-width:5;stroke-linecap:round}.lk .en{stroke:transparent;stroke-width:5;stroke-linecap:round}
+.lk.bc .en{stroke:var(--amber);stroke-width:4;stroke-dasharray:3 11;animation:flow .6s linear infinite;filter:drop-shadow(0 0 6px var(--amber))}
+.lk.ok .en{stroke:var(--green);stroke-width:6;filter:drop-shadow(0 0 8px var(--green))}.lk.dt .en{stroke:#c084fc;stroke-width:6;filter:drop-shadow(0 0 8px #a855f7)}
+.sw-b{fill:#0e1628;stroke:#818cf8;stroke-width:3;filter:drop-shadow(0 0 12px rgba(129,140,248,.5))}
+.dv .body{fill:#0e1628;stroke:#4b5a7a;stroke-width:3;transition:.4s}.dv .em{font-size:24px;text-anchor:middle;dominant-baseline:central}
+.dv .dn{font:700 12px Inter;fill:#e9eefb;text-anchor:middle}.dv .da{font:600 10.5px var(--mono);fill:#8e9bb8;text-anchor:middle}.dv .dm{font:500 9px var(--mono);fill:#5b6785;text-anchor:middle}
+.dv.me .body{fill:#0b2a3a;stroke:var(--cyan);filter:drop-shadow(0 0 14px var(--cyan))}.dv.dst .body{stroke:var(--pink);stroke-dasharray:6 5;animation:flow 2s linear infinite}
+.dv.chk .body{stroke:var(--amber);filter:drop-shadow(0 0 10px var(--amber))}.dv.ign{opacity:.45}
+.dv.hit .body{fill:#047857;stroke:#6ee7b7;filter:drop-shadow(0 0 14px rgba(52,211,153,.6))}.dv.off .body{fill:#3a1220;stroke:var(--red);stroke-dasharray:4 5}
+.bb{transition:opacity .3s}.bb rect{fill:rgba(6,9,19,.92);stroke:#33405f}.bb text{font:700 11px Inter;fill:#e9eefb;text-anchor:middle;dominant-baseline:central}
+.pl{font:800 9.5px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.sel{appearance:none;width:100%;background:rgba(255,255,255,.07);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 28px 9px 12px;font:600 13px Inter;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238e9bb8' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.sel option{background:#0d1426}.lab{display:block;font:700 10px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.tgl{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.verdict{margin-top:10px;padding:9px 12px;border-radius:12px;text-align:center;font-weight:600;font-size:12.5px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.verdict.ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:#a7f3d0}.verdict.no{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.4);color:#fecdd3}
+.th{font:700 9.5px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
+tr.flash td{animation:cf 1.2s ease-out}@keyframes cf{0%{background:rgba(52,211,153,.55)}100%{background:transparent}}
+.kv.w{grid-column:1/-1}.kv b.s{font-size:12px}
+</style></head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">C</div><div class="title">
+    <div class="crumbs">CRESCO CN<span>/</span>Practice<span>/</span>Unit 3<span>/</span><b>ARP</b></div>
+    <h1>Local Network Broadcast <span style="color:var(--cyan)">· ARP Lab</span></h1></div></div>
+  <div class="topbtns"><button class="tbtn" id="btn-def">↺ Reset lab</button></div>
+</header>
+<main class="layout">
+<section class="stage-col">
+  <div class="card stage">
+    <div class="hud">
+      <div class="pill"><span class="dot" style="background:var(--cyan)"></span>PC-A asks<span>→</span><b id="ask"></b></div>
+      <div class="stats">
+        <div class="stat"><small>ARP frames</small><b id="st-f">0</b></div>
+        <div class="stat"><small>Devices hit</small><b id="st-d">0</b></div>
+        <div class="stat"><small>Cache</small><b id="st-c">0</b></div>
+      </div>
+    </div>
+    <svg id="svg" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Local network with a switch and six devices">
+      <g id="lks"></g><g id="sw"></g><g id="nds"></g><g id="fx"></g><g id="bbs"></g>
+    </svg>
+    <div class="legend">
+      <span class="lg"><i style="border-color:var(--cyan);background:#0b2a3a"></i>Sender</span>
+      <span class="lg"><i style="border-color:var(--amber);background:#0e1628"></i>Hears the shout</span>
+      <span class="lg"><i style="border-color:#6ee7b7;background:#047857"></i>Owner replies</span>
+      <span class="lg"><i style="border-color:#4b5a7a;background:#0e1628;opacity:.5"></i>Ignores it</span>
+    </div>
+    <div class="hint">One subnet = one broadcast domain: <b>everyone</b> hears the request<br><kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> step · <kbd>R</kbd> restart</div>
+  </div>
+  <div class="card dock">
+    <div class="dock-row">
+      <div class="transport">
+        <button class="ib" id="b-reset" aria-label="Restart"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M4.6 15a8 8 0 100-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ib" id="b-prev" aria-label="Step back"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="play" id="b-play"></button>
+        <button class="ib" id="b-next" aria-label="Step forward"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="cbtn glow" id="b-skip">⏭<span class="lbl">Skip to result</span></button>
+      </div>
+      <div class="speed">Speed <input type="range" id="speed" min="1" max="10" value="5" aria-label="Speed"><output id="sp-o">1.5×</output></div>
+    </div>
+    <div><div class="timeline" id="tl" tabindex="0" role="slider" aria-label="Step timeline"><div class="ticks" id="ticks"></div></div>
+      <div class="tl-key"><span><i style="background:var(--cyan)"></i>Lookup</span><span><i style="background:var(--amber)"></i>Broadcast</span><span><i style="background:var(--blue)"></i>Check</span><span><i style="background:var(--green)"></i>Reply</span><span><i style="background:var(--indigo)"></i>Cache</span><span><i style="background:var(--violet)"></i>Data</span><span class="ctr">Step <span id="ctr"></span></span></div></div>
+    <div><label class="sw"><input type="checkbox" id="tips" checked><span class="knob"></span>Beginner tips</label></div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card pad narr" id="narr"></div>
+  <div class="card pad"><h3>Set up the lookup</h3>
+    <label class="lab" for="dst">PC-A wants to send to</label>
+    <select class="sel" id="dst"><option value="B">PC-B · 192.168.1.20</option><option value="C">Printer · 192.168.1.30</option><option value="D">Phone · 192.168.1.40</option><option value="E">Server · 192.168.1.60</option><option value="NET">Internet · 8.8.8.8</option></select>
+    <div class="tgl"><label class="sw"><input type="checkbox" id="hit"><span class="knob"></span>Entry already in ARP cache</label><label class="sw"><input type="checkbox" id="off"><span class="knob"></span>Target host is offline</label></div></div>
+  <div class="card pad"><h3>ARP packet · live</h3><div class="kvs" id="pkt"></div></div>
+  <div class="card pad"><h3>PC-A ARP cache</h3><table id="cache"></table></div>
+  <details class="card pad"><summary>Key terms</summary><div class="vocab">
+    <div><b>ARP</b> – finds the MAC address that goes with a known IP address, inside one network.</div>
+    <div><b>MAC address</b> – the hardware address a switch uses to deliver an Ethernet frame.</div>
+    <div><b>Broadcast</b> – frame to FF:FF:FF:FF:FF:FF; the switch floods it to every port.</div>
+    <div><b>ARP cache</b> – remembered IP→MAC pairs, so the shout is not repeated for every packet.</div>
+    <div><b>RARP</b> – the reverse: knows the MAC, asks for the IP.</div>
+  </div></details>
+</aside>
+</main></div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e};
+const D={A:{n:'PC-A',e:'💻',h:10,x:130,y:285},B:{n:'PC-B',e:'🖥️',h:20,x:270,y:115},C:{n:'Printer',e:'🖨️',h:30,x:630,y:115},D:{n:'Phone',e:'📱',h:40,x:770,y:285},E:{n:'Server',e:'🗄️',h:60,x:630,y:455},R:{n:'Gateway',e:'🌐',h:1,x:270,y:455}};
+const SW={x:450,y:285},keys=Object.keys(D),ip=k=>'192.168.1.'+D[k].h,mac=k=>'AA:BB:CC:DD:EE:'+D[k].h.toString(16).toUpperCase().padStart(2,'0');
+let dst='B',hit=false,off=false,idx=0,playing=false,timer=null,raf=0,busy=false;
+const sp=()=>+$('speed').value/3.3,tgt=()=>dst=='NET'?'R':dst,tip=()=>dst=='NET'?'192.168.1.1':ip(dst),dname=()=>dst=='NET'?'the Internet (8.8.8.8)':D[dst].n;
+const steps=()=>hit?['need','hit','data']:off?['need','miss','bcast','check','timeout']:['need','miss','bcast','check','reply','update','data'];
+/* ---- scene ---- */
+keys.forEach(k=>{const g=el('g',{id:'lk'+k,class:'lk'},$('lks'));el('line',{class:'track',x1:SW.x,y1:SW.y,x2:D[k].x,y2:D[k].y},g);el('line',{class:'en',x1:SW.x,y1:SW.y,x2:D[k].x,y2:D[k].y},g)});
+const sg=el('g',{transform:`translate(${SW.x},${SW.y})`},$('sw'));el('rect',{class:'sw-b',x:-40,y:-26,width:80,height:52,rx:14},sg);el('text',{y:2,style:'font-size:24px;text-anchor:middle;dominant-baseline:central'},sg).textContent='🔀';el('text',{y:44,style:'font:700 11px Inter;fill:#8e9bb8;text-anchor:middle'},sg).textContent='Switch';
+keys.forEach(k=>{const d=D[k],g=el('g',{id:'d'+k,class:'dv',transform:`translate(${d.x},${d.y})`},$('nds'));el('circle',{class:'body',r:28},g);el('text',{class:'em'},g).textContent=d.e;
+ el('text',{class:'dn',y:46},g).textContent=d.n;el('text',{class:'da',y:60},g).textContent=ip(k);el('text',{class:'dm',y:72},g).textContent=mac(k);
+ const b=el('g',{id:'bb'+k,class:'bb',opacity:0,transform:`translate(${d.x},${d.y-58})`},$('bbs'));el('rect',{rx:10,height:24,y:-12},b);el('text',{},b)});
+/* ---- narrative ---- */
+function nar(k){const t=tgt(),T=tip(),M=mac(t),nm=D[t].n;return({
+ need:{b:'Lookup',c:'#22d3ee',h:'PC-A needs a MAC address',p:dst=='NET'?`PC-A wants to reach <b>8.8.8.8</b>, which is outside 192.168.1.0/24. It cannot ARP for a remote host, so it ARPs for its <b>default gateway ${T}</b> instead.`:`PC-A knows the IP <b>${T}</b> (${nm}) but an Ethernet frame needs a <b>MAC address</b>. ${nm} is in the same subnet, so PC-A can use ARP to find it.`,t:'IP gets the packet across networks; MAC gets the frame across one link.'},
+ miss:{b:'Cache',c:'#fb7185',h:'Cache miss',p:`PC-A checks its ARP cache for ${T}. Nothing there — it must ask the network.`,t:'Caches stop devices from shouting before every single packet.'},
+ hit:{b:'Cache',c:'#34d399',h:'Cache hit',p:`The ARP cache already maps <b>${T}</b> to <b>${M}</b>. No broadcast is needed.`,v:['ok','✔ ARP skipped — MAC found in cache'],t:'Entries expire after a few minutes so changed addresses are relearned.'},
+ bcast:{b:'Broadcast',c:'#fbbf24',h:'📢 “Who has '+T+'?”',p:`PC-A sends an <b>ARP request</b> to the broadcast MAC <b>FF:FF:FF:FF:FF:FF</b>. The switch floods it out of every port, so every device on the street hears it.`,t:'The request is a question for everyone: “Tell 192.168.1.10”.'},
+ check:{b:'Check',c:'#60a5fa',h:'Everyone checks the question',p:off?`Each device compares ${T} with its own IP. The others ignore it, but <b>${nm}</b> is offline and cannot answer.`:`Each device compares <b>${T}</b> with its own IP. Only <b>${nm}</b> matches; the rest ignore the frame. ${nm} also notes PC-A's IP→MAC pair.`,t:'Non-matching devices drop the request silently.'},
+ reply:{b:'Reply',c:'#34d399',h:'Owner answers directly',p:`${nm} sends an <b>ARP reply</b> straight back to PC-A (unicast): “${T} is at <b>${M}</b>”. No one else is bothered.`,t:'Requests are broadcast; replies are unicast.'},
+ timeout:{b:'Failed',c:'#fb7185',h:'No reply — timeout',p:`Nobody owns ${T} on the wire. After retries PC-A gives up: <b>destination host unreachable</b>. Nothing is added to the cache.`,v:['no','✖ ARP failed — host offline'],t:'ARP failing is a common cause of “can ping gateway, not host” problems.'},
+ update:{b:'Cache',c:'#818cf8',h:'PC-A saves the answer',p:`PC-A stores <b>${T} → ${M}</b> in its ARP cache. Next time it skips the broadcast entirely.`,t:'Dynamic entries age out; static entries are typed by hand.'},
+ data:{b:'Data',c:'#a78bfa',h:'Frame sent to the MAC',p:`With the MAC known, PC-A builds the Ethernet frame addressed to <b>${M}</b> and the switch delivers it to ${nm} only.${dst=='NET'?' The gateway then routes it on toward the Internet.':''}${hit&&off?' <b>Warning:</b> the cache entry is stale — the host is offline, so nobody answers.':''}`,v:hit&&off?['no','✖ Stale cache — no response']:['ok','✔ Delivered'],t:'The IP packet inside stays the same; only the frame addressing changes per link.'}})[k]}
+/* ---- paint ---- */
+const TK={need:'#22d3ee',miss:'#fb7185',hit:'#34d399',bcast:'#fbbf24',check:'#60a5fa',reply:'#34d399',timeout:'#fb7185',update:'#818cf8',data:'#a78bfa'};
+function view(k){const t=tgt(),c={A:'me'},b={},oth=keys.filter(x=>x!='A'&&x!=t),T=tip();const ign=()=>oth.forEach(x=>c[x]='ign');
+ if(k=='need'){c[t]='dst';b.A='Need MAC of '+T}
+ if(k=='miss'){b.A='Cache miss ✖'}
+ if(k=='hit'){c[t]='dst';b.A='Cache hit ✔'}
+ if(k=='bcast'){oth.concat(t).forEach(x=>c[x]='chk');b.A='📢 Who has '+T+'?'}
+ if(k=='check'){ign();oth.forEach(x=>b[x]='Not me ✖');c[t]=off?'off':'hit';b[t]=off?'…no answer':'That is me ✔'}
+ if(k=='reply'){ign();c[t]='hit';b[t]=T+' is at '+mac(t).slice(-5)}
+ if(k=='timeout'){ign();c[t]='off';b[t]='Offline';b.A='Timeout ✖'}
+ if(k=='update'){c[t]='hit';b.A='Saved in cache ✔'}
+ if(k=='data'){c[t]=off&&hit?'off':'hit';b.A='Frame → '+mac(t).slice(-5)}
+ return{c,b}}
+const pk=k=>{const t=tgt(),q=['bcast','check','timeout'].includes(k),r=['reply','update'].includes(k);if(!q&&!r)return null;
+ return[['Operation',q?'1 · Request':'2 · Reply'],['Sender IP',q?ip('A'):tip()],['Sender MAC',q?mac('A'):mac(t)],['Target IP',q?tip():ip('A')],['Target MAC',q?'00:00:…:00 (unknown)':mac('A')],['Ethernet dst',q?'FF:FF:FF:FF:FF:FF':mac('A')]]}
+function paint(){const S=steps(),k=S[idx],nr=nar(k),v=view(k),t=tgt(),nb=$('narr');
+ nb.style.setProperty('--nc',nr.c);nb.innerHTML=`<div class="swap-in"><div class="narr-head"><span class="nbadge">${nr.b}</span><span class="nstep">Step ${idx+1} / ${S.length}</span></div><h2>${nr.h}</h2><p>${nr.p}</p>${nr.v?`<div class="verdict ${nr.v[0]}">${nr.v[1]}</div>`:''}${$('tips').checked?`<div class="tipbox"><b>Remember:</b> ${nr.t}</div>`:''}</div>`;
+ keys.forEach(x=>{$('d'+x).setAttribute('class','dv '+(v.c[x]||''));const b=$('bb'+x),m=v.b[x];b.setAttribute('opacity',m?1:0);if(m){const tx=b.querySelector('text'),r=b.querySelector('rect'),w=m.length*6.4+20;tx.textContent=m;r.setAttribute('width',w);r.setAttribute('x',-w/2)}
+  $('lk'+x).setAttribute('class','lk'+(k=='bcast'?' bc':(k=='reply'&&(x=='A'||x==t))?' ok':(k=='data'&&(x=='A'||x==t))?' dt':''))});
+ const p=pk(k);$('pkt').innerHTML=p?p.map((r,i)=>`<div class="kv ${i>=4||i==0?'':''}"><small>${r[0]}</small><b class="s">${r[1]}</b></div>`).join(''):'<div class="kv w"><small>Idle</small><b class="s" style="color:var(--dim);font:500 12px Inter">No ARP frame on the wire yet.</b></div>';
+ const ent=hit||S.indexOf('update')>=0&&idx>=S.indexOf('update');
+ $('cache').innerHTML=`<tr><td class="th">IP address</td><td class="th">MAC address</td><td class="th">Type</td></tr>`+(ent?`<tr class="${k=='update'||k=='hit'?'flash':''}"><td>${tip()}</td><td>${mac(t)}</td><td>dynamic</td></tr>`:'<tr><td colspan=3 style="color:var(--dim);font:12px Inter">Cache is empty.</td></tr>');
+ const fr=(S.indexOf('bcast')>=0&&idx>=S.indexOf('bcast')?1:0)+(S.indexOf('reply')>=0&&idx>=S.indexOf('reply')?1:0);
+ $('st-f').textContent=fr;$('st-d').textContent=S.indexOf('bcast')>=0&&idx>=S.indexOf('bcast')?5:0;$('st-c').textContent=ent?1:0;$('ask').textContent=tip();$('ctr').textContent=(idx+1)+' / '+S.length;
+ $('ticks').innerHTML=S.map((x,j)=>`<i class="tick ${j<idx?'past':''} ${j==idx?'on':''}" style="background:${TK[x]};color:${TK[x]}"></i>`).join('');
+ $('b-prev').disabled=idx==0;$('b-next').disabled=idx==S.length-1;const pl=$('b-play');pl.className='play'+(playing?' on':'');
+ pl.innerHTML=playing?'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>Pause':'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>'+(idx==S.length-1?'Replay':'Play')}
+/* ---- animation ---- */
+const COL={q:['#f59e0b','ARP?'],r:['#10b981','ARP!'],d:['#8b5cf6','DATA']};
+function fly(paths,kind,done){const items=paths.map(w=>{const g=el('g',{},$('fx'));el('rect',{x:-21,y:-11,width:42,height:22,rx:7,fill:COL[kind][0],stroke:'#fff','stroke-opacity':.7},g);el('text',{class:'pl'},g).textContent=COL[kind][1];
+  const seg=[];let tot=0;for(let j=1;j<w.length;j++){const d=Math.hypot(w[j].x-w[j-1].x,w[j].y-w[j-1].y);seg.push(d);tot+=d}return{g,w,seg,tot}});
+ const mx=Math.max(...items.map(i=>i.tot)),dur=mx*3.4/sp(),t0=performance.now();busy=true;
+ (function f(now){const k=Math.min(1,(now-t0)/dur);items.forEach(it=>{let d=Math.min(k*mx,it.tot),j=0;while(j<it.seg.length-1&&d>it.seg[j]){d-=it.seg[j];j++}const u=d/it.seg[j];it.g.setAttribute('transform',`translate(${it.w[j].x+(it.w[j+1].x-it.w[j].x)*u},${it.w[j].y+(it.w[j+1].y-it.w[j].y)*u})`)});
+  if(k<1)raf=requestAnimationFrame(f);else{busy=false;items.forEach(i=>i.g.remove());done&&done()}})(t0)}
+function ripple(){[0,.3,.6].forEach(dl=>el('circle',{class:'pop',cx:D.A.x,cy:D.A.y,r:30,stroke:'#fbbf24',style:`animation-delay:${dl}s;animation-duration:1.2s`},$('fx')));setTimeout(()=>{[...$('fx').querySelectorAll('.pop')].forEach(n=>n.remove())},2000)}
+function go(i,anim,cb){cancelAnimationFrame(raf);$('fx').innerHTML='';const S=steps(),from=idx;idx=Math.max(0,Math.min(S.length-1,i));busy=false;paint();const k=S[idx],t=tgt();
+ if(anim&&idx==from+1&&['bcast','reply','data'].includes(k)){
+  if(k=='bcast'){ripple();fly(keys.filter(x=>x!='A').map(x=>[D.A,SW,D[x]]),'q',cb)}else if(k=='reply')fly([[D[t],SW,D.A]],'r',cb);else fly([[D.A,SW,D[t]]],'d',cb)}
+ else cb&&cb()}
+const stop=()=>{playing=false;clearTimeout(timer);paint()};
+function tick(){if(!playing)return;if(idx>=steps().length-1){stop();return}go(idx+1,true,()=>{if(playing)timer=setTimeout(tick,1200/sp())})}
+function play(){if(idx>=steps().length-1)go(0,false);playing=true;paint();tick()}
+const step=d=>{stop();go(idx+d,d>0)},rebuild=()=>{stop();go(0,false)};
+$('b-play').onclick=()=>playing?stop():play();$('b-next').onclick=()=>step(1);$('b-prev').onclick=()=>step(-1);$('b-reset').onclick=rebuild;
+$('b-skip').onclick=()=>{stop();go(steps().length-1,false)};$('speed').oninput=()=>{$('sp-o').textContent=sp().toFixed(1)+'×'};$('tips').onchange=paint;
+$('dst').onchange=()=>{dst=$('dst').value;rebuild()};$('hit').onchange=()=>{hit=$('hit').checked;rebuild()};$('off').onchange=()=>{off=$('off').checked;rebuild()};
+$('btn-def').onclick=()=>{dst='B';hit=off=false;$('dst').value='B';$('hit').checked=$('off').checked=false;rebuild()};
+let sd=false;const tl=$('tl'),scrub=e=>{const n=steps().length,r=$('ticks').getBoundingClientRect(),i=Math.max(0,Math.min(n-1,Math.floor((e.clientX-r.left)/r.width*n)));if(i!=idx){stop();go(i,false)}};
+tl.onpointerdown=e=>{sd=true;tl.setPointerCapture(e.pointerId);scrub(e)};tl.onpointermove=e=>sd&&scrub(e);tl.onpointerup=()=>sd=false;
+addEventListener('keydown',e=>{if(e.target.matches('select,input[type=text]'))return;if(e.key==' '){e.preventDefault();playing?stop():play()}else if(e.key=='ArrowRight')step(1);else if(e.key=='ArrowLeft')step(-1);else if(e.key=='r'||e.key=='R')rebuild()});
+go(0,false);
+})();
+</script></body></html>

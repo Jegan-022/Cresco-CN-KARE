@@ -41,6 +41,42 @@ async function startServer() {
     }
   });
 
+  // AI Personal Tutor Endpoint (Step 23)
+  app.post("/api/ai-tutor", async (req, res) => {
+    try {
+      const { handleAiTutorRequest } = await import("./api/ai-tutor");
+      const result = await handleAiTutorRequest(req.body);
+      return res.status(result.status).json(result.data);
+    } catch (err: any) {
+      console.error("Error in /api/ai-tutor:", err);
+      return res.status(500).json({
+        success: false,
+        error: err?.message || "Server error in AI tutor",
+        errorCode: "AI_PROVIDER_UNAVAILABLE"
+      });
+    }
+  });
+
+  // Standalone Animated Learning modules (served directly, independent from React SPA)
+  app.get("/animated_learn_:num", (req, res, next) => {
+    const isProd = process.env.NODE_ENV === "production";
+    const baseDir = isProd ? path.join(process.cwd(), "dist") : path.join(process.cwd(), "public");
+    const filePath = path.join(baseDir, `animated_learn_${req.params.num}`, "index.html");
+    res.sendFile(filePath, (err) => {
+      if (err) next();
+    });
+  });
+
+  app.get("/animated_learn_:num/*", (req, res, next) => {
+    const isProd = process.env.NODE_ENV === "production";
+    const baseDir = isProd ? path.join(process.cwd(), "dist") : path.join(process.cwd(), "public");
+    const relativePath = req.params[0] || "index.html";
+    const filePath = path.join(baseDir, `animated_learn_${req.params.num}`, relativePath);
+    res.sendFile(filePath, (err) => {
+      if (err) next();
+    });
+  });
+
   // Vite development middleware vs production static files
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -60,7 +96,9 @@ async function startServer() {
   }
 
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[CRESCO Server] Running on http://0.0.0.0:${PORT}`);
+    console.log(`[CRESCO Server] Mode: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`[CRESCO Server] AI Tutor: ${process.env.GEMINI_API_KEY ? 'Configured (Active)' : 'Unconfigured (Fallback Ready)'}`);
   });
 }
 

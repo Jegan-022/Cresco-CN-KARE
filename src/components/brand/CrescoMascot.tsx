@@ -146,7 +146,8 @@ export const CrescoMascot: React.FC<CrescoMascotProps> = ({
           src={imageSrc}
           alt={alt}
           className={`${sizeConfig.img} object-contain ${glowStyle} transition-all duration-300`}
-          loading="eager"
+          loading="lazy"
+          decoding="async"
         />
       </div>
 

@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Course, NavTab } from '../../types';
 import { FolderCheck, Play, Star, Clock, CheckCircle2, BookOpen, ArrowRight, Layers, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ALL_MODULES } from '../../data/courseContent';
+import { PersonalizedNextCard } from '../personalization/PersonalizedNextCard';
+import { evaluatePersonalizedRecommendations } from '../../services/personalizedLearningService';
+import { TutorInstructionalContext } from '../../types/aiTutor';
 
 interface MyLearningViewProps {
   primaryCourse: Course;
@@ -21,6 +24,16 @@ export const MyLearningView: React.FC<MyLearningViewProps> = ({
   const overallProgress = userProfile ? userProfile.overallProgress : 0;
   const modulesCount = userProfile?.completedModules?.length || 0;
   const totalModules = ALL_MODULES.length || 30;
+
+  const personalizationResult = useMemo(() => {
+    return evaluatePersonalizedRecommendations({
+      studentId: userProfile?.studentId || 'student',
+      completedLessonIds: userProfile?.completedModules || [],
+      practiceScores: (userProfile as any)?.practiceScores,
+      quizAverage: userProfile?.quizAverage,
+      remediationRecommendations: (userProfile as any)?.activeRemediations || []
+    });
+  }, [userProfile?.studentId, userProfile?.completedModules, (userProfile as any)?.practiceScores, userProfile?.quizAverage, (userProfile as any)?.activeRemediations]);
 
   return (
     <div className="space-y-6 pb-16 font-sans max-w-7xl mx-auto">
@@ -63,7 +76,25 @@ export const MyLearningView: React.FC<MyLearningViewProps> = ({
 
       {/* Courses List */}
       {filter === 'continue' ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Personalized Learning Recommendation Hero Card (Step 24) */}
+          <PersonalizedNextCard
+            result={personalizationResult}
+            onNavigate={onNavigate}
+            onAskTutor={(rec) => {
+              const tutorContext: TutorInstructionalContext = {
+                courseId: 'cs-4200',
+                unitId: rec.unitId,
+                lessonId: rec.targetLessonId,
+                conceptTopic: rec.conceptTitle || rec.title,
+                actionType: rec.category === 'strengthen_understanding' ? 'explain_mistake' : 'explain_concept',
+                learningObjective: rec.rationale,
+                explanationSnippet: rec.description
+              };
+              window.dispatchEvent(new CustomEvent('cresco:open-ai-tutor', { detail: tutorContext }));
+            }}
+          />
+
           <div className="bg-white dark:bg-[#11141B] border border-slate-200 dark:border-[#252B36] rounded-2xl p-6 shadow-sm dark:shadow-xl hover:border-[#5B7CFF]/40 transition-all transform-gpu flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center space-x-2 text-xs">

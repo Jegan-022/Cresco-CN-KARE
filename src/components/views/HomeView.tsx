@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavTab } from '../../types';
 import { soundFx } from '../../utils/soundEffects';
 import { CrescoMascot } from '../brand/CrescoMascot';
@@ -6,6 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 import { ALL_MODULES } from '../../data/courseContent';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { PersonalizedNextCard } from '../personalization/PersonalizedNextCard';
+import { evaluatePersonalizedRecommendations } from '../../services/personalizedLearningService';
+import { PersonalizedRecommendation } from '../../types/personalization';
+import { TutorInstructionalContext } from '../../types/aiTutor';
 import { 
   ArrowRight, 
   Flame, 
@@ -66,6 +70,40 @@ export const HomeView: React.FC<HomeViewProps> = ({
   // Determine active/next module
   const nextModule = ALL_MODULES.find((m) => !completedIds.includes(m.id)) || ALL_MODULES[0];
 
+  const [cycleVersion, setCycleVersion] = useState(0);
+
+  useEffect(() => {
+    const handleCycleUpdated = () => {
+      setCycleVersion((v) => v + 1);
+    };
+    window.addEventListener('cresco:learning-cycle-updated', handleCycleUpdated);
+    return () => window.removeEventListener('cresco:learning-cycle-updated', handleCycleUpdated);
+  }, []);
+
+  // Deterministic Personalized Learning Engine (Step 24)
+  const personalizationResult = useMemo(() => {
+    return evaluatePersonalizedRecommendations({
+      studentId: currentUser?.uid || userProfile?.studentId || 'guest_student',
+      completedLessonIds: completedIds,
+      practiceScores: (userProfile as any)?.practiceScores,
+      quizAverage: userProfile?.quizAverage,
+      remediationRecommendations: (userProfile as any)?.activeRemediations || []
+    });
+  }, [currentUser?.uid, userProfile?.studentId, completedIds, (userProfile as any)?.practiceScores, userProfile?.quizAverage, (userProfile as any)?.activeRemediations, cycleVersion]);
+
+  const handleAskTutorAboutRec = (rec: PersonalizedRecommendation) => {
+    const tutorContext: TutorInstructionalContext = {
+      courseId: 'cs-4200',
+      unitId: rec.unitId,
+      lessonId: rec.targetLessonId,
+      conceptTopic: rec.conceptTitle || rec.title,
+      actionType: rec.category === 'strengthen_understanding' ? 'explain_mistake' : 'explain_concept',
+      learningObjective: rec.rationale,
+      explanationSnippet: rec.description
+    };
+    window.dispatchEvent(new CustomEvent('cresco:open-ai-tutor', { detail: tutorContext }));
+  };
+
   // Active path view tab
   const [activePathFilter, setActivePathFilter] = useState<'roadmap' | 'labs' | 'rfcs'>('roadmap');
 
@@ -74,20 +112,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   useEffect(() => {
     try {
-      const studentsRef = collection(db, 'students');
-      const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const leaderboardRef = collection(db, 'public_leaderboard');
+      const unsubscribe = onSnapshot(leaderboardRef, (snapshot) => {
         if (!snapshot.empty) {
           const list: LeaderboardUser[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            // Filter out developer accounts
-            if (data.role === 'developer' || docSnap.id.startsWith('dev_')) return;
-            const sXp = data.totalXP ?? data.xp ?? 0;
-            const sName = data.displayName || data.name || `Student ${docSnap.id.slice(0, 5)}`;
-            const isMe = docSnap.id === currentUser?.uid || data.studentId === studentId;
-            const mods = data.modulesCompleted ?? (data.completedModules || []).length;
-            const prog = data.overallProgress ?? 0;
-            const isCompleted = mods >= 30 || prog >= 100;
+            const sXp = Number(data.totalXP ?? data.xp ?? 0);
+            const sName = String(data.displayName || 'NetQuest Cadet');
+            const isMe = docSnap.id === currentUser?.uid;
+            const mods = Number(data.modulesCompleted || 0);
+            const prog = Number(data.overallProgress || 0);
+            const isCompleted = mods >= 30 || prog >= 100 || !!data.courseCompletedAt;
+
             // Only show active learners who have earned XP, completed course, or current student
             if (sXp > 0 || isMe || isCompleted) {
               list.push({
@@ -105,13 +142,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           setTopStudents([]);
         }
       }, (err) => {
-        console.warn("HomeView leaderboard onSnapshot handled error:", err);
+        console.warn("HomeView public_leaderboard onSnapshot handled error:", err);
+        setTopStudents([]);
       });
       return () => unsubscribe();
     } catch (e) {
-      console.warn("HomeView leaderboard listener fallback:", e);
+      console.warn("HomeView public_leaderboard listener fallback:", e);
+      setTopStudents([]);
     }
-  }, [currentUser?.uid, studentId]);
+  }, [currentUser?.uid]);
 
   // Weekly bar chart (Mon=0..Sun=6)
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -356,75 +395,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           </section>
 
-          {/* 4. INTERACTIVE CURRENT LESSON HERO CARD */}
-          <section className="rounded-xl bg-surface-container-lowest p-6 md:p-8 shadow-[0_8px_30px_rgba(19,27,46,0.06)]" id="interactive-lesson-card">
-            <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 font-label-md text-label-md font-bold">
-                    {nextModule.unitTitle || 'Unit 3'} • Module {nextModule.moduleIndex + 1}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant font-label-md text-label-md">
-                    Difficulty: Intermediate
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-md text-label-md flex items-center gap-1 font-bold">
-                    <Zap size={13} className="fill-current" /> +50 XP
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant font-label-md text-label-md flex items-center gap-1">
-                    <Clock size={13} /> {nextModule.readTimeMinutes || 7} mins
-                  </span>
-                </div>
-
-                <h2 className="font-headline-md text-headline-md text-on-surface tracking-tight">
-                  {nextModule.title}
-                </h2>
-
-                <p className="font-body-md text-body-md text-on-surface-variant pt-2 max-w-2xl">
-                  {nextModule.pedagogy?.concept || nextModule.lesson?.hook || 'Examine fundamental networking mechanisms, header configurations, and packet transitions.'}
-                </p>
-
-                {/* Key Takeaways Preview */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5">
-                  {(nextModule.keyTakeaways || [
-                    'Master architectural boundaries & RFC definitions.',
-                    'Analyze packet framing & control flags.',
-                    'Solve drills to unlock module knowledge check quiz.'
-                  ]).slice(0, 3).map((item, idx) => (
-                    <div key={idx} className="p-3 rounded-lg bg-surface-container-low flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md text-label-md font-bold shrink-0">
-                        {idx + 1}
-                      </span>
-                      <span className="font-body-sm text-body-sm text-on-surface font-medium line-clamp-2">
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Start Action Card Column */}
-              <div className="w-full md:w-56 shrink-0 flex flex-col gap-3 justify-center">
-                <button 
-                  onClick={() => { 
-                    soundFx.playClick(); 
-                    onNavigate('learn-map'); 
-                  }}
-                  className="w-full py-4 px-6 rounded-xl bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-[0_5px_0_0_#047857,0_10px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_2px_0_0_#047857,0_6px_12px_rgba(16,185,129,0.2)] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer"
-                >
-                  <span>{completedIds.includes(nextModule.id) ? 'Island Learning Map' : 'Go to Island Map'}</span>
-                  <ArrowRight size={20} />
-                </button>
-
-                <button 
-                  onClick={() => { soundFx.playClick(); onNavigate('learn-map'); }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-surface-container text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Bookmark size={16} />
-                  <span>Open Full Learning Map</span>
-                </button>
-              </div>
-            </div>
-          </section>
+          {/* 4. DETERMINISTIC PERSONALIZED RECOMMENDATION HERO CARD (Step 24) */}
+          <PersonalizedNextCard
+            result={personalizationResult}
+            onNavigate={onNavigate}
+            onAskTutor={handleAskTutorAboutRec}
+          />
 
         </div>
 

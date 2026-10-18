@@ -26,7 +26,7 @@ interface HeaderProps {
   onSearch?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   currentTab,
   onNavigate,
   userStats = { streak: 0, xp: 0, hearts: 5 },
@@ -309,4 +309,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});

@@ -71,7 +71,7 @@ export const QuizLearningPage: React.FC<QuizLearningPageProps> = ({
       setScore((s) => s + 1);
       setStreak((st) => st + 1);
     } else {
-      soundFx.playWrong();
+      soundFx.playIncorrect();
       setStreak(0);
     }
   };

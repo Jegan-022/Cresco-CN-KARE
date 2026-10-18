@@ -20,7 +20,7 @@ import {
 interface CohortMetrics {
   totalStudents: number;
   avgCohortXP: number;
-  avgCohortAccuracy: number;
+  avgCohortAccuracy: number | null;
   avgCohortCompleted: number;
   userRank: number;
 }
@@ -38,17 +38,17 @@ export const AnalyticsView: React.FC = () => {
   const [cohortMetrics, setCohortMetrics] = useState<CohortMetrics>({
     totalStudents: 0,
     avgCohortXP: 0,
-    avgCohortAccuracy: 0,
+    avgCohortAccuracy: null,
     avgCohortCompleted: 0,
     userRank: 1,
   });
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
-  // Subscribe to live Firestore 'students' collection for cohort benchmarking
+  // Subscribe to live Firestore 'public_leaderboard' collection for sanitized cohort benchmarking
   useEffect(() => {
     try {
-      const studentsRef = collection(db, 'students');
-      const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const leaderboardRef = collection(db, 'public_leaderboard');
+      const unsubscribe = onSnapshot(leaderboardRef, (snapshot) => {
         if (!snapshot.empty) {
           const studentsList: any[] = [];
           snapshot.forEach((doc) => {
@@ -57,34 +57,42 @@ export const AnalyticsView: React.FC = () => {
 
           const total = studentsList.length;
           let sumXP = 0;
-          let sumAccuracy = 0;
           let sumCompleted = 0;
 
           studentsList.forEach((s) => {
-            sumXP += (s.totalXP ?? s.xp ?? 0);
-            sumAccuracy += (s.quizAverage ?? s.quizAccuracy ?? 75);
-            sumCompleted += (s.completedModules?.length ?? s.modulesCompleted ?? 0);
+            sumXP += Number(s.totalXP ?? s.xp ?? 0);
+            sumCompleted += Number(s.modulesCompleted ?? 0);
           });
 
           // Sort descending by XP to compute user's rank
-          studentsList.sort((a, b) => (b.totalXP ?? b.xp ?? 0) - (a.totalXP ?? a.xp ?? 0));
+          studentsList.sort((a, b) => Number(b.totalXP ?? b.xp ?? 0) - Number(a.totalXP ?? a.xp ?? 0));
           const currentUid = currentUser?.uid;
           const rankIndex = studentsList.findIndex(
-            (s) => s.id === currentUid || s.uid === currentUid || (studentId && s.studentId === studentId)
+            (s) => s.id === currentUid || s.uid === currentUid
           );
           const computedRank = rankIndex !== -1 ? rankIndex + 1 : 1;
 
           setCohortMetrics({
             totalStudents: total,
             avgCohortXP: Math.round(sumXP / Math.max(1, total)),
-            avgCohortAccuracy: Math.round(sumAccuracy / Math.max(1, total)),
+            avgCohortAccuracy: null, // Private assessment attempts are not exposed in public projection
             avgCohortCompleted: Math.round(sumCompleted / Math.max(1, total)),
             userRank: computedRank,
           });
           setIsLiveConnected(true);
+        } else {
+          // Public projection is empty or initializing: provide honest baseline without reading private collections
+          setCohortMetrics({
+            totalStudents: 0,
+            avgCohortXP: 0,
+            avgCohortAccuracy: null,
+            avgCohortCompleted: 0,
+            userRank: 1,
+          });
+          setIsLiveConnected(true);
         }
       }, (error) => {
-        console.warn('AnalyticsView: Firestore students listener warning:', error);
+        console.warn('AnalyticsView: Firestore public_leaderboard listener warning:', error);
       });
 
       return () => unsubscribe();
@@ -102,7 +110,9 @@ export const AnalyticsView: React.FC = () => {
   });
 
   const xpDiff = xp - cohortMetrics.avgCohortXP;
-  const accuracyDiff = quizAccuracy - cohortMetrics.avgCohortAccuracy;
+  const accuracyDiff = cohortMetrics.avgCohortAccuracy !== null
+    ? quizAccuracy - cohortMetrics.avgCohortAccuracy
+    : null;
 
   return (
     <div className="space-y-8 pb-20 max-w-4xl mx-auto">
@@ -217,10 +227,12 @@ export const AnalyticsView: React.FC = () => {
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-bold block mb-1">Cohort Avg Accuracy</span>
             <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-              {cohortMetrics.avgCohortAccuracy}%
+              {cohortMetrics.avgCohortAccuracy !== null ? `${cohortMetrics.avgCohortAccuracy}%` : 'N/A'}
             </div>
-            <div className={`mt-1.5 text-xs font-bold ${accuracyDiff >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
-              {accuracyDiff >= 0 ? `+${accuracyDiff}% vs peer avg` : `${Math.abs(accuracyDiff)}% to peer avg`}
+            <div className={`mt-1.5 text-xs font-bold ${accuracyDiff !== null && accuracyDiff >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+              {accuracyDiff !== null
+                ? (accuracyDiff >= 0 ? `+${accuracyDiff}% vs peer avg` : `${Math.abs(accuracyDiff)}% to peer avg`)
+                : 'Insufficient peer evidence'}
             </div>
           </div>
         </div>

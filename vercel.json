@@ -8,6 +8,14 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/animated_learn_:id",
+      "destination": "/animated_learn_:id/index.html"
+    },
+    {
+      "source": "/animated_learn_:id/",
+      "destination": "/animated_learn_:id/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Router Configuration – CRESCO CN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--card:rgba(255,255,255,.045);--cyan:#22d3ee;--blue:#60a5fa;--amber:#fbbf24;--green:#34d399;--violet:#a78bfa;--pink:#f472b6;--red:#fb7185;--indigo:#818cf8;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}button:disabled{opacity:.35;cursor:not-allowed}
+.aurora{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.28;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:#4f46e5;left:-15vmax;top:-20vmax}
+.aurora i:nth-child(2){background:#0891b2;right:-18vmax;top:10vmax;animation-duration:32s;animation-delay:-8s}
+.aurora i:nth-child(3){background:#be185d;left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s;animation-delay:-14s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#22d3ee);display:grid;place-items:center;font-weight:800;box-shadow:0 6px 24px -6px #6366f1}
+.crumbs{color:var(--muted);font-size:12px;font-weight:500}.crumbs b{color:var(--ink);font-weight:600}.crumbs span{margin:0 6px;opacity:.5}
+.title h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+.tbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.tbtn:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:14px;padding:0 18px 18px}
+.stage-col{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;min-height:0}.side>*{flex:none}
+.side::-webkit-scrollbar{width:7px}.side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.card h3{margin:0 0 10px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:14px 16px}
+.stage{flex:1;min-height:340px;position:relative;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.14),transparent 70%),radial-gradient(circle,rgba(255,255,255,.075) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+#svg{position:absolute;inset:0;width:100%;height:100%;user-select:none}
+.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;z-index:3;pointer-events:none}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.pill b{color:var(--ink);font-size:12.5px;letter-spacing:0;text-transform:none}
+.dot{width:8px;height:8px;border-radius:50%}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);min-width:92px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stat b{font:700 17px var(--mono);letter-spacing:-.02em}.stat em{font-style:normal;font-size:10px;color:var(--dim);margin-left:4px}
+.legend{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:3;max-width:75%}
+.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted);font-weight:500}
+.lg i{width:10px;height:10px;border-radius:50%;border:2px solid}
+.hint{position:absolute;right:14px;bottom:14px;z-index:3;font-size:11px;color:var(--dim);text-align:right;line-height:1.5;pointer-events:none}
+.hint kbd{font:600 10px var(--mono);padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--muted)}
+.dock{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dock-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.06);transition:.2s}
+.ib:hover:not(:disabled){background:rgba(255,255,255,.14);transform:translateY(-1px)}
+.ib svg,.play svg{width:19px;height:19px}
+.play{height:44px;padding:0 22px;border-radius:14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#6366f1,#06b6d4);box-shadow:0 8px 28px -8px #6366f1;transition:.25s;min-width:116px;justify-content:center}
+.play:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.play.on{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 28px -8px #f59e0b}
+.cbtn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.cbtn:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.cbtn.glow{border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.16);color:#f0e1ff;animation:glowbtn 1.8s ease-in-out infinite}
+.cbtn.red{border-color:rgba(251,113,133,.6);background:rgba(251,113,133,.14);color:#fecdd3}
+@keyframes glowbtn{50%{box-shadow:0 0 22px -2px rgba(168,85,247,.7)}}
+.speed{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;font-weight:600}
+.speed output{font:600 12px var(--mono);color:var(--ink);min-width:38px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.14);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+.timeline{height:30px;cursor:pointer;touch-action:none;border-radius:8px;outline:none}.timeline:focus-visible{box-shadow:0 0 0 2px var(--indigo)}
+.ticks{display:flex;gap:3px;height:100%;align-items:flex-end}
+.tick{flex:1;min-width:2px;border-radius:3px;opacity:.28;transition:opacity .2s;height:60%}
+.tick.past{opacity:.95}.tick.on{opacity:1;height:100%;box-shadow:0 0 0 1.5px #fff,0 0 14px currentColor}
+.tl-key{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);align-items:center;margin-top:5px}
+.tl-key span{display:flex;align-items:center;gap:5px}.tl-key i{width:8px;height:8px;border-radius:3px}
+.tl-key .ctr{margin-left:auto;font:600 12px var(--mono);color:var(--ink)}
+.sw{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+.sw input{display:none}.knob{width:34px;height:20px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;transition:.25s}
+.knob::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
+.sw input:checked+.knob{background:linear-gradient(135deg,#6366f1,#06b6d4)}.sw input:checked+.knob::after{transform:translateX(14px)}
+.narr{position:relative;overflow:hidden}
+.narr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--nc,var(--cyan));box-shadow:0 0 22px var(--nc,var(--cyan))}
+.narr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nbadge{padding:3px 10px;border-radius:99px;font:800 10px Inter;letter-spacing:.12em;text-transform:uppercase;color:#05101c;background:var(--nc,var(--cyan))}
+.nstep{font:600 11px var(--mono);color:var(--muted)}
+.narr h2{margin:0 0 6px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.narr p{margin:0;line-height:1.62;color:#cdd6ec;font-size:13.5px}.narr p b{color:#fff}
+.tipbox{margin-top:11px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.14);font-size:12px;line-height:1.5;color:var(--muted)}.tipbox b{color:var(--amber)}
+.swap-in{animation:swapin .35s ease-out}@keyframes swapin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.kvs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.kv small{display:block;font:700 9.5px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.kv b{font:700 13.5px var(--mono)}
+.jbar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:10px}
+.jbar i{display:block;height:100%;background:linear-gradient(90deg,#f472b6,#a78bfa);box-shadow:0 0 12px #c084fc;transition:width .5s}
+.hops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hop{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);opacity:.45;transition:.35s}
+.hop .hn{font-weight:800}.hop .ha{color:var(--dim);font:500 11px var(--mono)}.hop .hc{margin-left:auto;font:700 12px var(--mono);color:var(--amber)}
+.hop.active{opacity:1;border-color:var(--amber);background:rgba(251,191,36,.1)}.hop.lit{opacity:1;border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.14)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td{padding:7px 6px;border-top:1px solid rgba(255,255,255,.06);font-family:var(--mono)}td:first-child{font:700 12px Inter;color:var(--muted)}
+details summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+details summary::-webkit-details-marker{display:none}details summary::after{content:'+';font:600 16px var(--mono)}details[open] summary::after{content:'–'}details[open] summary{margin-bottom:10px}
+.log{max-height:170px;overflow-y:auto;font:12px/1.5 var(--mono);display:flex;flex-direction:column;gap:5px}.log div{display:flex;gap:8px;color:#aab6d3}.log .cur{color:#fff}
+.vocab{display:grid;gap:9px}.vocab div{font-size:12.5px;line-height:1.5;color:#b9c4de}.vocab b{color:#fff}
+.pop{animation:rip .9s ease-out forwards;fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center}
+@keyframes rip{from{transform:scale(.8);opacity:.95}to{transform:scale(2.8);opacity:0}}
+@keyframes flow{to{stroke-dashoffset:-30}}
+@media (max-width:1100px){body{overflow:auto}.app{height:auto;min-height:100vh}.layout{grid-template-columns:minmax(0,1fr)}.stage{flex:none;height:64vh;min-height:380px}.side{overflow:visible}.hint{display:none}.legend{max-width:100%;bottom:8px}}
+@media (max-width:560px){.stat{min-width:0;padding:5px 9px}.stat b{font-size:14px}.cbtn span.lbl{display:none}}
+@media (prefers-reduced-motion:reduce){.aurora i{animation:none}}
+
+.rack{fill:#0b1222;stroke:#33405f;stroke-width:2;transition:.4s}.rack.on{stroke:var(--cyan);filter:drop-shadow(0 0 18px rgba(34,211,238,.35))}
+.rt{font:800 13px Inter;fill:#e9eefb;text-anchor:middle}.rs{font:500 10px var(--mono);fill:#5b6785;text-anchor:middle}
+.pt{font:700 10px var(--mono);fill:#8e9bb8}.led{transition:.4s}
+.dv .body{fill:#0e1628;stroke:#4b5a7a;stroke-width:3;transition:.4s}.dv.on .body{fill:#047857;stroke:#6ee7b7;filter:drop-shadow(0 0 10px rgba(52,211,153,.45))}
+.dv.bad .body{fill:#3a1220;stroke:var(--red)}.dv .em{font-size:24px;text-anchor:middle;dominant-baseline:central}
+.dn{font:700 12px Inter;fill:#e9eefb;text-anchor:middle}.da{font:500 10px var(--mono);fill:#8e9bb8;text-anchor:middle}.da.r{fill:var(--red)}
+.cb .track{stroke:#4a1626;stroke-width:5;stroke-linecap:round;stroke-dasharray:5 8}.cb.up .track{stroke:#34d399;stroke-dasharray:none;filter:drop-shadow(0 0 6px rgba(52,211,153,.6))}
+.ch rect{fill:#3a1220;stroke:var(--red);stroke-width:1.3}.ch text{font:600 10.5px var(--mono);fill:#fecdd3;text-anchor:middle;dominant-baseline:central}
+.cb.up .ch rect{fill:#0b1222;stroke:#34d399}.cb.up .ch text{fill:#a7f3d0}
+#pk text{font:800 9px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.term{background:#050810;border:1px solid var(--line);border-radius:12px;padding:10px 12px;max-height:210px;overflow-y:auto;font:11.5px/1.55 var(--mono)}
+.term div{color:#7d8aa8;white-space:pre-wrap;word-break:break-all}.term .p{color:var(--cyan)}.term .g{color:#a7f3d0}.term .r{color:var(--red)}.term .cur{color:#fff}.term .p.cur{color:#67e8f9}
+.field{display:flex;align-items:center;gap:10px;margin-bottom:8px}.field label{width:92px;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input{flex:1;padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font:600 13px var(--mono);outline:none;min-width:0}
+.field input:focus{border-color:var(--cyan)}.field input.bad{border-color:var(--red);background:rgba(251,113,133,.1)}
+.st{font:600 10.5px Inter;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}.st.u{color:#a7f3d0;border-color:rgba(52,211,153,.5)}.st.d{color:#fecdd3;border-color:rgba(251,113,133,.5)}
+.tt{font:700 9.5px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
+.verdict{margin-top:10px;padding:9px 12px;border-radius:12px;text-align:center;font-weight:600;font-size:12.5px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.verdict.ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:#a7f3d0}.verdict.no{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.4);color:#fecdd3}
+</style></head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">C</div><div class="title">
+    <div class="crumbs">CRESCO CN<span>/</span>Practice<span>/</span>Unit 3<span>/</span><b>Router Configuration</b></div>
+    <h1>Network Command Center <span style="color:var(--cyan)">· Router Lab</span></h1></div></div>
+  <div class="topbtns"><button class="tbtn" id="btn-def">↺ Reset lab</button></div>
+</header>
+<main class="layout">
+<section class="stage-col">
+  <div class="card stage">
+    <div class="hud">
+      <div class="pill"><span class="dot" style="background:var(--cyan)"></span>Router <b>R1</b><span>·</span><b id="mode">Boot</b></div>
+      <div class="stats">
+        <div class="stat"><small>Ports up</small><b id="st-p">0/3</b></div>
+        <div class="stat"><small>Routes</small><b id="st-r">0</b></div>
+        <div class="stat"><small>Ping</small><b id="st-g">—</b></div>
+      </div>
+    </div>
+    <svg id="svg" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Router and connected networks">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+      <g id="s"></g>
+      <g id="pk" style="display:none"><rect x="-19" y="-11" width="38" height="22" rx="7" fill="url(#dg)" stroke="#f5d0fe" stroke-width="1.5" style="filter:drop-shadow(0 0 10px #d946ef)"/><text>ICMP</text></g>
+    </svg>
+    <div class="legend">
+      <span class="lg"><i style="border-color:var(--red);background:#3a1220"></i>Port down / no route</span>
+      <span class="lg"><i style="border-color:#6ee7b7;background:#047857"></i>Port up</span>
+      <span class="lg"><i style="border-color:#f5d0fe;background:#8b5cf6"></i>Ping packet</span>
+    </div>
+    <div class="hint">Each step types real router commands<br>and the cables light up<br><kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> step · <kbd>R</kbd> restart</div>
+  </div>
+  <div class="card dock">
+    <div class="dock-row">
+      <div class="transport">
+        <button class="ib" id="b-reset" aria-label="Restart"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M4.6 15a8 8 0 100-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ib" id="b-prev" aria-label="Step back"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="play" id="b-play"></button>
+        <button class="ib" id="b-next" aria-label="Step forward"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="cbtn glow" id="b-skip">⚡<span class="lbl">Apply all</span></button>
+        <button class="cbtn" id="b-bug">🐞<span class="lbl" id="bug-l">Inject mistake</span></button>
+      </div>
+      <div class="speed">Speed <input type="range" id="speed" min="1" max="10" value="5" aria-label="Speed"><output id="sp-o">1.5×</output></div>
+    </div>
+    <div><div class="timeline" id="tl" tabindex="0" role="slider" aria-label="Step timeline"><div class="ticks" id="ticks"></div></div>
+      <div class="tl-key"><span><i style="background:var(--cyan)"></i>Boot</span><span><i style="background:var(--blue)"></i>Interface</span><span><i style="background:var(--violet)"></i>Route</span><span><i style="background:var(--amber)"></i>Verify</span><span><i style="background:var(--green)"></i>Test</span><span class="ctr">Step <span id="ctr"></span></span></div></div>
+    <div><label class="sw"><input type="checkbox" id="tips" checked><span class="knob"></span>Beginner tips</label></div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card pad narr" id="narr"></div>
+  <div class="card pad"><h3>Terminal · R1</h3><div class="term" id="term"></div></div>
+  <div class="card pad"><h3>Address plan</h3>
+    <div class="field"><label>eth0 · LAN A</label><input type="text" id="e0" value="192.168.1.1" spellcheck="false"></div>
+    <div class="field"><label>eth1 · LAN B</label><input type="text" id="e1" value="10.0.0.1" spellcheck="false"></div>
+    <div class="field"><label>wan · ISP</label><input type="text" id="wan" value="203.0.113.2" spellcheck="false"></div>
+    <div class="muted" style="color:var(--dim);font-size:11.5px;line-height:1.5">Try giving eth1 an address in LAN A's network, then run the steps.</div></div>
+  <div class="card pad"><h3>show ip interface brief</h3><table id="t1"></table><h3 style="margin-top:14px">show ip route</h3><table id="t2"></table></div>
+  <details class="card pad"><summary>Key terms</summary><div class="vocab">
+    <div><b>Interface</b> – a router port. Each one needs its own IP in its own network.</div>
+    <div><b>no shutdown</b> – switches a port on; ports are administratively down by default.</div>
+    <div><b>Default gateway</b> – the router's LAN address; hosts send off-network traffic to it.</div>
+    <div><b>Connected route (C)</b> – added automatically when an interface is up with an IP.</div>
+    <div><b>Static default route (S*)</b> – manual route 0.0.0.0/0 for “everything else”.</div>
+  </div></details>
+</aside>
+</main></div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e};
+const parse=s=>{const m=s.trim().split('.');if(m.length!=4||m.some(x=>!/^\d{1,3}$/.test(x)||+x>255))return null;return m.reduce((a,x)=>a*256+ +x,0)>>>0};
+const str=n=>[24,16,8,0].map(s=>(n>>>s)&255).join('.'),n24=a=>(a&0xFFFFFF00)>>>0,n30=a=>(a&0xFFFFFFFC)>>>0;
+const S=8;let ip={e0:parse('192.168.1.1'),e1:parse('10.0.0.1'),wan:parse('203.0.113.2')},bug=false,idx=0,playing=false,timer=null,raf=0,busy=false;
+const sp=()=>+$('speed').value/3.3;
+const P={r:{x:450,y:300},e0:{x:350,y:300},e1:{x:550,y:300},wan:{x:450,y:240},pc1:{x:110,y:300},pc2:{x:790,y:300},isp:{x:450,y:90}};
+function st(i){const ov=n24(ip.e0)==n24(ip.e1),u0=i>=1,u1=i>=2&&!ov,u2=i>=3,rt=i>=4,gw=(ip.wan^3)>>>0;
+ return{ov,u0,u1,u2,rt,gw,p1:u0&&u1&&!bug,p2:u0&&u2&&rt,pc1:(n24(ip.e0)+10)>>>0,pc2:(n24(ip.e1)+10)>>>0}}
+/* ---- static scene ---- */
+const sc=$('s');
+el('rect',{id:'rack',class:'rack',x:350,y:240,width:200,height:120,rx:16},sc);
+el('text',{class:'rt',x:450,y:290},sc).textContent='R1 · ROUTER';el('text',{class:'rs',x:450,y:308},sc).textContent='Network Command Center';
+const link=(id,a,b,mid)=>{const g=el('g',{id,class:'cb'},sc);el('line',{class:'track',x1:a.x,y1:a.y,x2:b.x,y2:b.y},g);const c=el('g',{class:'ch',transform:`translate(${mid.x},${mid.y})`},g);el('rect',{x:-58,y:-11,width:116,height:22,rx:9},c);el('text',{id:id+'t'},c);return g};
+link('k0',P.pc1,P.e0,{x:230,y:300});link('k1',P.e1,P.pc2,{x:670,y:300});link('k2',P.wan,P.isp,{x:450,y:165});
+[['e0',P.e0,'eth0',12,0],['e1',P.e1,'eth1',-12,0],['wan',P.wan,'wan',0,18],['e2',{x:450,y:360},'eth2 · unused',0,-10]].forEach(p=>{
+ el('circle',{id:'led-'+p[0],class:'led',cx:p[1].x,cy:p[1].y,r:7,fill:'#fb7185'},sc);const t=el('text',{class:'pt',x:p[1].x+p[3],y:p[1].y+p[4]+4,'text-anchor':p[3]>0?'start':p[3]<0?'end':'middle'},sc);t.textContent=p[2]});
+const dev=(id,pos,em,name)=>{const g=el('g',{id,class:'dv',transform:`translate(${pos.x},${pos.y})`},sc);el('circle',{class:'body',r:28},g);el('text',{class:'em'},g).textContent=em;
+ el('text',{class:'dn',y:48},g).textContent=name;el('text',{id:id+'a',class:'da',y:62},g);el('text',{id:id+'g',class:'da',y:75},g)};
+dev('pc1',P.pc1,'💻','PC1 · LAN A');dev('pc2',P.pc2,'💻','PC2 · LAN B');dev('isp',P.isp,'☁️','ISP · Internet');
+/* ---- terminal ---- */
+const Pm=t=>[t,'p'],G=t=>[t,'g'],R=t=>[t,'r'],O=t=>[t,''];
+function T(i){const c=st(i),i0=str(ip.e0),i1=str(ip.e1),w=str(ip.wan),m='255.255.255.0';
+ const ifc=(n,a,mk,ok,e)=>[Pm('R1(config)# interface '+n),Pm('R1(config-if)# ip address '+str(a)+' '+mk),...(ok?[Pm('R1(config-if)# no shutdown'),G('%LINK-3-UPDOWN: '+n+' changed state to up')]:[R('% '+e)])];
+ return[[Pm('R1> enable'),Pm('R1# show ip interface brief'),R('eth0 unassigned  administratively down'),R('eth1 unassigned  administratively down'),R('wan  unassigned  administratively down')],
+ ifc('eth0',ip.e0,m,1),ifc('eth1',ip.e1,m,!c.ov,str(n24(ip.e1))+'/24 overlaps with eth0 — interface left down'),ifc('wan',ip.wan,'255.255.255.252',1),
+ [Pm('R1(config)# ip route 0.0.0.0 0.0.0.0 '+str(c.gw)),G('default route added')],
+ [Pm('R1# show ip route'),...(c.u0?[O('C  '+str(n24(ip.e0))+'/24 is directly connected, eth0')]:[]),...(c.u1?[O('C  '+str(n24(ip.e1))+'/24 is directly connected, eth1')]:[]),O('C  '+str(n30(ip.wan))+'/30 is directly connected, wan'),G('S* 0.0.0.0/0 via '+str(c.gw))],
+ [Pm('PC1> ping '+str(c.pc2)),...(c.p1?[G('Reply from '+str(c.pc2)+': time=2ms TTL=63'),G('Reply from '+str(c.pc2)+': time=2ms TTL=63'),G('Success rate 100%')]:c.ov?[R('Destination host unreachable (from '+i0+')')]:[R('Request timed out.'),R('Success rate 0%')])],
+ [Pm('PC1> ping 8.8.8.8'),G('Reply from 8.8.8.8: time=14ms TTL=60'),G('Reply from 8.8.8.8: time=14ms TTL=60'),G('Success rate 100%')]][i]}
+function nar(i){const c=st(i),i0=str(ip.e0),w=str(ip.wan);return[
+ {b:'Boot',c:'#22d3ee',h:'Command center online',p:`R1 has three working ports and one spare. Every port is <b>shut down</b> with no IP, so every cable shows red. A router does nothing until you configure it.`,t:'Routers connect different networks; each interface sits in its own network.'},
+ {b:'Interface',c:'#60a5fa',h:'Bring up eth0 (LAN A)',p:`Assign <b>${i0}/24</b> to eth0 and run <b>no shutdown</b>. The port turns green and R1 now reaches network <b>${str(n24(ip.e0))}/24</b>. This address becomes PC1's default gateway.`,t:'Always set the IP first, then no shutdown.'},
+ c.ov?{b:'Conflict',c:'#fb7185',h:'Overlapping networks',p:`eth1 was given <b>${str(ip.e1)}/24</b>, which is in the same network as eth0. A router cannot have two interfaces in one network, so it refuses and eth1 stays down.`,v:['no','✖ Fix the eth1 address in the Address plan'],t:'Each router interface needs a different network ID.'}:{b:'Interface',c:'#60a5fa',h:'Bring up eth1 (LAN B)',p:`eth1 gets <b>${str(ip.e1)}/24</b>. Now R1 sits between two networks and can pass traffic from LAN A to LAN B.`,t:'This is the whole point of a router: one foot in each network.'},
+ {b:'Interface',c:'#60a5fa',h:'Bring up the WAN port',p:`The ISP gave us <b>${w}/30</b>, a tiny point-to-point network with just two usable addresses: ours and the ISP's <b>${str(c.gw)}</b>.`,t:'/30 links waste only 2 addresses.'},
+ {b:'Route',c:'#a78bfa',h:'Add a default route',p:`R1 only knows its connected networks. For everything else — the Internet — it needs a <b>default route</b> 0.0.0.0/0 pointing at the ISP router <b>${str(c.gw)}</b>.`,t:'0.0.0.0/0 matches every address, so it is only used when nothing more specific matches.'},
+ {b:'Verify',c:'#fbbf24',h:'Read the routing table',p:`<b>C</b> routes appeared automatically when each port came up. <b>S*</b> is the static default route we added.`,t:'show ip route is the first command to run when something is not working.'},
+ c.p1?{b:'Test',c:'#34d399',h:'PC1 pings PC2',p:`PC1 sees PC2 is in another network, so it sends to its gateway <b>${i0}</b>. R1 looks up the destination, forwards out eth1, and the reply comes back.`,v:['ok','✔ LAN A can reach LAN B'],t:'Hosts use the gateway for any destination outside their own network.'}:c.ov?{b:'Failed',c:'#fb7185',h:'Ping fails at the router',p:`eth1 is down, so R1 has no route to PC2's network. It drops the packet and reports <b>host unreachable</b>.`,v:['no','✖ No route to destination'],t:'Check show ip interface brief for ports that are down.'}:{b:'Failed',c:'#fb7185',h:'Reply never returns',p:`The request reaches PC2, but PC2's gateway is set to <b>${str(c.pc2+244>>>0)}</b>, not R1. It cannot send the reply back through R1, so the ping times out.`,v:['no','✖ Wrong default gateway on PC2'],t:'Connectivity needs a correct path in both directions.'},
+ {b:'Test',c:'#34d399',h:'PC1 pings the Internet',p:`8.8.8.8 matches no connected route, so R1 uses the <b>default route</b> and forwards the packet out wan to the ISP.`,v:['ok','✔ Internet reachable'],t:'Without step 4, this ping would fail.'}][i]}
+/* ---- paint ---- */
+function paint(){const c=st(idx),nr=nar(idx),nb=$('narr');
+ nb.style.setProperty('--nc',nr.c);nb.innerHTML=`<div class="swap-in"><div class="narr-head"><span class="nbadge">${nr.b}</span><span class="nstep">Step ${idx+1} / ${S}</span></div><h2>${nr.h}</h2><p>${nr.p}</p>${nr.v?`<div class="verdict ${nr.v[0]}">${nr.v[1]}</div>`:''}${$('tips').checked?`<div class="tipbox"><b>Remember:</b> ${nr.t}</div>`:''}</div>`;
+ const led=(k,u)=>$('led-'+k).setAttribute('fill',u?'#34d399':'#fb7185'),lk=(k,u,t)=>{$('k'+k).setAttribute('class','cb'+(u?' up':''));$('k'+k+'t').textContent=u?t:'✖ cable down'};
+ led('e0',c.u0);led('e1',c.u1);led('wan',c.u2);lk(0,c.u0,str(n24(ip.e0))+'/24');lk(1,c.u1,str(n24(ip.e1))+'/24');lk(2,c.u2,str(n30(ip.wan))+'/30');
+ $('rack').setAttribute('class','rack'+(c.u0||c.u1||c.u2?' on':''));
+ const dv=(id,on,bad,a,g,gr)=>{$(id).setAttribute('class','dv'+(on?' on':bad?' bad':''));$(id+'a').textContent=a;$(id+'g').textContent=g;$(id+'g').setAttribute('class','da'+(gr?' r':''))};
+ dv('pc1',c.u0,0,c.u0?str(c.pc1):'no IP',c.u0?'gw '+str(ip.e0):'');
+ dv('pc2',c.u1,c.u0&&c.ov,c.u1||c.ov?str(c.pc2):'no IP',c.u1?'gw '+(bug?str(c.pc2+244>>>0)+' ✖':str(ip.e1)):'',bug&&c.u1);
+ dv('isp',c.u2,0,'203.0.113.x',c.u2?'gw '+str(c.gw):'');
+ const rows=[['eth0',c.u0?str(ip.e0):'unassigned',c.u0],['eth1',c.u1?str(ip.e1):'unassigned',c.u1],['eth2','unassigned',0],['wan',c.u2?str(ip.wan):'unassigned',c.u2]];
+ $('t1').innerHTML=`<tr><td class="tt">Interface</td><td class="tt">IP</td><td class="tt">Status</td></tr>`+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="st ${r[2]?'u':'d'}">${r[2]?'up':'down'}</span></td></tr>`).join('');
+ const rt=[];if(c.u0)rt.push(['C',str(n24(ip.e0))+'/24','eth0']);if(c.u1)rt.push(['C',str(n24(ip.e1))+'/24','eth1']);if(c.u2)rt.push(['C',str(n30(ip.wan))+'/30','wan']);if(c.rt&&c.u2)rt.push(['S*','0.0.0.0/0','via '+str(c.gw)]);
+ $('t2').innerHTML=rt.length?rt.map(r=>`<tr><td style="color:${r[0]=='S*'?'#c084fc':'#a7f3d0'};font:800 12px var(--mono)">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join(''):'<tr><td colspan=3 style="color:var(--dim);font:12px Inter">Routing table is empty.</td></tr>';
+ const lines=[];for(let j=0;j<=idx;j++)T(j).forEach(l=>lines.push([l,j==idx]));
+ $('term').innerHTML=lines.map(([l,cur])=>`<div class="${l[1]} ${cur?'cur':''}">${l[0]}</div>`).join('');$('term').scrollTop=1e5;
+ $('mode').textContent=idx==0?'Boot':idx<4?'Config':idx==4?'Routing':idx==5?'Verify':'Testing';
+ $('st-p').textContent=[c.u0,c.u1,c.u2].filter(Boolean).length+'/3';$('st-r').textContent=rt.length;
+ $('st-g').textContent=idx<6?'—':idx==6?(c.p1?'OK':'FAIL'):'OK';$('st-g').style.color=idx>=6&&!(idx==6?c.p1:1)?'var(--red)':'';
+ $('ctr').textContent=(idx+1)+' / '+S;
+ const cs=['#22d3ee','#60a5fa','#60a5fa','#60a5fa','#a78bfa','#fbbf24','#34d399','#34d399'];
+ $('ticks').innerHTML=cs.map((x,j)=>`<i class="tick ${j<idx?'past':''} ${j==idx?'on':''}" style="background:${x};color:${x}"></i>`).join('');
+ $('b-prev').disabled=idx==0;$('b-next').disabled=idx==S-1;const p=$('b-play');p.className='play'+(playing?' on':'');
+ p.innerHTML=playing?'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>Pause':'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>'+(idx==S-1?'Replay':'Play')}
+/* ---- ping animation ---- */
+function pathFor(i){const c=st(i);let w=i==6?[P.pc1,P.e0,P.r,P.e1,P.pc2]:[P.pc1,P.e0,P.r,P.wan,P.isp];
+ if(i==6&&c.ov)w=[P.pc1,P.e0,P.r];if(i==6&&c.p1||i==7)w=w.concat(w.slice(0,-1).reverse());return w}
+function fly(w,done){const pk=$('pk'),seg=[];let tot=0;for(let j=1;j<w.length;j++){const d=Math.hypot(w[j].x-w[j-1].x,w[j].y-w[j-1].y);seg.push(d);tot+=d}
+ const dur=tot*3.2/sp(),t0=performance.now();pk.style.display='';busy=true;
+ (function f(now){const k=Math.min(1,(now-t0)/dur);let d=k*tot,j=0;while(j<seg.length-1&&d>seg[j]){d-=seg[j];j++}const u=seg[j]?d/seg[j]:0;
+  pk.setAttribute('transform',`translate(${w[j].x+(w[j+1].x-w[j].x)*u},${w[j].y+(w[j+1].y-w[j].y)*u})`);
+  if(k<1)raf=requestAnimationFrame(f);else{busy=false;pk.style.display='none';done()}})(t0)}
+function go(i,anim,cb){cancelAnimationFrame(raf);$('pk').style.display='none';const from=idx;i=Math.max(0,Math.min(S-1,i));idx=i;
+ if(anim&&i==from+1&&i>=6){paint();fly(pathFor(i),()=>cb&&cb())}else{busy=false;paint();cb&&cb()}}
+const stop=()=>{playing=false;clearTimeout(timer);paint()};
+function tick(){if(!playing)return;if(idx>=S-1){stop();return}go(idx+1,true,()=>{if(playing)timer=setTimeout(tick,1300/sp())})}
+function play(){if(idx>=S-1)go(0,false);playing=true;paint();tick()}
+const step=d=>{stop();go(idx+d,d>0)},rebuild=()=>{stop();go(0,false)};
+$('b-play').onclick=()=>playing?stop():play();$('b-next').onclick=()=>step(1);$('b-prev').onclick=()=>step(-1);$('b-reset').onclick=rebuild;
+$('b-skip').onclick=()=>{stop();go(S-1,false)};$('speed').oninput=()=>{$('sp-o').textContent=sp().toFixed(1)+'×'};$('tips').onchange=paint;
+$('b-bug').onclick=()=>{bug=!bug;$('bug-l').textContent=bug?'Fix mistake':'Inject mistake';$('b-bug').classList.toggle('red',bug);rebuild()};
+['e0','e1','wan'].forEach(k=>$(k).oninput=()=>{const v=parse($(k).value);$(k).classList.toggle('bad',v==null);if(v!=null){ip[k]=v;rebuild()}});
+$('btn-def').onclick=()=>{ip={e0:parse('192.168.1.1'),e1:parse('10.0.0.1'),wan:parse('203.0.113.2')};bug=false;$('bug-l').textContent='Inject mistake';$('b-bug').classList.remove('red');['e0','e1','wan'].forEach(k=>{$(k).value=str(ip[k]);$(k).classList.remove('bad')});rebuild()};
+let sd=false;const tl=$('tl'),scrub=e=>{const r=$('ticks').getBoundingClientRect(),i=Math.max(0,Math.min(S-1,Math.floor((e.clientX-r.left)/r.width*S)));if(i!=idx){stop();go(i,false)}};
+tl.onpointerdown=e=>{sd=true;tl.setPointerCapture(e.pointerId);scrub(e)};tl.onpointermove=e=>sd&&scrub(e);tl.onpointerup=()=>sd=false;
+addEventListener('keydown',e=>{if(e.target.matches('input'))return;if(e.key==' '){e.preventDefault();playing?stop():play()}else if(e.key=='ArrowRight')step(1);else if(e.key=='ArrowLeft')step(-1);else if(e.key=='r'||e.key=='R')rebuild()});
+go(0,false);
+})();
+</script></body></html>

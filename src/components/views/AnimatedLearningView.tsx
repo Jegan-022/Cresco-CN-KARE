@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { soundFx } from '../../utils/soundEffects';
 import { CrescoMascot } from '../brand/CrescoMascot';
+import { ANIMATED_MODULES } from '../../data/animatedModulesData';
 
 interface AnimatedLearningViewProps {
   onNavigateHome?: () => void;
@@ -827,6 +828,93 @@ export const AnimatedLearningView: React.FC<AnimatedLearningViewProps> = ({ onNa
 
         </div>
 
+      </div>
+
+      {/* Standalone Animated Learning Modules 1–30 */}
+      <div className="max-w-7xl mx-auto pt-8 border-t border-outline-variant/30 dark:border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+                CURRICULUM SIMULATIONS
+              </span>
+              <span className="text-xs font-mono text-slate-500">
+                Modules 1–30
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-headline font-black text-slate-900 dark:text-white mt-1">
+              Standalone Animated Learning Labs
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Dedicated isolated visual simulations for networking protocols, packet journeys, and security mechanisms.
+            </p>
+          </div>
+          <div className="text-xs font-mono text-slate-500">
+            21 Active Modules · 9 In Preparation
+          </div>
+        </div>
+
+        {/* Modules 1–30 Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          {ANIMATED_MODULES.map((mod) => (
+            <div
+              key={mod.id}
+              className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                mod.available
+                  ? 'bg-white dark:bg-[#0c1424] border-outline-variant/30 dark:border-slate-800 hover:border-cyan-500/50 hover:shadow-lg dark:hover:shadow-cyan-950/20 shadow-xs'
+                  : 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800/50 opacity-70'
+              }`}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    Module {mod.id}
+                  </span>
+                  <span
+                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                      mod.available
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                    }`}
+                  >
+                    {mod.tag}
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
+                  {mod.unit}
+                </div>
+                <h4 className="font-headline font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-1" title={mod.title}>
+                  {mod.title}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2" title={mod.description}>
+                  {mod.description}
+                </p>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80">
+                {mod.available ? (
+                  <a
+                    href={mod.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-1.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer group"
+                  >
+                    <span>Launch Simulation</span>
+                    <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                  </a>
+                ) : (
+                  <button
+                    disabled
+                    type="button"
+                    className="w-full py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  >
+                    <span>Coming Soon</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
     </div>

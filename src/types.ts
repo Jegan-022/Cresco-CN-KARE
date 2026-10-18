@@ -352,3 +352,9 @@ export interface CourseUnitData {
   finalQuiz?: UnitFinalQuizData;
 }
 
+// Re-export canonical Learning Evidence, Pedagogy Decision & Adaptation types
+export * from './types/learningEvents';
+export * from './types/evidenceSummary';
+export * from './types/pedagogyDecision';
+export * from './types/adaptationViewModel';
+

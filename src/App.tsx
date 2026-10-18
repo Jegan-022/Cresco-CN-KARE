@@ -26,39 +26,39 @@ import { SearchModal } from './components/SearchModal';
 import { QuizModal } from './components/QuizModal';
 import { PracticeDrillModal } from './components/PracticeDrillModal';
 import { NetworkBackground } from './components/background/NetworkBackground';
+import { parseLevelFromPath, getLevelRouteByLessonId } from './utils/levelRouting';
 
 // Modals
 import { StreakModal } from './components/modals/StreakModal';
 import { LevelProgressModal } from './components/modals/LevelProgressModal';
 
-// 16 Dedicated Screens & Views
-import { WelcomeOnboardingView } from './components/views/WelcomeOnboardingView';
+import { Loader, FullScreenLoader } from './components/ui/Loader';
+
+// Core Primary Screens
 import { HomeView } from './components/views/HomeView';
 import { LearningMapView } from './components/views/LearningMapView';
-import { GamifiedLessonView } from './components/views/GamifiedLessonView';
-import { LevelView } from './components/learn/LevelView';
-import { DragDropNetworkView } from './components/views/DragDropNetworkView';
-import { PacketSimulatorView } from './components/views/PacketSimulatorView';
-import { BossChallengeView } from './components/views/BossChallengeView';
-import { DailyChallengeView } from './components/views/DailyChallengeView';
-import { PracticeView } from './components/views/PracticeView';
-import { SmartReviewView } from './components/views/SmartReviewView';
-import { AchievementsView } from './components/views/AchievementsView';
-import { LeaderboardView } from './components/views/LeaderboardView';
-import { ProfileView } from './components/views/ProfileView';
-import { ExamModeView } from './components/views/ExamModeView';
-import { NetworkChallengesView } from './components/views/NetworkChallengesView';
-import { SettingsView } from './components/views/SettingsView';
-import { AnimatedLearningView } from './components/views/AnimatedLearningView';
-import { LandingView } from './components/views/LandingView';
 
-// Existing Secondary Supporting Views
-import { TeacherDashboardView } from './components/views/TeacherDashboardView';
-import { LiveClassroomView } from './components/views/LiveClassroomView';
-import { DeveloperDashboardView } from './components/views/DeveloperDashboardView';
-import { AnalyticsView } from './components/views/AnalyticsView';
-import { MyLearningView } from './components/views/MyLearningView';
-import { LoginView } from './components/views/LoginView';
+// Code-Split Secondary & Interactive Views
+const WelcomeOnboardingView = React.lazy(() => import('./components/views/WelcomeOnboardingView').then(m => ({ default: m.WelcomeOnboardingView })));
+const GamifiedLessonView = React.lazy(() => import('./components/views/GamifiedLessonView').then(m => ({ default: m.GamifiedLessonView })));
+const DragDropNetworkView = React.lazy(() => import('./components/views/DragDropNetworkView').then(m => ({ default: m.DragDropNetworkView })));
+const PacketSimulatorView = React.lazy(() => import('./components/views/PacketSimulatorView').then(m => ({ default: m.PacketSimulatorView })));
+const PracticeView = React.lazy(() => import('./components/views/PracticeView').then(m => ({ default: m.PracticeView })));
+const SmartReviewView = React.lazy(() => import('./components/views/SmartReviewView').then(m => ({ default: m.SmartReviewView })));
+const LeaderboardView = React.lazy(() => import('./components/views/LeaderboardView').then(m => ({ default: m.LeaderboardView })));
+const ProfileView = React.lazy(() => import('./components/views/ProfileView').then(m => ({ default: m.ProfileView })));
+const SettingsView = React.lazy(() => import('./components/views/SettingsView').then(m => ({ default: m.SettingsView })));
+const AnimatedLearningView = React.lazy(() => import('./components/views/AnimatedLearningView').then(m => ({ default: m.AnimatedLearningView })));
+const LandingView = React.lazy(() => import('./components/views/LandingView').then(m => ({ default: m.LandingView })));
+const ExamModeView = React.lazy(() => import('./components/views/ExamModeView').then(m => ({ default: m.ExamModeView })));
+
+// Code-Split Supporting Dashboard Views
+const TeacherDashboardView = React.lazy(() => import('./components/views/TeacherDashboardView').then(m => ({ default: m.TeacherDashboardView })));
+const LiveClassroomView = React.lazy(() => import('./components/views/LiveClassroomView').then(m => ({ default: m.LiveClassroomView })));
+const DeveloperDashboardView = React.lazy(() => import('./components/views/DeveloperDashboardView').then(m => ({ default: m.DeveloperDashboardView })));
+const AnalyticsView = React.lazy(() => import('./components/views/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
+const MyLearningView = React.lazy(() => import('./components/views/MyLearningView').then(m => ({ default: m.MyLearningView })));
+const LoginView = React.lazy(() => import('./components/views/LoginView').then(m => ({ default: m.LoginView })));
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -69,24 +69,32 @@ import { CharacterProvider, useCharacter } from './context/CharacterContext';
 import { CharacterHubModal } from './components/character/CharacterHubModal';
 import { FloatingCompanion } from './components/character/FloatingCompanion';
 import { KluRegistrationModal } from './components/auth/KluRegistrationModal';
+import { Bot, Sparkles } from 'lucide-react';
+import { AiTutorDrawer } from './components/tutor/AiTutorDrawer';
+import { TutorInstructionalContext } from './types/aiTutor';
 
 function MainApp() {
   const { currentUser, userProfile, loading, recordModuleCompletion, pendingRegistration } = useAuth();
   const { isOnline } = useNetworkStatus();
   const { isCharacterHubOpen, closeCharacterHub } = useCharacter();
 
-  // Check URL on startup for /learn/level-X or other routes
+  // Check URL on startup for /learn/level1 .. /learn/level21 or other routes
   const getInitialRoute = () => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
+      const routeInfo = parseLevelFromPath(path);
+      if (routeInfo) {
+        return { tab: 'lesson-player' as NavTab, lessonId: routeInfo.lessonId, sectionId: routeInfo.sectionId };
+      }
       if (path.startsWith('/learn/')) {
         const slug = path.replace('/learn/', '').replace(/\/$/, '');
         if (slug) {
-          return { tab: 'lesson-player' as NavTab, lessonId: slug };
+          const fallbackRoute = getLevelRouteByLessonId(slug);
+          return { tab: 'lesson-player' as NavTab, lessonId: fallbackRoute.lessonId, sectionId: fallbackRoute.sectionId };
         }
       }
     }
-    return { tab: 'landing' as NavTab, lessonId: 'level-1' };
+    return { tab: 'landing' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
   };
 
   const initialRoute = getInitialRoute();
@@ -107,7 +115,7 @@ function MainApp() {
 
   // Active Lesson Pointer - starts at Unit 3 Module 1 or URL level
   const [activeLessonId, setActiveLessonId] = useState<string>(initialRoute.lessonId);
-  const [activeSectionId, setActiveSectionId] = useState<number>(3);
+  const [activeSectionId, setActiveSectionId] = useState<number>(initialRoute.sectionId);
 
   // Curriculum State
   const [sections, setSections] = useState<CourseSection[]>(COURSE_SECTIONS);
@@ -129,14 +137,38 @@ function MainApp() {
     bonusXp: number;
   } | null>(null);
 
+  // AI Personal Tutor State (Step 23)
+  const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
+  const [aiTutorContext, setAiTutorContext] = useState<TutorInstructionalContext | undefined>(undefined);
+
+  useEffect(() => {
+    const handleOpenTutor = (e: any) => {
+      if (e.detail) {
+        setAiTutorContext(e.detail);
+      }
+      setIsAiTutorOpen(true);
+    };
+    window.addEventListener('cresco:open-ai-tutor', handleOpenTutor as EventListener);
+    return () => window.removeEventListener('cresco:open-ai-tutor', handleOpenTutor as EventListener);
+  }, []);
+
   // Browser History & URL route synchronization
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
+      const levelRoute = parseLevelFromPath(path);
+      if (levelRoute) {
+        setActiveLessonId(levelRoute.lessonId);
+        setActiveSectionId(levelRoute.sectionId);
+        setCurrentTab('lesson-player');
+        return;
+      }
       if (path.startsWith('/learn/')) {
         const slug = path.replace('/learn/', '').replace(/\/$/, '');
         if (slug) {
-          setActiveLessonId(slug);
+          const fallbackRoute = getLevelRouteByLessonId(slug);
+          setActiveLessonId(fallbackRoute.lessonId);
+          setActiveSectionId(fallbackRoute.sectionId);
           setCurrentTab('lesson-player');
           return;
         }
@@ -228,6 +260,11 @@ function MainApp() {
       xp: userProfile?.totalXP ?? userProfile?.xp ?? 0,
       hearts: 5,
     });
+  }, [currentUser, userProfile?.streak, userProfile?.totalXP, userProfile?.xp]);
+
+  // Stable Firestore onSnapshot listener for lesson completions
+  useEffect(() => {
+    if (!currentUser?.uid) return;
 
     const completionsRef = collection(db, 'users', currentUser.uid, 'lessonCompletions');
     const unsubscribe = onSnapshot(
@@ -246,7 +283,7 @@ function MainApp() {
     );
 
     return () => unsubscribe();
-  }, [currentUser, userProfile]);
+  }, [currentUser?.uid]);
 
   // Navigation handlers
   const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
@@ -255,13 +292,16 @@ function MainApp() {
   };
 
   const handleSelectLesson = (lessonId: string, sectionId: number) => {
-    setActiveLessonId(lessonId);
+    const routeInfo = getLevelRouteByLessonId(lessonId);
+    const targetLessonId = routeInfo ? routeInfo.lessonId : lessonId;
+    const targetPath = routeInfo ? routeInfo.path : `/learn/${lessonId}`;
+
+    setActiveLessonId(targetLessonId);
     setActiveSectionId(sectionId);
     setCurrentTab('lesson-player');
     if (typeof window !== 'undefined') {
-      const targetPath = `/learn/${lessonId}`;
       if (window.location.pathname !== targetPath) {
-        window.history.pushState({ lessonId }, '', targetPath);
+        window.history.pushState({ tab: 'lesson-player', lessonId: targetLessonId }, '', targetPath);
       }
     }
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'instant' });
@@ -299,7 +339,9 @@ function MainApp() {
     if (tab !== currentTab) {
       setTabHistory(prev => [...prev, tab]);
       if (typeof window !== 'undefined') {
-        window.history.pushState({ tab }, '', window.location.pathname);
+        const currentPath = window.location.pathname;
+        const targetUrl = currentPath.startsWith('/learn/') ? '/' : currentPath;
+        window.history.pushState({ tab }, '', targetUrl);
       }
     }
 
@@ -323,6 +365,14 @@ function MainApp() {
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      const levelRoute = parseLevelFromPath(window.location.pathname);
+      if (levelRoute) {
+        setActiveLessonId(levelRoute.lessonId);
+        setActiveSectionId(levelRoute.sectionId);
+        setCurrentTab('lesson-player');
+        return;
+      }
+
       if (e.state && e.state.tab) {
         setCurrentTab(e.state.tab);
         setTabHistory(prev => {
@@ -360,36 +410,38 @@ function MainApp() {
   // Landing page routing
   if (currentTab === 'landing') {
     return (
-      <LandingView
-        isLoggedIn={!!currentUser}
-        onNavigateToLogin={() => {
-          if (currentUser) {
-            handleNavigate('home');
-          } else {
-            setLoginMode('login');
-            handleNavigate('login');
-          }
-        }}
-        onNavigateToSignup={() => {
-          if (currentUser) {
-            handleNavigate('home');
-          } else {
-            setLoginMode('signup');
-            handleNavigate('login');
-          }
-        }}
-        onNavigateToLaunch={() => {
-          const el = document.getElementById('launch') || document.getElementById('simulators');
-          el?.scrollIntoView({ behavior: 'smooth' });
-        }}
-      />
+      <React.Suspense fallback={<BootTerminal />}>
+        <LandingView
+          isLoggedIn={!!currentUser}
+          onNavigateToLogin={() => {
+            if (currentUser) {
+              handleNavigate('home');
+            } else {
+              setLoginMode('login');
+              handleNavigate('login');
+            }
+          }}
+          onNavigateToSignup={() => {
+            if (currentUser) {
+              handleNavigate('home');
+            } else {
+              setLoginMode('signup');
+              handleNavigate('login');
+            }
+          }}
+          onNavigateToLaunch={() => {
+            const el = document.getElementById('launch') || document.getElementById('simulators');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+      </React.Suspense>
     );
   }
 
   // Dedicated Login & Student Registration Flow
   if (currentTab === 'login') {
     return (
-      <>
+      <React.Suspense fallback={<FullScreenLoader message="Loading Authentication Portal..." />}>
         <LoginView
           initialMode={loginMode}
           initialPortal={selectedPortal}
@@ -413,42 +465,56 @@ function MainApp() {
             setTabHistory(['home']);
           }}
         />
-      </>
+      </React.Suspense>
     );
   }
 
   // SCREEN 01 — WELCOME / ONBOARDING (if tab is 'welcome')
   if (currentTab === 'welcome') {
     return (
-      <WelcomeOnboardingView
-        onStart={() => setCurrentTab('login')}
-        onKnowBasics={() => {
-          setActiveSectionId(1);
-          setCurrentTab('learn-map');
-        }}
-        onSignIn={() => setCurrentTab('login')}
-      />
+      <React.Suspense fallback={<FullScreenLoader message="Loading Onboarding Experience..." />}>
+        <WelcomeOnboardingView
+          onStart={() => setCurrentTab('login')}
+          onKnowBasics={() => {
+            setActiveSectionId(1);
+            setCurrentTab('learn-map');
+          }}
+          onSignIn={() => setCurrentTab('login')}
+        />
+      </React.Suspense>
     );
   }
 
   // SCREEN 04 & 05 — LESSON & INTERACTIVE QUESTION (Full-Screen Mode, No Sidebar!)
   if (currentTab === 'lesson-player') {
     return (
-      <GamifiedLessonView
-        key={activeLessonId}
-        lessonId={activeLessonId}
-        onClose={() => handleNavigate('learn-map')}
-        onCompleteLesson={(earnedXp) => {
-          setUserStats((prev) => ({ ...prev, xp: prev.xp + earnedXp }));
-          if (recordModuleCompletion) {
-            const unitId = activeLessonId.startsWith('u3') ? 'unit-3' : activeLessonId.startsWith('u4') ? 'unit-4' : 'unit-5';
-            recordModuleCompletion(activeLessonId, unitId, earnedXp);
-          }
-        }}
-        onNavigateNextLesson={(nextId) => {
-          setActiveLessonId(nextId);
-        }}
-      />
+      <React.Suspense fallback={<FullScreenLoader message="Initializing Lesson Pipeline..." />}>
+        <GamifiedLessonView
+          key={activeLessonId}
+          lessonId={activeLessonId}
+          onClose={() => {
+            handleNavigate('learn-map');
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/learn/')) {
+              window.history.pushState({ tab: 'learn-map' }, '', '/');
+            }
+          }}
+          onCompleteLesson={(earnedXp) => {
+            setUserStats((prev) => ({ ...prev, xp: prev.xp + earnedXp }));
+            if (recordModuleCompletion) {
+              const unitId = activeLessonId.startsWith('u3') ? 'unit-3' : activeLessonId.startsWith('u4') ? 'unit-4' : 'unit-5';
+              recordModuleCompletion(activeLessonId, unitId, earnedXp);
+            }
+          }}
+          onNavigateNextLesson={(nextId) => {
+            const nextRoute = getLevelRouteByLessonId(nextId);
+            const resolvedId = nextRoute ? nextRoute.lessonId : nextId;
+            setActiveLessonId(resolvedId);
+            if (typeof window !== 'undefined' && nextRoute) {
+              window.history.pushState({ tab: 'lesson-player', lessonId: resolvedId }, '', nextRoute.path);
+            }
+          }}
+        />
+      </React.Suspense>
     );
   }
 
@@ -480,112 +546,125 @@ function MainApp() {
           <OfflinePersistenceBanner pendingSyncCount={pendingWritesCount} />
 
           <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-28 sm:pb-24 md:pb-16 py-4">
-            {currentTab === 'home' && (
-              <HomeView onNavigate={handleNavigate} userStats={userStats} />
-            )}
+            <React.Suspense fallback={
+              <div className="w-full flex items-center justify-center min-h-[360px] py-20">
+                <Loader size="3em" />
+              </div>
+            }>
+              {currentTab === 'home' && (
+                <HomeView onNavigate={handleNavigate} userStats={userStats} />
+              )}
 
-            {(currentTab === 'learn-map' || currentTab === 'courses' || currentTab === 'learn') && (
-              <LearningMapView
-                onSelectLesson={handleSelectLesson}
-                onNavigate={handleNavigate}
-              />
-            )}
+              {(currentTab === 'learn-map' || currentTab === 'courses' || currentTab === 'learn') && (
+                <LearningMapView
+                  onSelectLesson={handleSelectLesson}
+                  onNavigate={handleNavigate}
+                />
+              )}
 
-            {currentTab === 'drag-drop' && (
-              <DragDropNetworkView
-                onComplete={() => handleNavigate('learn-map')}
-                onBack={() => handleNavigate('home')}
-              />
-            )}
+              {currentTab === 'drag-drop' && (
+                <DragDropNetworkView
+                  onComplete={() => handleNavigate('learn-map')}
+                  onBack={() => handleNavigate('home')}
+                />
+              )}
 
-            {(currentTab === 'simulator' || currentTab === 'lab') && (
-              <PacketSimulatorView
-                onBack={() => handleNavigate('home')}
-              />
-            )}
+              {(currentTab === 'simulator' || currentTab === 'lab') && (
+                <PacketSimulatorView
+                  onBack={() => handleNavigate('home')}
+                />
+              )}
 
-            {currentTab === 'animated-learning' && (
-              <AnimatedLearningView
-                onNavigateHome={() => handleNavigate('home')}
-              />
-            )}
+              {currentTab === 'animated-learning' && (
+                <AnimatedLearningView
+                  onNavigateHome={() => handleNavigate('home')}
+                />
+              )}
 
-            {(currentTab === 'practice' || currentTab === 'quiz-and-practice' || currentTab === 'quiz' || currentTab === 'exam' || currentTab === 'challenges' || currentTab === 'boss-challenge' || currentTab === 'daily-challenge') && (
-              <PracticeView onNavigate={handleNavigate} initialTab="flashcards" />
-            )}
+              {currentTab === 'exam' && (
+                <ExamModeView onNavigate={handleNavigate} />
+              )}
 
-            {currentTab === 'review' && (
-              <SmartReviewView
-                onBack={handleGoBack}
-                onSelectTopic={() => handleNavigate('practice')}
-                onNavigate={handleNavigate}
-              />
-            )}
+              {(currentTab === 'practice' || currentTab === 'quiz-and-practice' || currentTab === 'quiz' || currentTab === 'challenges' || currentTab === 'boss-challenge' || currentTab === 'daily-challenge') && (
+                <PracticeView 
+                  onNavigate={handleNavigate} 
+                  initialTab={currentTab === 'quiz' ? 'quiz' : 'flashcards'} 
+                />
+              )}
 
-            {currentTab === 'settings' && (
-              <SettingsView onNavigate={handleNavigate} />
-            )}
+              {currentTab === 'review' && (
+                <SmartReviewView
+                  onBack={handleGoBack}
+                  onSelectTopic={() => handleNavigate('practice')}
+                  onNavigate={handleNavigate}
+                />
+              )}
 
-            {currentTab === 'leaderboard' && (
-              <LeaderboardView />
-            )}
+              {currentTab === 'settings' && (
+                <SettingsView onNavigate={handleNavigate} />
+              )}
 
-            {currentTab === 'profile' && (
-              <ProfileView
-                primaryCourse={course}
-                onNavigate={handleNavigate}
-                onOpenAuth={handleOpenAuth}
-              />
-            )}
+              {currentTab === 'leaderboard' && (
+                <LeaderboardView />
+              )}
 
-            {currentTab === 'analytics' && (
-              <AnalyticsView />
-            )}
+              {currentTab === 'profile' && (
+                <ProfileView
+                  primaryCourse={course}
+                  onNavigate={handleNavigate}
+                  onOpenAuth={handleOpenAuth}
+                />
+              )}
 
-            {currentTab === 'my-learning' && (
-              <MyLearningView
-                primaryCourse={course}
-                secondaryCourses={SECONDARY_COURSES}
-                onNavigate={handleNavigate}
-              />
-            )}
+              {currentTab === 'analytics' && (
+                <AnalyticsView />
+              )}
 
-            {currentTab === 'teacher-dashboard' && (
-              <TeacherDashboardView
-                metrics={TEACHER_STATS}
-                sections={sections}
-                onNavigate={handleNavigate}
-              />
-            )}
+              {currentTab === 'my-learning' && (
+                <MyLearningView
+                  primaryCourse={course}
+                  secondaryCourses={SECONDARY_COURSES}
+                  onNavigate={handleNavigate}
+                />
+              )}
 
-            {currentTab === 'live-classroom' && (
-              <LiveClassroomView
-                userRole={userRole}
-                onNavigate={handleNavigate}
-              />
-            )}
+              {currentTab === 'teacher-dashboard' && (
+                <TeacherDashboardView
+                  metrics={TEACHER_STATS}
+                  sections={sections}
+                  onNavigate={handleNavigate}
+                />
+              )}
 
-            {currentTab === 'developer-dashboard' && (
-              <DeveloperDashboardView onNavigate={handleNavigate} />
-            )}
+              {currentTab === 'live-classroom' && (
+                <LiveClassroomView
+                  userRole={userRole}
+                  onNavigate={handleNavigate}
+                />
+              )}
 
-            {currentTab === '403' && (
-              <Offline403Page
-                standalone
-                onDismiss={() => handleNavigate('home')}
-                onRetry={() => handleNavigate('home')}
-              />
-            )}
+              {currentTab === 'developer-dashboard' && (
+                <DeveloperDashboardView onNavigate={handleNavigate} />
+              )}
 
-            {currentTab === '404' && (
-              <ServerCrash404Page
-                errorCode="404"
-                customTitle="Server Crash & 404 Route Failure"
-                customMessage="Cresco CN edge worker detected an unhandled server-side crash or unresolvable destination route."
-                onNavigateHome={() => handleNavigate('home')}
-                resetErrorBoundary={() => handleNavigate('home')}
-              />
-            )}
+              {currentTab === '403' && (
+                <Offline403Page
+                  standalone
+                  onDismiss={() => handleNavigate('home')}
+                  onRetry={() => handleNavigate('home')}
+                />
+              )}
+
+              {currentTab === '404' && (
+                <ServerCrash404Page
+                  errorCode="404"
+                  customTitle="Server Crash & 404 Route Failure"
+                  customMessage="Cresco CN edge worker detected an unhandled server-side crash or unresolvable destination route."
+                  onNavigateHome={() => handleNavigate('home')}
+                  resetErrorBoundary={() => handleNavigate('home')}
+                />
+              )}
+            </React.Suspense>
           </main>
 
           <footer className="border-t border-[#E5E0D8] dark:border-slate-800/80 py-6 px-4 text-center text-xs text-[#64748B] dark:text-slate-400">
@@ -664,6 +743,30 @@ function MainApp() {
           onClose={() => setSectionCompletionCelebration(null)}
         />
       )}
+
+      {/* Floating AI Tutor Trigger Button (Step 23) */}
+      <button
+        type="button"
+        onClick={() => {
+          setAiTutorContext(undefined);
+          setIsAiTutorOpen(true);
+        }}
+        className="fixed bottom-20 right-6 sm:bottom-6 sm:right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-xl hover:shadow-cyan-500/25 flex items-center gap-2 font-bold text-xs transition-all transform hover:-translate-y-0.5 cursor-pointer group border border-cyan-400/30"
+        title="Open ByteBot AI Personal Tutor"
+      >
+        <Bot className="w-5 h-5 text-cyan-200 group-hover:scale-110 transition-transform" />
+        <span className="hidden sm:inline">Ask AI Tutor</span>
+        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+      </button>
+
+      {/* AI Personal Tutor Drawer (Step 23) */}
+      <AiTutorDrawer
+        isOpen={isAiTutorOpen}
+        onClose={() => setIsAiTutorOpen(false)}
+        studentId={currentUser?.uid || 'guest'}
+        initialContext={aiTutorContext}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 }

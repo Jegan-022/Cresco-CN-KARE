@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { PracticeCategory, QuizQuestion } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle2, XCircle, ArrowRight, HelpCircle, RotateCcw, X, Layers } from 'lucide-react';
+import { AdaptationCard } from './common/AdaptationCard';
+import { getBoundaryAdaptation } from '../services/adaptationService';
+import { AdaptationViewModel } from '../types/adaptationViewModel';
 
 interface PracticeDrillModalProps {
   isOpen: boolean;
@@ -19,7 +22,8 @@ export const PracticeDrillModal: React.FC<PracticeDrillModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { recordPracticeAttempt } = useAuth();
+  const [adaptation, setAdaptation] = useState<AdaptationViewModel | null>(null);
+  const { recordPracticeAttempt, currentUser } = useAuth();
 
   if (!isOpen || !category) return null;
 
@@ -65,6 +69,16 @@ export const PracticeDrillModal: React.FC<PracticeDrillModalProps> = ({
       const maxScore = Math.max(category.questions.length, 1);
       const scorePercent = Math.round((finalScore / maxScore) * 100);
       recordPracticeAttempt(category.id, scorePercent, finalScore * 10);
+      if (currentUser?.uid) {
+        getBoundaryAdaptation(currentUser.uid, {
+          courseId: 'cs-4200',
+          targetScope: 'practice',
+        }).then((res) => {
+          if (res) setAdaptation(res);
+        }).catch((err) => {
+          console.warn('[Adaptation] Non-fatal drill boundary adaptation error:', err);
+        });
+      }
     }
   };
 
@@ -73,6 +87,7 @@ export const PracticeDrillModal: React.FC<PracticeDrillModalProps> = ({
     setSelectedOptionId(null);
     setIsSubmitted(false);
     setScore(0);
+    setAdaptation(null);
     setIsCompleted(false);
   };
 
@@ -193,6 +208,18 @@ export const PracticeDrillModal: React.FC<PracticeDrillModalProps> = ({
               <p className="text-xs text-slate-600 max-w-xs mx-auto">
                 You scored {score} / {Math.max(category.questions.length, 1)} on {category.title}. Keep practicing to maintain your streak!
               </p>
+
+              {/* Pedagogical Adaptive Guidance (Step 10) */}
+              {adaptation && (
+                <div className="max-w-md mx-auto text-left pt-1">
+                  <AdaptationCard
+                    adaptation={adaptation}
+                    onDismiss={() => setAdaptation(null)}
+                    onAction={() => onClose()}
+                  />
+                </div>
+              )}
+
               <div className="flex justify-center space-x-3 pt-2">
                 <button
                   onClick={handleReset}

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Routing Algorithms – CRESCO CN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--a1:#4f46e5;--a2:#0891b2;--a3:#be185d}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit;cursor:pointer}
+.aurora{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.27;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--a1);left:-15vmax;top:-20vmax}.aurora i:nth-child(2){background:var(--a2);right:-18vmax;top:10vmax;animation-duration:32s}
+.aurora i:nth-child(3){background:var(--a3);left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;height:100vh;display:flex;flex-direction:column}
+.topbar{padding:12px 18px}.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;font-size:19px;box-shadow:0 6px 24px -6px var(--a1)}
+.crumbs{color:var(--muted);font-size:12px}.crumbs b{color:var(--ink)}.crumbs span{margin:0 6px;opacity:.5}
+h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}.title p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:0 18px 18px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px)}
+.card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:13px 15px}
+.stage{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.13),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+.hud{display:flex;gap:8px;flex-wrap:wrap;padding:12px 12px 0}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);min-width:96px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.stat b{font:700 15px var(--mono)}
+.vp{flex:1;position:relative;min-height:300px}#svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px}.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;min-height:0;padding-right:4px}.side>*{flex:none}
+.idea{font-size:12.5px;line-height:1.55;color:#c3cde6}.idea b{color:#fff}
+select{background:#0d1426;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:600;font-size:12.5px}#scn{width:100%}
+.ctl{display:flex;gap:8px;margin-top:10px}.btn{padding:8px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;transition:.2s}.btn:hover{background:rgba(255,255,255,.12)}
+.btn.pri{background:linear-gradient(135deg,var(--a1),var(--a2));border:0;flex:1}
+.narr{border-left:3px solid var(--a2)}.narr.ok{border-left-color:#34d399}.narr.deny{border-left-color:#fb7185}.narr.warn{border-left-color:#fbbf24}
+.narr h3{color:var(--ink);font-size:12px;letter-spacing:.04em;text-transform:none}.narr p{margin:0;font-size:12.5px;line-height:1.55;color:#c3cde6}
+.tbl{display:grid;gap:5px;font:12px var(--mono)}.row{display:flex;justify-content:space-between;gap:10px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.04);transition:.3s}.row span{color:var(--muted)}.row.hl{background:rgba(52,211,153,.18);outline:1px solid #34d399}
+ol{margin:0;padding:0;list-style:none;display:grid;gap:4px}li{display:flex;gap:9px;align-items:center;padding:5px 8px;border-radius:9px;font-size:12px;color:var(--dim);transition:.3s}
+li i{font:700 10px var(--mono);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-style:normal}
+li.done{color:var(--muted)}li.done i{background:#34d399;color:#04281c;border:0}li.on{color:#fff;background:rgba(255,255,255,.08)}li.on i{background:var(--a2);color:#001;border:0}
+/* svg */
+.lk{stroke:#1f2a44;stroke-width:5;stroke-linecap:round}
+.body{fill:#0e1628;stroke-width:3}.halo{fill:none;stroke-width:2;opacity:.25}.em{font-size:28px;text-anchor:middle;dominant-baseline:central}
+.nl{font:700 13px Inter;fill:#fff;text-anchor:middle}.ns{font:500 10px Inter;fill:var(--muted);text-anchor:middle}.ct{font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}.chip{transition:opacity .3s}
+.pl{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.wm{font:700 11px Inter;letter-spacing:.2em;text-anchor:middle;opacity:.65}.big{font-size:13px}
+.rip{fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:rip 1.1s ease-out forwards}
+@keyframes rip{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.fl{animation:fl 14s linear infinite}@keyframes fl{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-380px);opacity:0}}
+.scan{animation:scan 2.4s ease-in-out infinite alternate}@keyframes scan{to{transform:translateX(14px)}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.barrier{transform-origin:500px 270px;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+svg[data-gate=open] .barrier{transform:rotate(88deg)}svg[data-gate=deny] .barrier,svg[data-gate=deny] .door{animation:shake .25s 3}
+.lamp{fill:#fb7185;transition:.4s;filter:drop-shadow(0 0 6px currentColor)}svg[data-gate=open] .lamp{fill:#34d399}
+.door{transition:transform .9s cubic-bezier(.3,1.2,.5,1)}svg[data-gate=open] .door{transform:translateY(-92px)}
+.lko{opacity:0}svg[data-gate=open] .lko{opacity:1}svg[data-gate=open] .lkc{opacity:0}.cband{opacity:.35;transition:.6s}svg[data-gate=open] .cband{opacity:1}
+.lc{font:700 11px var(--mono);fill:#cfd8ee;text-anchor:middle;dominant-baseline:central}.lk{transition:stroke .4s}
+@media(max-width:900px){body{overflow:auto}.app{height:auto}.layout{grid-template-columns:1fr}.side{overflow:visible}}
+</style></head><body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar"><div class="brand"><div class="logo" id="logo"></div><div class="title"><div class="crumbs">CRESCO CN<span>›</span>Unit III · Network Layer<span>›</span><b id="cr"></b></div><h1 id="h1"></h1><p id="sub"></p></div></div></header>
+<main class="layout">
+<section class="card stage"><div class="hud" id="hud"></div><div class="vp"><svg id="svg" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg></div><div class="legend" id="lg"></div></section>
+<aside class="side">
+<div class="card pad"><h3>Key idea</h3><div class="idea" id="idea"></div></div>
+<div class="card pad"><h3>Scenario</h3><select id="scn"></select><div class="ctl"><button class="btn pri" id="play"></button><button class="btn" id="step">⏭ Step</button><button class="btn" id="rst">↺</button><select id="spd"><option value=".6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select></div></div>
+<div class="card pad narr" id="narr"><h3 id="nt"></h3><p id="nx"></p></div>
+<div class="card pad"><h3 id="tt"></h3><div class="tbl" id="tb"></div></div>
+<div class="card pad"><h3>Event timeline</h3><ol id="tl"></ol></div>
+</aside></main></div>
+<script>
+const C='#22d3ee',G='#34d399',X='#fb7185',A='#fbbf24',V='#a78bfa',P='#f472b6',D='#5b6785';
+const hop=(from,to,label,color,title,text,x={})=>({from,to,label,color,title,text,...x});
+
+const PATH=[['S','R2'],['R2','R3'],['R3','R4'],['R4','D']],NEWP=[['S','R1'],['R1','R4'],['R4','D']];
+const pl=(p,c)=>p.map(([a,b])=>[a,b,c]),T='#22d3ee',PU='#c084fc';
+const row=o=>({S:'∞',R1:'∞',R2:'∞',R3:'∞',R4:'∞',R5:'∞',D:'∞',...o});
+const dij={name:'Dijkstra · link-state (min cost)',tbl:row({S:'0'}),init:{S:['d=0',G]},intro:'S knows the whole map. Press <b>Play</b> to watch Dijkstra finalise the closest router each round.',steps:[
+ {title:'S needs a route to D',text:'With <b>link-state</b> routing every router holds the full map, then runs <b>Dijkstra</b>: repeatedly finalise the closest unvisited router and relax its links.',pulse:'S',pc:C,tele:{ROUTE:'computing',COST:'—'}},
+ {title:'Visit S (0)',text:'Relax S\u2019s links: R1 = 0+2 = 2, R2 = 0+4 = 4.',lk:[['S','R1',A],['S','R2',A]],tbl:{R1:'2',R2:'4'},hl:'R1',set:{S:['final 0',G],R1:['d=2',A],R2:['d=4',A]}},
+ {title:'Visit R1 (2)',text:'R3 = 2+4 = 6, R4 = 2+8 = 10.',lk:[['S','R1',T],['R1','R3',A],['R1','R4',A]],tbl:{R3:'6',R4:'10'},hl:'R3',set:{R1:['final 2',G],R3:['d=6',A],R4:['d=10',A]}},
+ {title:'Visit R2 (4)',text:'R3 = 4+1 = <b>5</b>, better than 6 ✓. R5 = 4+8 = 12.',lk:[['S','R2',T],['R2','R3',G],['R1','R3',X,true],['R2','R5',A]],tbl:{R3:'5',R5:'12'},hl:'R3',set:{R2:['final 4',G],R3:['d=5 ✓',G],R5:['d=12',A]}},
+ {title:'Visit R3 (5)',text:'R4 = 5+3 = <b>8</b> beats 10 ✓. R5 = 5+6 = <b>11</b> beats 12 ✓.',lk:[['R2','R3',T],['R3','R4',G],['R3','R5',G],['R1','R4',X,true],['R2','R5',X,true]],tbl:{R4:'8',R5:'11'},hl:'R4',set:{R3:['final 5',G],R4:['d=8 ✓',G],R5:['d=11 ✓',G]}},
+ {title:'Visit R4 (8)',text:'D = 8+2 = 10.',lk:[['R3','R4',T],['R4','D',A]],tbl:{D:'10'},hl:'D',set:{R4:['final 8',G],D:['d=10',A]}},
+ {title:'Visit R5 (11)',text:'D via R5 = 11+3 = 14, worse than 10, so it is rejected.',lk:[['R3','R5',T],['R5','D',X,true]],set:{R5:['final 11',G]}},
+ {title:'Shortest path found',text:'Backtrack from D: <b>S → R2 → R3 → R4 → D</b>, cost 4+1+3+2 = <b>10</b>.',lkReset:true,lk:pl(PATH,PU),set:{D:['final 10',G]},tele:{ROUTE:'S→R2→R3→R4→D',COST:'10'}},
+ hop('S','D','DATA',G,'Packet follows the route','Each router forwards to the next hop it computed.',{via:['R2','R3','R4'],end:'ok'})]};
+const dv={name:'Distance Vector · Bellman-Ford',tbl:row({D:'0'}),init:{D:['0',G]},intro:'Routers see only their neighbours. Press <b>Play</b> to watch distances to D spread through the city.',steps:[
+ {title:'Each router knows only its links',text:'<b>Distance-vector</b> routers do not see the map. They keep a table of distance to each destination and swap it with neighbours. Here we track distance to <b>D</b>.',pulse:'D',pc:G,tele:{ROUTE:'learning',COST:'—'}},
+ hop('D',['R4','R5'],'D = 0',V,'Round 1 · D advertises','D tells its neighbours its distance to D. They add the link cost.',{lk:[['R4','D',G],['R5','D',G]],tbl:{R4:'2 (via D)',R5:'3 (via D)'},hl:'R4',set:{R4:['2 via D',G],R5:['3 via D',G]}}),
+ hop('R4',['R1','R3'],'D = 2',V,'Round 2 · R4 advertises','R3 = 2+3 = 5, R1 = 2+8 = 10.',{lk:[['R3','R4',A],['R1','R4',A]],tbl:{R3:'5 (via R4)',R1:'10 (via R4)'},hl:'R3',set:{R3:['5 via R4',A],R1:['10 via R4',A]}}),
+ hop('R5',['R3','R2'],'D = 3',V,'R5 advertises','R3 would get 3+6 = 9, worse than 5, so it ignores it. R2 learns 8+3 = 11.',{lk:[['R3','R5',X,true],['R2','R5',A]],tbl:{R2:'11 (via R5)'},hl:'R2',set:{R2:['11 via R5',A]}}),
+ hop('R3',['R1','R2'],'D = 5',V,'R3 advertises','R1: 4+5 = <b>9</b> beats 10 ✓. R2: 1+5 = <b>6</b> beats 11 ✓.',{lk:[['R1','R3',G],['R2','R3',G],['R2','R5',X,true],['R1','R4',X,true]],tbl:{R1:'9 (via R3)',R2:'6 (via R3)'},hl:'R2',set:{R1:['9 via R3',G],R2:['6 via R3',G]}}),
+ hop('R1','S','D = 9',V,'R1 advertises','S learns 2+9 = 11 via R1.',{lk:[['S','R1',A]],tbl:{S:'11 (via R1)'},hl:'S',set:{S:['11 via R1',A]}}),
+ hop('R2','S','D = 6',V,'R2 advertises','S learns 4+6 = <b>10</b>, better than 11 ✓. No more changes: the network has <b>converged</b>.',{lk:[['S','R2',G],['S','R1',X,true]],tbl:{S:'10 (via R2)'},hl:'S',set:{S:['10 via R2',G]}}),
+ {title:'Forwarding tables are ready',text:'Same answer as Dijkstra, but no router ever saw the whole map. Each only knows <b>distance</b> and <b>next hop</b>.',lkReset:true,lk:pl(PATH,PU),tele:{ROUTE:'S→R2→R3→R4→D',COST:'10'}},
+ hop('S','D','DATA',G,'Packet is forwarded','Each router forwards to the next hop in its own table.',{via:['R2','R3','R4'],end:'ok'})]};
+const flood={name:'Flooding · no tables at all',tbl:{'Copies sent':'0','Needs tables?':'No'},init:{},intro:'The simplest "algorithm": send a copy on every link. Press <b>Play</b> and count the copies.',steps:[
+ {title:'No routing tables',text:'<b>Flooding</b> needs no topology knowledge. Every router forwards each packet on every link except the one it arrived on.',pulse:'S',pc:P,tele:{ROUTE:'all links',COST:'—'}},
+ hop('S',['R1','R2'],'PKT #1',P,'S floods','Two copies leave S.',{tbl:{'Copies sent':'2'}}),
+ hop('R1',['R3','R4'],'PKT #1',P,'R1 re-floods','R1 copies the packet to every other link.',{tbl:{'Copies sent':'4'}}),
+ hop('R2',['R3','R5'],'PKT #1',P,'R2 re-floods','R3 now receives a <b>duplicate</b>.',{tbl:{'Copies sent':'6'},set:{R3:['duplicate',A]}}),
+ hop('R3',['R4','R5'],'PKT #1',P,'R3 re-floods','More duplicates. Without a hop counter or sequence numbers this could loop forever.',{tbl:{'Copies sent':'8'},set:{R4:['duplicate',A],R5:['duplicate',A]}}),
+ hop('R4','D','PKT #1',P,'First copy reaches D','D has the packet. Flooding always finds the shortest path, because one copy takes it.',{tbl:{'Copies sent':'9'},set:{D:['delivered ✓',G]}}),
+ hop('R5','D','PKT #1',P,'Duplicate reaches D','It works even when links fail, but cost <b>10 transmissions for 1 packet</b>. Use it for routing updates and broadcast, not normal data.',{tbl:{'Copies sent':'10'},set:{D:['dup dropped',A]},tele:{COST:'10 copies'},end:'warn'})]};
+const hops={name:'Minimum hop count vs min cost',tbl:{'S→R1→R4→D':'3 hops · cost 12','S→R2→R3→R4→D':'4 hops · cost 10','S→R2→R3→R5→D':'4 hops · cost 14'},init:{},intro:'What if the metric is just "number of routers"? Press <b>Play</b>.',steps:[
+ {title:'Metric = hop count',text:'Protocols like <b>RIP</b> count every link as 1 and ignore real cost (bandwidth, delay).',pulse:'S',pc:A,tele:{ROUTE:'comparing',COST:'—'}},
+ {title:'Fewest hops wins',text:'S→R1→R4→D has only <b>3 hops</b>, the fewest, so it is chosen.',lk:pl(NEWP,PU),hl:'S→R1→R4→D',tele:{ROUTE:'S→R1→R4→D',COST:'12 (3 hops)'}},
+ hop('S','D','DATA',A,'Delivered, but not optimal','The packet arrives, but the path costs <b>12</b>. The 4-hop path through R2, R3, R4 costs only <b>10</b>. Cost-based algorithms (Dijkstra, OSPF) beat plain hop count.',{via:['R1','R4'],end:'warn'})]};
+const fail={name:'Link failure · automatic re-route',tbl:{'Best path':'S→R2→R3→R4→D (10)'},init:{},intro:'A link dies mid-flight. Press <b>Play</b> to watch the network recompute.',steps:[
+ {title:'Normal operation',text:'The best route is S → R2 → R3 → R4 → D, cost 10.',lk:pl(PATH,PU),tele:{ROUTE:'S→R2→R3→R4→D',COST:'10'}},
+ {title:'Link R3–R4 fails',text:'The link goes down, so the chosen route is broken.',lk:[['R3','R4',X,true,'✗']],set:{R3:['link down',X],R4:['link down',X]},tele:{ROUTE:'broken',COST:'∞'}},
+ hop('R3',['R1','R2','R5'],'LSA · R3–R4 DOWN',A,'R3 floods an update','In <b>link-state</b> routing the change is flooded as a link-state advertisement.'),
+ hop('R4',['R1','D'],'LSA · R3–R4 DOWN',A,'R4 floods an update','Every router now has the same updated map.'),
+ {title:'Everyone recomputes',text:'Dijkstra runs again. Via R5 costs 14, via R1→R4 costs <b>12</b>, so the second wins.',pulse:'S',pc:A,tbl:{'Alt via R5':'S→R2→R3→R5→D (14)','Alt via R1':'S→R1→R4→D (12)','Best path':'S→R1→R4→D (12)'},hl:'Best path'},
+ {title:'New route installed',text:'The route switches to <b>S → R1 → R4 → D</b>.',lkReset:true,lk:[['R3','R4',X,true,'✗'],...pl(NEWP,PU)],tele:{ROUTE:'S→R1→R4→D',COST:'12'}},
+ hop('S','D','DATA',G,'Delivered on the new path','Traffic keeps flowing at a slightly higher cost, with no manual change.',{via:['R1','R4'],end:'ok'})]};
+const nd=(id,x,y,i,l,s,c)=>({id,x,y,i,l,s,c});
+const CFG={topic:'Routing Algorithms',title:'Routing Algorithms',sub:'Smart city routing system · choosing the best road for every packet',icon:'🚦',a:['#0f766e','#2563eb','#7c3aed'],
+ idea:'A <b>routing algorithm</b> decides which output link a packet should take. <b>Link-state</b> (Dijkstra) gives every router the full map. <b>Distance-vector</b> (Bellman-Ford) shares only distances with neighbours. <b>Flooding</b> needs no tables. Numbers on the roads are <b>link costs</b>. Switch the scenario to compare.',
+ tblTitle:'Routing table / distances',legend:[[A,'Tentative'],[T,'Confirmed'],[PU,'Chosen route'],[X,'Rejected / failed']],tele:{ROUTE:'—',COST:'—'},
+ nodes:[nd('S',80,235,'🏠','Source S','sender',C),nd('R1',230,95,'🔀','R1','router','#60a5fa'),nd('R2',230,375,'🔀','R2','router','#60a5fa'),nd('R3',420,235,'🔀','R3','router','#60a5fa'),nd('R4',580,95,'🔀','R4','router','#60a5fa'),nd('R5',580,375,'🔀','R5','router','#60a5fa'),nd('D',720,235,'🏢','Destination D','receiver',G)],
+ links:[['S','R1',2],['S','R2',4],['R1','R3',4],['R2','R3',1],['R1','R4',8],['R3','R4',3],['R3','R5',6],['R2','R5',8],['R4','D',2],['R5','D',3]],
+ sc:{dij,dv,flood,hops,fail},
+ world:()=>{const b=[];for(let i=0;i<8;i++)for(let j=0;j<4;j++)b.push(`<rect x="${34+i*95}" y="${62+j*98}" width="70" height="70" rx="12" fill="rgba(34,211,238,.022)"/>`);
+  return b.join('')+'<text x="400" y="38" class="wm big" fill="#2dd4bf">SMART CITY ROUTING SYSTEM</text><text x="400" y="446" class="wm" fill="#8e9bb8">PATH COST = SUM OF LINK WEIGHTS ALONG THE ROAD</text>'}};
+
+const NS='http://www.w3.org/2000/svg',$=s=>document.querySelector(s),svg=$('#svg');
+let LK={},SC,idx=0,busy=false,playing=false,speed=1,tok=0,pos={},count=0,TELE={},TBL={},HL='',layer;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/speed));
+const el=(t,a={},p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+const mv=(g,p,q,ms,t)=>new Promise(res=>{const s=performance.now(),d=ms/speed;(function f(n){if(t!==tok)return res();const u=Math.min(1,(n-s)/d),e=ease(u);g.setAttribute('transform',`translate(${p.x+(q.x-p.x)*e},${p.y+(q.y-p.y)*e})`);u<1?requestAnimationFrame(f):res()})(s)});
+async function fly(pts,labels,cols,bounce,t){
+  const pick=(v,i)=>Array.isArray(v)?v[Math.min(i,v.length-1)]:v;
+  const g=el('g',{},layer),r=el('rect',{y:-11,height:22,rx:11,fill:'#0b1222','stroke-width':1.8},g),tx=el('text',{class:'pl'},g);
+  g.setAttribute('transform',`translate(${pts[0].x},${pts[0].y})`);
+  const label=(l,c)=>{tx.textContent=l;const w=l.length*6.8+20;r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',c);g.style.filter=`drop-shadow(0 0 7px ${c})`};
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],last=i===pts.length-1;label(pick(labels,i-1),pick(cols,i-1));
+    if(last&&bounce){const m={x:a.x+(b.x-a.x)*.74,y:a.y+(b.y-a.y)*.74};await mv(g,a,m,750,t);if(t!==tok)return g.remove();label(pick(labels,i-1)+' ✗',X);await sleep(350);await mv(g,m,a,600,t)}
+    else await mv(g,a,b,750,t);
+    if(t!==tok)return g.remove();
+  }
+  g.style.transition='opacity .25s';g.style.opacity=0;await sleep(250);g.remove();
+}
+function pulse(id,c){const n=pos[id],e=el('circle',{cx:n.x,cy:n.y,r:36,class:'rip',stroke:c||n.c},layer);setTimeout(()=>e.remove(),1200)}
+function stat(id,txt,col){const g=$('#n_'+id+' .chip');if(!txt){g.style.opacity=0;return}g.style.opacity=1;const t=g.querySelector('text'),r=g.querySelector('rect'),w=txt.length*6.5+20;t.textContent=txt;t.setAttribute('fill',col);r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',col)}
+function lit(a,b,col,dash,txt){const k=LK[a+'|'+b];if(!k)return;const s=k.l.style;s.stroke=col||'';s.strokeWidth=col?7:'';s.strokeDasharray=dash?'3 9':'';s.filter=col?`drop-shadow(0 0 7px ${col})`:'';if(k.r)k.r.setAttribute('stroke',col||'#33405f');if(txt!=null&&k.t)k.t.textContent=txt}
+function build(){
+  svg.innerHTML='<defs><pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#fbbf24"/><rect x="6" width="6" height="12" fill="#1a1a1a"/></pattern></defs>';
+  svg.insertAdjacentHTML('beforeend',CFG.world());
+  LK={};CFG.links.forEach(([a,b])=>{LK[a+'|'+b]=LK[b+'|'+a]={l:el('line',{x1:pos[a].x,y1:pos[a].y,x2:pos[b].x,y2:pos[b].y,class:'lk'})}});
+  CFG.links.forEach(([a,b,w])=>{if(w==null)return;const g=el('g',{transform:`translate(${(pos[a].x+pos[b].x)/2},${(pos[a].y+pos[b].y)/2})`}),ww=String(w).length*7.4+14,k=LK[a+'|'+b];
+   k.r=el('rect',{x:-ww/2,y:-10,width:ww,height:20,rx:7,fill:'#0b1222',stroke:'#33405f','stroke-width':1.3},g);k.t=el('text',{class:'lc'},g);k.t.textContent=w});
+  CFG.nodes.forEach(n=>{const g=el('g',{id:'n_'+n.id,transform:`translate(${n.x},${n.y})`});
+    el('circle',{r:42,class:'halo',stroke:n.c},g);el('circle',{r:32,class:'body',stroke:n.c},g);
+    el('text',{class:'em'},g).textContent=n.i;el('text',{class:'nl',y:52},g).textContent=n.l;el('text',{class:'ns',y:65},g).textContent=n.s;
+    const c=el('g',{class:'chip',transform:'translate(0,86)'},g);el('rect',{y:-10,height:20,rx:10,fill:'#0b1222','stroke-width':1.4},c);el('text',{class:'ct'},c)});
+  layer=el('g');
+}
+function hud(){const s=[['STEP',`${idx}/${SC.steps.length}`],['FRAMES',count],...Object.entries(TELE)];$('#hud').innerHTML=s.map(([k,v])=>`<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('')}
+function tbl(){$('#tb').innerHTML=Object.entries(TBL).map(([k,v])=>`<div class="row${k===HL?' hl':''}"><span>${k}</span><b>${v}</b></div>`).join('')}
+function narr(t,x,cls=''){$('#nt').textContent=t;$('#nx').innerHTML=x;$('#narr').className='card pad narr '+cls}
+function btn(){$('#play').textContent=playing?'⏸ Pause':idx>=SC.steps.length?'↻ Replay':'▶ Play'}
+function reset(){
+  tok++;busy=false;playing=false;idx=0;count=0;TELE={...CFG.tele};TBL={...SC.tbl};HL='';build();
+  svg.dataset.gate=SC.gate||'closed';CFG.nodes.forEach(n=>stat(n.id,''));for(const k in SC.init)stat(k,...SC.init[k]);
+  $('#tl').innerHTML=SC.steps.map((s,i)=>`<li id="t${i}"><i>${i+1}</i>${s.title}</li>`).join('');
+  narr('Ready',SC.intro);hud();tbl();btn();
+}
+async function run(s,t){
+  const li=$('#t'+idx);li.className='on';narr(s.title,s.text);
+  if(s.lkReset)CFG.links.forEach(([a,b,w])=>lit(a,b,'',0,w));for(const e of s.lk||[])lit(...e);
+  if(s.pulse)pulse(s.pulse,s.pc);
+  if(s.from){const tos=[].concat(s.to);await Promise.all(tos.map(to=>fly([pos[s.from],...[].concat(s.via||[]).map(v=>pos[v]),pos[to]],s.label,s.color,s.bounce,t)));count+=tos.length}
+  else await sleep(1000);
+  if(t!==tok)return false;
+  for(const k in s.set)stat(k,...s.set[k]);Object.assign(TELE,s.tele||{});Object.assign(TBL,s.tbl||{});HL=s.hl||'';
+  if(s.gate)svg.dataset.gate=s.gate;if(s.end)narr(s.title,s.text,s.end);
+  li.className='done';await sleep(450);return t===tok;
+}
+async function next(){if(busy||idx>=SC.steps.length)return;busy=true;const t=tok;if(!await run(SC.steps[idx],t))return;busy=false;idx++;hud();tbl();btn()}
+$('#play').onclick=async()=>{if(playing){playing=false;btn();return}if(idx>=SC.steps.length)reset();playing=true;btn();while(playing&&idx<SC.steps.length)await next();if(tok)playing=false;btn()};
+$('#step').onclick=()=>{playing=false;btn();next()};$('#rst').onclick=reset;
+$('#spd').onchange=e=>speed=+e.target.value;
+$('#scn').onchange=e=>{SC=CFG.sc[e.target.value];reset()};
+CFG.nodes.forEach(n=>pos[n.id]=n);
+['--a1','--a2','--a3'].forEach((v,i)=>document.documentElement.style.setProperty(v,CFG.a[i]));
+$('#logo').textContent=CFG.icon;$('#cr').textContent=CFG.topic;$('#h1').textContent=CFG.title;$('#sub').textContent=CFG.sub;$('#idea').innerHTML=CFG.idea;$('#tt').textContent=CFG.tblTitle;
+$('#lg').innerHTML=CFG.legend.map(([c,t])=>`<div class="lg"><i style="background:${c}"></i>${t}</div>`).join('');
+$('#scn').innerHTML=Object.entries(CFG.sc).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+SC=Object.values(CFG.sc)[0];reset();
+</script></body></html>

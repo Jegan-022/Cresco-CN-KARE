@@ -14,7 +14,7 @@ interface NetworkBackgroundProps {
  * - Behavior: Static for Dashboard/Exam, gentle packet transit on active views
  * - Respects prefers-reduced-motion
  */
-export const NetworkBackground: React.FC<NetworkBackgroundProps> = ({ mode = 'static' }) => {
+export const NetworkBackground: React.FC<NetworkBackgroundProps> = React.memo(({ mode = 'static' }) => {
   const isExam = mode === 'exam';
 
   return (
@@ -67,4 +67,4 @@ export const NetworkBackground: React.FC<NetworkBackgroundProps> = ({ mode = 'st
       </svg>
     </div>
   );
-};
+});

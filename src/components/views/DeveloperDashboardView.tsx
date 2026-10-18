@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  onSnapshot,
-  getDocs
-} from 'firebase/firestore';
+// Direct client Firestore queries to 'students' collection removed for student data privacy
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { TOTAL_MODULES_COUNT } from '../../data/courseContent';
@@ -225,96 +221,19 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({ 
   };
 
   // Real-time Firestore sync on all students
+  // Direct client queries to 'students' collection are removed to protect student privacy.
+  // Private student records require trusted server-side administrative token verification.
   useEffect(() => {
-    setLoading(true);
-    let unsubscribe = () => {};
-
-    try {
-      const studentsRef = collection(db, 'students');
-      unsubscribe = onSnapshot(
-        studentsRef,
-        (snapshot) => {
-          setFirestoreError(null);
-          const list: StudentData[] = [];
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data() as any;
-            const sId = data.studentId || docSnap.id.replace('klu_', '').replace('dev_', '');
-            if (data.role === 'developer' || isAuthorizedDeveloper(sId) || isAuthorizedDeveloper(data.email || '')) {
-              return;
-            }
-            const completedList = data.completedModules || [];
-            const calculatedProgress = data.overallProgress ?? Math.min(100, Math.round((completedList.length / TOTAL_MODULES_COUNT) * 100));
-            const calculatedXP = data.totalXP ?? data.xp ?? 0;
-
-            list.push({
-              uid: docSnap.id,
-              ...data,
-              completedModules: completedList,
-              modulesCompleted: data.modulesCompleted ?? completedList.length,
-              overallProgress: calculatedProgress,
-              totalXP: calculatedXP,
-              isOnline: !!data.isOnline,
-              lastLogin: data.lastLogin,
-            });
-          });
-          setStudents(getMergedStudents(list));
-          setLoading(false);
-        },
-        (err: any) => {
-          console.warn("Developer Dashboard Firestore sync error:", err);
-          const errMsg = err?.message || String(err);
-          if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
-            setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'cresco-cn'. Please create the database in the Firebase Console so student progress syncs across devices.");
-          } else {
-            setFirestoreError(errMsg);
-          }
-          setStudents(getMergedStudents([]));
-          setLoading(false);
-        }
-      );
-    } catch (err: any) {
-      console.warn("Failed to listen to students collection:", err);
-      setFirestoreError(err?.message || String(err));
-      setStudents(getMergedStudents([]));
-      setLoading(false);
-    }
-
-    return () => unsubscribe();
+    setLoading(false);
+    setStudents(getMergedStudents([]));
   }, []);
 
   const handleRetryConnection = async () => {
     setIsRetryingDb(true);
     try {
-      const snap = await getDocs(collection(db, 'students'));
       setFirestoreError(null);
-      const list: StudentData[] = [];
-      snap.forEach((docSnap) => {
-        const data = docSnap.data() as any;
-        const sId = data.studentId || docSnap.id.replace('klu_', '').replace('dev_', '');
-        if (data.role === 'developer' || isAuthorizedDeveloper(sId) || isAuthorizedDeveloper(data.email || '')) {
-          return;
-        }
-        const completedList = data.completedModules || [];
-        const calculatedProgress = data.overallProgress ?? Math.min(100, Math.round((completedList.length / TOTAL_MODULES_COUNT) * 100));
-        list.push({
-          uid: docSnap.id,
-          ...data,
-          completedModules: completedList,
-          modulesCompleted: data.modulesCompleted ?? completedList.length,
-          overallProgress: calculatedProgress,
-          totalXP: data.totalXP ?? data.xp ?? 0,
-        });
-      });
-      setStudents(getMergedStudents(list));
-      showToast("Successfully connected to Cloud Firestore!", "success");
-    } catch (err: any) {
-      const errMsg = err?.message || String(err);
-      if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('has not been used') || err?.code === 'permission-denied') {
-        setFirestoreError("Cloud Firestore Database API is not initialized or not enabled in Firebase project 'cresco-cn'. Please create the database in the Firebase Console.");
-      } else {
-        setFirestoreError(errMsg);
-      }
-      showToast("Could not connect to Cloud Firestore. See warning banner above.", "error");
+      setStudents(getMergedStudents([]));
+      showToast("Student database direct access restricted pending admin authorization.", "success");
     } finally {
       setIsRetryingDb(false);
     }

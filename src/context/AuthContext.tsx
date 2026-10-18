@@ -36,8 +36,9 @@ import { auth, db } from '../lib/firebase';
 import { AlertTriangle, X } from 'lucide-react';
 import { fetchWithAuth } from '../lib/api';
 import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } from '../config/developers';
-import { findStudentCredential, verifyStudentCredential } from '../data/studentCredentials';
+import { findStudentCredential } from '../data/studentCredentials';
 import { ALL_MODULES } from '../data/courseContent';
+import { recordLearningEvent } from '../services/learningEventService';
 
 // KLU / KIID email validation regex strictly mandated by requirements (accepts @klu.ac.in, @kluniversity.in, and KIID domains)
 export const KLU_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.)?(klu\.ac\.in|kluniversity\.in|kiid\.[a-z.]+|kiid\.ac\.in|kiid\.edu\.in|kiid\.in)$/i;
@@ -306,36 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. Match from usernames collection by email
-    try {
-      const qUsernames = query(collection(db, 'usernames'), where('email', '==', cleanEmail), limit(1));
-      const uSnap = await withTimeout(getDocs(qUsernames), 2000, null as any);
-      if (uSnap && !uSnap.empty) {
-        const uDoc = uSnap.docs[0].data();
-        const targetUid = uDoc.uid || uid;
-        const sSnap = await withTimeout(getDoc(doc(db, 'students', targetUid)), 1500, null as any);
-        if (sSnap && sSnap.exists && sSnap.exists()) {
-          return { docId: targetUid, data: sSnap.data() as any };
-        }
-      }
-    } catch (e) {
-      console.warn('[Auth] Usernames email lookup handled error:', e);
-    }
-
-    // 4. Query students collection by email
-    try {
-      const qStudents = query(collection(db, 'students'), where('email', '==', cleanEmail), limit(1));
-      const sSnap = await withTimeout(getDocs(qStudents), 2000, null as any);
-      if (sSnap && !sSnap.empty) {
-        const docSnap = sSnap.docs[0];
-        const d = docSnap.data() as any;
-        return { docId: docSnap.id, data: d };
-      }
-    } catch (e) {
-      console.warn('[Auth] Students collection email query handled error:', e);
-    }
-
-    // 5. Check local cache fallback
+    // 3. Check local cache fallback
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem(`klu_profile_${uid}`) || 
                      localStorage.getItem(`klu_profile_${studentId}`);
@@ -403,7 +375,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: user.email || prefetchedData.email || currentProfile.email,
         username: prefetchedData.username || currentProfile.username,
         profileCompleted: prefetchedData.profileCompleted ?? currentProfile.profileCompleted ?? true,
-        portalPassword: prefetchedData.portalPassword || currentProfile.portalPassword,
         department: prefetchedData.department || currentProfile.department || 'CSE',
         year: prefetchedData.year || currentProfile.year || '3rd Year',
       };
@@ -481,7 +452,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           studentId: remoteData.studentId || currentProfile.studentId || studentId,
           username: remoteData.username || currentProfile.username,
           profileCompleted: Boolean(remoteData.profileCompleted || currentProfile.profileCompleted),
-          portalPassword: remoteData.portalPassword || currentProfile.portalPassword,
           department: remoteData.department || currentProfile.department || 'CSE',
           year: remoteData.year || currentProfile.year || '3rd Year',
           college: remoteData.college || currentProfile.college || 'KLU',
@@ -530,7 +500,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           completedUnits: profile.completedUnits,
           modulesCompleted: mergedModules.length,
           overallProgress: profile.overallProgress,
-          ...(profile.portalPassword ? { portalPassword: profile.portalPassword } : {}),
           ...(profile.courseCompletedAt ? { courseCompletedAt: profile.courseCompletedAt } : {}),
           resetEpoch: GLOBAL_RESET_EPOCH,
           isOnline: true,
@@ -558,7 +527,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...liveData,
               username: liveData.username || prev.username,
               profileCompleted: liveData.profileCompleted ?? prev.profileCompleted,
-              portalPassword: liveData.portalPassword || prev.portalPassword,
             } : liveData);
           }
         }, (err) => {
@@ -602,7 +570,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: devInfo.email || `${activeDevId.toLowerCase()}@klu.ac.in`,
         displayName: devInfo.name,
         emailVerified: true,
-        getIdToken: async () => `token_${uid}`,
+        getIdToken: async () => `dev_token_${uid}`,
       };
       const zeroDev = createZeroStudentState(
         uid, 
@@ -633,30 +601,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Check if a student session exists locally
-    const activeStudentId = typeof window !== 'undefined' ? localStorage.getItem('klu_active_student_id') : null;
-    if (activeStudentId) {
-      const saved = localStorage.getItem(`klu_profile_${activeStudentId}`);
-      if (saved) {
-        try {
-          const profile = JSON.parse(saved);
-          const syntheticUser: any = {
-            uid: profile.uid || `klu_${activeStudentId}`,
-            email: profile.email,
-            displayName: profile.name || profile.displayName,
-            emailVerified: true,
-            getIdToken: async () => `token_${profile.uid || activeStudentId}`,
-          };
-          setCurrentUser(syntheticUser);
-          setUserProfile(profile);
-          setLoading(false);
-          // Sync in background to ensure latest stats
-          syncAndFetchProfile(syntheticUser, profile.name, 'student', profile);
-        } catch (e) {
-          console.error('Failed to restore local student profile:', e);
-        }
-      }
-    }
+
 
     // Handle redirect result if user was redirected for Google Sign-in
     getRedirectResult(auth)
@@ -773,8 +718,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         syncAndFetchProfile(user);
       } else {
         const hasDev = typeof window !== 'undefined' && localStorage.getItem('klu_active_dev_id');
-        const hasLocal = typeof window !== 'undefined' && localStorage.getItem('klu_active_student_id');
-        if (!hasDev && !hasLocal) {
+        if (!hasDev) {
           setCurrentUser(null);
           setUserProfile(null);
           setPendingRegistration(null);
@@ -831,6 +775,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const local = typeof window !== 'undefined' ? localStorage.getItem(`klu_user_claim_${clean}`) : null;
       return !local;
     }
+  };
+
+  // Synchronize minimal sanitized public leaderboard projection (zero PII)
+  // Client-side synchronization to /public_leaderboard is disabled.
+  // Authoritative gamification and leaderboard statistics (XP, level, badges, progress, streak)
+  // must NOT be written by untrusted student clients. Projection updates require a trusted
+  // server-side background worker or cloud function driven by immutable /learning_events.
+  const syncPublicLeaderboardProjection = async (
+    _targetUid: string,
+    _profileData: Partial<UserProfileData>
+  ) => {
+    // No-op: client writes to /public_leaderboard are strictly denied by Firestore rules.
   };
 
   const completeStudentRegistration = async ({
@@ -897,7 +853,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       department: department || 'CSE',
       year: year || '3rd Year (UG)',
       profileCompleted: true,
-      portalPassword: cleanPass,
       resetEpoch: GLOBAL_RESET_EPOCH,
       updatedAt: now,
     };
@@ -923,16 +878,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${cleanRegNo}`, JSON.stringify(profile));
       localStorage.setItem(`klu_profile_${email}`, JSON.stringify(profile));
-      localStorage.setItem(`klu_pwd_${cleanId}`, cleanPass);
-      localStorage.setItem(`klu_pwd_${cleanRegNo}`, cleanPass);
-      localStorage.setItem(`klu_pwd_${email}`, cleanPass);
       localStorage.setItem(`klu_user_claim_${cleanRegNo}`, uid);
       localStorage.setItem(`klu_user_claim_${email}`, uid);
       localStorage.setItem('klu_active_student_id', cleanId);
       window.dispatchEvent(new CustomEvent('netquest_profile_updated', { detail: profile }));
     }
 
-    // 3. Save profile and mappings in Firestore in parallel with timeout
+    // 3. Save profile and mappings in Firestore in parallel with timeout (passwords never stored in Firestore)
     const credentialPayload = {
       uid,
       username: cleanRegNo,
@@ -941,24 +893,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: cleanName,
       department: department || 'CSE',
       year: year || '3rd Year (UG)',
-      portalPassword: cleanPass,
       profileCompleted: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
+    const { portalPassword: _omittedPwd, ...firestoreProfile } = profile;
+
+    // Minimal claim document for public username registry (zero PII: no email, no name, no studentId)
+    const minimalUsernameClaim = {
+      uid,
+      claimed: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
     const writeTasks = [
-      setDoc(doc(db, 'usernames', cleanRegNo), credentialPayload, { merge: true }),
-      setDoc(doc(db, 'usernames', email), credentialPayload, { merge: true }),
+      setDoc(doc(db, 'usernames', cleanRegNo), minimalUsernameClaim, { merge: true }),
+      setDoc(doc(db, 'usernames', email), minimalUsernameClaim, { merge: true }),
       setDoc(doc(db, 'users', uid), credentialPayload, { merge: true }),
       setDoc(doc(db, 'students', uid), {
-        ...profile,
+        ...firestoreProfile,
         lastLogin: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true }),
       setDoc(doc(db, 'students', `klu_${cleanId}`), {
-        ...profile,
+        ...firestoreProfile,
         uid,
         lastLogin: serverTimestamp(),
         createdAt: serverTimestamp(),
@@ -971,19 +931,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // 4. Finalize login and clear pending state instantly
-    const syntheticUser: any = auth.currentUser || {
-      uid,
-      email,
-      displayName: cleanName,
-      emailVerified: true,
-      getIdToken: async () => `token_${uid}`,
-    };
+    const authenticatedUser = auth.currentUser;
+    if (!authenticatedUser) {
+      throw new Error('No active authenticated Firebase session found. Please sign in with your Google account.');
+    }
 
-    setCurrentUser(syntheticUser);
+    setCurrentUser(authenticatedUser);
     setUserProfile(profile);
     setPendingRegistration(null);
     setLoading(false);
-    syncAndFetchProfile(syntheticUser, cleanName, 'student', profile);
+    syncAndFetchProfile(authenticatedUser, cleanName, 'student', profile);
 
     return profile;
   };
@@ -1012,18 +969,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = currentUser?.uid || userProfile?.uid || `klu_${studentId}`;
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
-      localStorage.setItem(`klu_pwd_${username}`, cleanPassword);
-      localStorage.setItem(`klu_pwd_${userEmail}`, cleanPassword);
-      localStorage.setItem(`klu_pwd_${emailPrefix}`, cleanPassword);
-      localStorage.setItem(`klu_pwd_${cleanInput}`, cleanPassword);
-      if (currentUser?.uid) {
-        localStorage.setItem(`klu_pwd_${currentUser.uid}`, cleanPassword);
-      }
       if (userProfile) {
         const updated = { 
           ...userProfile, 
-          portalPassword: cleanPassword, 
           username: userProfile.username || username || userEmail,
           studentId: userProfile.studentId || studentId,
           updatedAt: new Date().toISOString() 
@@ -1040,7 +988,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUserProfile(prev => prev ? { 
       ...prev, 
-      portalPassword: cleanPassword, 
       username: prev.username || username || userEmail,
       studentId: prev.studentId || studentId,
       updatedAt: new Date().toISOString()
@@ -1048,21 +995,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const updateData = { 
-        portalPassword: cleanPassword, 
         username,
         studentId,
         email: userEmail,
         updatedAt: serverTimestamp() 
       };
+      const minimalClaimUpdate = {
+        uid,
+        claimed: true,
+        updatedAt: serverTimestamp(),
+      };
       const targets = [
         setDoc(doc(db, 'students', uid), updateData, { merge: true }),
         setDoc(doc(db, 'students', `klu_${studentId}`), updateData, { merge: true }),
-        setDoc(doc(db, 'usernames', username), { ...updateData, uid }, { merge: true }),
-        setDoc(doc(db, 'usernames', userEmail), { ...updateData, uid }, { merge: true }),
-        setDoc(doc(db, 'usernames', emailPrefix), { ...updateData, uid }, { merge: true }),
+        setDoc(doc(db, 'usernames', username), minimalClaimUpdate, { merge: true }),
+        setDoc(doc(db, 'usernames', userEmail), minimalClaimUpdate, { merge: true }),
+        setDoc(doc(db, 'usernames', emailPrefix), minimalClaimUpdate, { merge: true }),
       ];
       if (studentId && studentId !== username && studentId !== emailPrefix) {
-        targets.push(setDoc(doc(db, 'usernames', studentId.toLowerCase()), { ...updateData, uid }, { merge: true }));
+        targets.push(setDoc(doc(db, 'usernames', studentId.toLowerCase()), minimalClaimUpdate, { merge: true }));
       }
       if (currentUser?.uid && currentUser.uid !== uid) {
         targets.push(setDoc(doc(db, 'students', currentUser.uid), updateData, { merge: true }));
@@ -1074,11 +1025,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (auth.currentUser && auth.currentUser.email) {
         try {
-          updatePassword(auth.currentUser, cleanPassword).catch((pwErr) => {
-            console.warn('Firebase Auth updatePassword notice (custom portal password saved in Firestore & local cache):', pwErr);
-          });
-        } catch (pwErr) {
+          await updatePassword(auth.currentUser, cleanPassword);
+        } catch (pwErr: any) {
           console.warn('Firebase Auth updatePassword warning:', pwErr);
+          if (pwErr?.code === 'auth/requires-recent-login') {
+            throw new Error('For security reasons, updating your password requires recent authentication. Please sign in again and retry.');
+          }
         }
       }
     } catch (err) {
@@ -1108,210 +1060,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    let matchedUid: string | null = null;
-    let matchedStudentId: string | null = null;
-    let matchedEmail: string | null = null;
-    let matchedName: string | null = null;
-    let matchedPassword: string | null = null;
-    let matchedData: any = null;
-
-    // 1. Subsequent Login: Username lookup from 'usernames' collection
-    // Check cleanInput directly (handles both user@klu.ac.in and username prefix)
-    const candidateKeys = [cleanInput];
-    if (!cleanInput.includes('@')) {
-      candidateKeys.push(`${cleanInput}@klu.ac.in`);
-      candidateKeys.push(`${cleanInput}@kluniversity.in`);
+    // Formulate candidate emails to verify against native Firebase Auth
+    const candidateEmails: string[] = [];
+    if (cleanInput.includes('@')) {
+      candidateEmails.push(cleanInput);
     } else {
-      candidateKeys.push(cleanInput.split('@')[0]);
+      candidateEmails.push(`${cleanInput}@klu.ac.in`);
+      candidateEmails.push(`${cleanInput}@kluniversity.in`);
     }
 
-    for (const key of candidateKeys) {
+    // Authenticate securely against Firebase Auth using real password credentials
+    let authErrorDetails: any = null;
+
+    for (const emailCandidate of candidateEmails) {
       try {
-        const usernameDoc = await withTimeout(getDoc(doc(db, 'usernames', key)), 1800, null);
-        if (usernameDoc && usernameDoc.exists()) {
-          const uData = usernameDoc.data() as any;
-          matchedUid = uData?.uid || null;
-          matchedStudentId = uData?.studentId || key;
-          matchedEmail = uData?.email || (key.includes('@') ? key : null);
-          matchedName = uData?.name || null;
-          if (uData?.portalPassword) {
-            matchedPassword = uData.portalPassword;
-          }
+        const cred = await signInWithEmailAndPassword(auth, emailCandidate, cleanPassword);
+        if (cred && cred.user) {
+          await syncAndFetchProfile(cred.user);
+          return;
+        }
+      } catch (fbErr: any) {
+        authErrorDetails = fbErr;
+        // If password explicitly failed for an exact match, abort further candidate attempts
+        if (fbErr?.code === 'auth/wrong-password' || fbErr?.code === 'auth/invalid-credential') {
           break;
         }
-      } catch (e) {
-        console.warn('Firestore username lookup fallback note:', e);
       }
     }
 
-    // Direct email authentication if input is an email (non-blocking fallback)
-    if (cleanInput.includes('@')) {
-      try {
-        const cred = await signInWithEmailAndPassword(auth, cleanInput, cleanPassword);
-        await syncAndFetchProfile(cred.user);
-        return;
-      } catch (fbErr: any) {
-        console.warn('Direct email signInWithEmailAndPassword fallback notice:', fbErr?.code);
-      }
-    }
-
-    // 2. Query 'users' collection by email or username if not yet resolved
-    if (!matchedUid || !matchedPassword) {
-      try {
-        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanInput), limit(1));
-        const uSnap = await withTimeout(getDocs(emailQuery), 1500, null as any);
-        if (uSnap && !uSnap.empty) {
-          const uDoc = uSnap.docs[0].data();
-          matchedUid = uDoc.uid || uSnap.docs[0].id;
-          matchedStudentId = uDoc.studentId || cleanInput;
-          matchedEmail = uDoc.email;
-          matchedName = uDoc.name;
-          if (uDoc.portalPassword) matchedPassword = uDoc.portalPassword;
-        }
-      } catch {}
-    }
-
-    // 3. Query 'students' collection by email or direct UID
-    if (!matchedUid || !matchedPassword) {
-      const candidateUids = [`klu_${cleanInput}`, cleanInput];
-      for (const cUid of candidateUids) {
-        try {
-          const sSnap = await getDoc(doc(db, 'students', cUid));
-          if (sSnap.exists()) {
-            matchedUid = cUid;
-            matchedData = sSnap.data();
-            matchedStudentId = matchedData.studentId || cleanInput;
-            matchedEmail = matchedData.email;
-            matchedName = matchedData.name || matchedData.displayName;
-            if (matchedData.portalPassword) matchedPassword = matchedData.portalPassword;
-            break;
-          }
-        } catch {}
-      }
-    }
-
-    if (!matchedUid && cleanInput.includes('@')) {
-      try {
-        const qByEmail = query(collection(db, 'students'), where('email', '==', cleanInput), limit(1));
-        const snap = await getDocs(qByEmail);
-        if (!snap.empty) {
-          const docSnap = snap.docs[0];
-          matchedUid = docSnap.id;
-          matchedData = docSnap.data();
-          matchedStudentId = matchedData.studentId || cleanInput;
-          matchedEmail = matchedData.email;
-          matchedName = matchedData.name || matchedData.displayName;
-          if (matchedData.portalPassword) matchedPassword = matchedData.portalPassword;
-        }
-      } catch {}
-    }
-
-    // 4. Fallback: check local storage cache
-    if (!matchedPassword && typeof window !== 'undefined') {
-      const localPwd = localStorage.getItem(`klu_pwd_${cleanInput}`) || 
-                       (matchedStudentId ? localStorage.getItem(`klu_pwd_${matchedStudentId}`) : null) ||
-                       (matchedEmail ? localStorage.getItem(`klu_pwd_${matchedEmail}`) : null);
-      if (localPwd) {
-        matchedPassword = localPwd;
-      }
-    }
-
-    // 5. Fallback: check legacy student credentials CSV/roster
-    const rosterStudent = findStudentCredential(cleanInput);
-    if (rosterStudent) {
-      matchedStudentId = rosterStudent.studentId;
-      matchedEmail = rosterStudent.email;
-      matchedName = rosterStudent.name;
-      if (!matchedPassword) {
-        matchedPassword = rosterStudent.password;
-      }
-    }
-
-    // 6. Default fallback for whole-college KLU accounts
-    const isRegisterFormat = /^992400\d{4,5}(@klu\.ac\.in)?$/i.test(cleanInput) || /^\d{10,11}$/.test(cleanInput.replace(/\D/g, ''));
-    if (!matchedPassword && (isRegisterFormat || KLU_EMAIL_REGEX.test(cleanInput))) {
-      matchedPassword = 'stu@sid';
-      if (!matchedStudentId) matchedStudentId = cleanInput.split('@')[0];
-      if (!matchedEmail) matchedEmail = cleanInput.includes('@') ? cleanInput : `${matchedStudentId}@klu.ac.in`;
-    }
-
-    // If still no student identified
-    if (!matchedUid && !rosterStudent && !matchedPassword && !matchedData) {
-      const msg = 'Account not found. First-time student? Please sign up with your official KLU Google account to activate your portal account.';
-      setAuthError(msg);
-      throw new Error(msg);
-    }
-
-    const studentId = matchedStudentId || cleanInput.split('@')[0] || cleanInput;
-    const last5 = studentId.slice(-5);
-    const expectedLegacyPassword = `sid@${last5}`;
-
-    const localCachedPwd = typeof window !== 'undefined'
-      ? (localStorage.getItem(`klu_pwd_${cleanInput}`) || 
-         localStorage.getItem(`klu_pwd_${studentId}`) ||
-         (matchedEmail ? localStorage.getItem(`klu_pwd_${matchedEmail}`) : null))
-      : null;
-
-    const isMatch = (matchedPassword && cleanPassword === matchedPassword) ||
-                    (localCachedPwd && cleanPassword === localCachedPwd) ||
-                    (cleanPassword === 'stu@sid') ||
-                    (cleanPassword.toLowerCase() === expectedLegacyPassword.toLowerCase()) ||
-                    (rosterStudent && rosterStudent.password.toLowerCase() === cleanPassword.toLowerCase());
-
-    if (!isMatch) {
-      const msg = 'Invalid password. (Default is stu@sid, or sign in with your official KLU Google account).';
-      setAuthError(msg);
-      throw new Error(msg);
-    }
-
-    // Setup session
-    const email = matchedEmail || (cleanInput.includes('@') ? cleanInput : `${studentId}@klu.ac.in`);
-    const name = studentName || matchedName || (rosterStudent ? rosterStudent.name : `Student (${studentId})`);
-    const uid = matchedUid || `klu_${studentId}`;
-
-    const syntheticUser: any = {
-      uid,
-      email,
-      displayName: name,
-      emailVerified: true,
-      getIdToken: async () => `token_${uid}`,
-    };
-
-    const storageKey = `klu_profile_${studentId}`;
-    const zeroState = createZeroStudentState(uid, email, name, 'student');
-    let profile: UserProfileData = {
-      ...zeroState,
-      ...(matchedData || {}),
-      uid,
-      studentId,
-      name,
-      displayName: name,
-      email,
-      role: 'student',
-      portalPassword: cleanPassword,
-    };
-
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('klu_active_dev_id');
-      localStorage.setItem('klu_active_student_id', studentId);
-      localStorage.setItem(`klu_pwd_${studentId}`, cleanPassword);
-      localStorage.setItem(storageKey, JSON.stringify(profile));
-      localStorage.setItem(`klu_profile_${uid}`, JSON.stringify(profile));
-    }
-
-    setCurrentUser(syntheticUser);
-    setUserProfile(profile);
-
-    // Sync Firestore in background & attach live listener
-    try {
-      const userRef = doc(db, 'students', uid);
-      await setDoc(userRef, {
-        ...profile,
-        lastLogin: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-      syncAndFetchProfile(syntheticUser, name, 'student', profile);
-    } catch {}
+    // If native Firebase Auth failed, do not generate synthetic unauthenticated sessions or consult plaintext passwords
+    const failureMsg = 'Invalid Register Number or password. If you have not set a password yet or are a first-time student, please click "KLU Sign Up" to sign in with your official KLU Google account (@klu.ac.in). You can then configure your password in Settings.';
+    setAuthError(failureMsg);
+    throw new Error(failureMsg);
   };
 
   const loginWithGoogle = async (): Promise<{ isNewUser: boolean; profile: UserProfileData | null }> => {
@@ -1491,6 +1271,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('klu_active_student_id');
         localStorage.removeItem('klu_active_dev_id');
         localStorage.removeItem('klu_active_developer_id');
+        // Purge any legacy plaintext credentials lingering in localStorage
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('klu_pwd_')) {
+            localStorage.removeItem(k);
+          }
+        });
         sessionStorage.clear();
       } catch (e) {
         console.warn('Error clearing local storage on logout:', e);
@@ -1553,7 +1339,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const devInfo = getDeveloperProfile(cleanId);
     const uid = `dev_${devInfo.id.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
 
-    const syntheticUser: any = {
+    const developerUser: any = {
       uid,
       email: devInfo.email || `${cleanId.toLowerCase()}@klu.ac.in`,
       displayName: devInfo.name,
@@ -1582,7 +1368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Connect to Firestore and sync real profile (starts at zero if new, loads genuine progress if exists)
-    await syncAndFetchProfile(syntheticUser, devInfo.name, 'developer');
+    await syncAndFetchProfile(developerUser, devInfo.name, 'developer');
   };
 
   const resetStudentCourse = async (
@@ -1845,6 +1631,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.warn("Failed to record module completion in Firestore:", err);
     }
+
+    // Emit canonical Learning Event (Step 6 Learning Evidence Foundation)
+    recordLearningEvent({
+      eventType: 'LESSON_COMPLETED',
+      courseId: 'cs-4200',
+      unitId,
+      lessonId: moduleId,
+      studentId: currentUser.uid,
+      metadata: {
+        completionPercentage: newOverallProgress,
+        xpEarned: xpToAdd,
+      },
+    }).catch((err) => {
+      console.warn('[LearningEvent] Non-fatal emit error on lesson completed:', err);
+    });
+
     return { success: true, duplicate: false };
   };
 
@@ -1904,6 +1706,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     await updateStudentProfile(payload);
+
+    // Emit canonical Learning Event (Step 6 Learning Evidence Foundation)
+    recordLearningEvent({
+      eventType: 'ASSESSMENT_COMPLETED',
+      courseId: 'cs-4200',
+      unitId,
+      assessmentId: `quiz_${unitId}`,
+      studentId: currentUser.uid,
+      metadata: {
+        score: scorePercent,
+        correctness: passed,
+        attemptNumber: currentAttempts,
+        xpEarned: xpBonus,
+      },
+    }).catch((err) => {
+      console.warn('[LearningEvent] Non-fatal emit error on quiz completed:', err);
+    });
   };
 
   
@@ -1944,6 +1763,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn("Failed to persist practice score:", e);
     }
+
+    // Emit canonical Learning Event (Step 6 Learning Evidence Foundation)
+    recordLearningEvent({
+      eventType: 'PRACTICE_COMPLETED',
+      courseId: 'cs-4200',
+      activityId: categoryId,
+      studentId: currentUser.uid,
+      metadata: {
+        score: scorePercent,
+        xpEarned: xpBonus,
+      },
+    }).catch((err) => {
+      console.warn('[LearningEvent] Non-fatal emit error on practice completed:', err);
+    });
   };
 
   return (

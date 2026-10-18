@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEEE 802.1X – CRESCO CN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--a1:#4f46e5;--a2:#0891b2;--a3:#be185d}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit;cursor:pointer}
+.aurora{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.27;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--a1);left:-15vmax;top:-20vmax}.aurora i:nth-child(2){background:var(--a2);right:-18vmax;top:10vmax;animation-duration:32s}
+.aurora i:nth-child(3){background:var(--a3);left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;height:100vh;display:flex;flex-direction:column}
+.topbar{padding:12px 18px}.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;font-size:19px;box-shadow:0 6px 24px -6px var(--a1)}
+.crumbs{color:var(--muted);font-size:12px}.crumbs b{color:var(--ink)}.crumbs span{margin:0 6px;opacity:.5}
+h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}.title p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:0 18px 18px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px)}
+.card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:13px 15px}
+.stage{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.13),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+.hud{display:flex;gap:8px;flex-wrap:wrap;padding:12px 12px 0}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);min-width:96px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.stat b{font:700 15px var(--mono)}
+.vp{flex:1;position:relative;min-height:300px}#svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px}.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;min-height:0;padding-right:4px}.side>*{flex:none}
+.idea{font-size:12.5px;line-height:1.55;color:#c3cde6}.idea b{color:#fff}
+select{background:#0d1426;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:600;font-size:12.5px}#scn{width:100%}
+.ctl{display:flex;gap:8px;margin-top:10px}.btn{padding:8px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;transition:.2s}.btn:hover{background:rgba(255,255,255,.12)}
+.btn.pri{background:linear-gradient(135deg,var(--a1),var(--a2));border:0;flex:1}
+.narr{border-left:3px solid var(--a2)}.narr.ok{border-left-color:#34d399}.narr.deny{border-left-color:#fb7185}.narr.warn{border-left-color:#fbbf24}
+.narr h3{color:var(--ink);font-size:12px;letter-spacing:.04em;text-transform:none}.narr p{margin:0;font-size:12.5px;line-height:1.55;color:#c3cde6}
+.tbl{display:grid;gap:5px;font:12px var(--mono)}.row{display:flex;justify-content:space-between;gap:10px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.04);transition:.3s}.row span{color:var(--muted)}.row.hl{background:rgba(52,211,153,.18);outline:1px solid #34d399}
+ol{margin:0;padding:0;list-style:none;display:grid;gap:4px}li{display:flex;gap:9px;align-items:center;padding:5px 8px;border-radius:9px;font-size:12px;color:var(--dim);transition:.3s}
+li i{font:700 10px var(--mono);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-style:normal}
+li.done{color:var(--muted)}li.done i{background:#34d399;color:#04281c;border:0}li.on{color:#fff;background:rgba(255,255,255,.08)}li.on i{background:var(--a2);color:#001;border:0}
+/* svg */
+.lk{stroke:#1f2a44;stroke-width:5;stroke-linecap:round}
+.body{fill:#0e1628;stroke-width:3}.halo{fill:none;stroke-width:2;opacity:.25}.em{font-size:28px;text-anchor:middle;dominant-baseline:central}
+.nl{font:700 13px Inter;fill:#fff;text-anchor:middle}.ns{font:500 10px Inter;fill:var(--muted);text-anchor:middle}.ct{font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}.chip{transition:opacity .3s}
+.pl{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.wm{font:700 11px Inter;letter-spacing:.2em;text-anchor:middle;opacity:.65}.big{font-size:13px}
+.rip{fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:rip 1.1s ease-out forwards}
+@keyframes rip{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.fl{animation:fl 14s linear infinite}@keyframes fl{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-380px);opacity:0}}
+.scan{animation:scan 2.4s ease-in-out infinite alternate}@keyframes scan{to{transform:translateX(14px)}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.barrier{transform-origin:500px 270px;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+svg[data-gate=open] .barrier{transform:rotate(88deg)}svg[data-gate=deny] .barrier,svg[data-gate=deny] .door{animation:shake .25s 3}
+.lamp{fill:#fb7185;transition:.4s;filter:drop-shadow(0 0 6px currentColor)}svg[data-gate=open] .lamp{fill:#34d399}
+.door{transition:transform .9s cubic-bezier(.3,1.2,.5,1)}svg[data-gate=open] .door{transform:translateY(-92px)}
+.lko{opacity:0}svg[data-gate=open] .lko{opacity:1}svg[data-gate=open] .lkc{opacity:0}.cband{opacity:.35;transition:.6s}svg[data-gate=open] .cband{opacity:1}
+@media(max-width:900px){body{overflow:auto}.app{height:auto}.layout{grid-template-columns:1fr}.side{overflow:visible}}
+</style></head><body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar"><div class="brand"><div class="logo" id="logo"></div><div class="title"><div class="crumbs">CRESCO CN<span>›</span>Unit III · Network Layer<span>›</span><b id="cr"></b></div><h1 id="h1"></h1><p id="sub"></p></div></div></header>
+<main class="layout">
+<section class="card stage"><div class="hud" id="hud"></div><div class="vp"><svg id="svg" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg></div><div class="legend" id="lg"></div></section>
+<aside class="side">
+<div class="card pad"><h3>Key idea</h3><div class="idea" id="idea"></div></div>
+<div class="card pad"><h3>Scenario</h3><select id="scn"></select><div class="ctl"><button class="btn pri" id="play"></button><button class="btn" id="step">⏭ Step</button><button class="btn" id="rst">↺</button><select id="spd"><option value=".6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select></div></div>
+<div class="card pad narr" id="narr"><h3 id="nt"></h3><p id="nx"></p></div>
+<div class="card pad"><h3 id="tt"></h3><div class="tbl" id="tb"></div></div>
+<div class="card pad"><h3>Event timeline</h3><ol id="tl"></ol></div>
+</aside></main></div>
+<script>
+const C='#22d3ee',G='#34d399',X='#fb7185',A='#fbbf24',V='#a78bfa',P='#f472b6',D='#5b6785';
+const hop=(from,to,label,color,title,text,x={})=>({from,to,label,color,title,text,...x});
+
+const E=C,R=A;
+const open=ok=>[hop('pc','sw','EAPOL-Start',E,'EAPOL-Start','The supplicant asks to authenticate. EAPOL frames are the <b>only</b> thing the uncontrolled port accepts.',{set:{pc:['requesting',C]},tbl:{'Auth state':'CONNECTING'}}),
+ hop('sw','pc','EAP-Req/Identity',E,'Identity request','The switch (authenticator) asks the client for its identity.'),
+ hop('pc','srv','EAP-Resp/Identity',[E,R],'Identity forwarded','The switch wraps the EAP response into a RADIUS Access-Request and sends it to the server.',{via:'sw',label:['EAP-Resp/Identity','Access-Request'],tbl:{'Auth state':'AUTHENTICATING'}}),
+ hop('srv','pc','Access-Challenge',[R,E],'Method exchange','The server starts the chosen EAP method. The switch relays it without understanding it.',{via:'sw',label:['Access-Challenge','EAP-Request']}),
+ hop('pc','srv','EAP-Response',[E,R],'Credentials sent','The client answers with its proof (password hash or certificate).',{via:'sw',label:['EAP-Response','Access-Request']}),
+ {title:ok?'Server verifies ✓':'Server verifies ✗',text:ok?'Credentials are valid.':'Credentials are invalid.',pulse:'srv',pc:ok?G:X,set:{srv:[ok?'valid ✓':'invalid ✗',ok?G:X]}},
+ hop('srv','pc','x',ok?G:X,ok?'Port authorized':'Port stays blocked',ok?'On Access-Accept the switch moves the <b>controlled port</b> to AUTHORIZED. The gate opens.':'On Access-Reject the switch sends EAP-Failure. The controlled port stays UNAUTHORIZED.',
+  {via:'sw',label:ok?['Access-Accept','EAP-Success']:['Access-Reject','EAP-Failure'],gate:ok?'open':'deny',set:{sw:[ok?'port AUTHORIZED':'port UNAUTHORIZED',ok?G:X],pc:[ok?'authenticated ✓':'rejected',ok?G:X]},tbl:{'Controlled port':ok?'OPEN':'BLOCKED','Auth state':ok?'AUTHENTICATED':'FAILED'},tele:{PORT:ok?'OPEN':'BLOCKED'}}),
+ hop('pc','lan','DATA',ok?G:X,ok?'Data flows':'Data still blocked',ok?'Normal traffic now passes through the controlled port into the protected LAN.':'Without authentication nothing reaches the LAN.',{via:'sw',bounce:!ok,end:ok?'ok':'deny'})];
+const pre=[{title:'Link up · port locked',text:'A cable is plugged in. The port starts <b>UNAUTHORIZED</b>: the controlled port is closed and only EAPOL passes.',pulse:'sw',pc:X,set:{sw:['port UNAUTHORIZED',X],pc:['connected',C]},tele:{PORT:'BLOCKED'}},
+ hop('pc','lan','DATA',X,'Try data first','The client tries to send normal traffic before authenticating.',{via:'sw',bounce:true,set:{sw:['dropped',X]}})];
+const st=()=>({'Controlled port':'BLOCKED','Uncontrolled port':'EAPOL only','Auth state':'DISCONNECTED'});
+const init={pc:['unplugged',D],sw:['port UNAUTHORIZED',X],srv:['ready',V]};
+const CFG={topic:'IEEE 802.1X',title:'IEEE 802.1X Port-Based Access Control',sub:'Smart network gate · the port opens only after authentication',icon:'🔐',a:['#4f46e5','#0891b2','#7c3aed'],
+ idea:'<b>802.1X</b> blocks a switch port until the device authenticates. Roles: <b>supplicant</b> (client), <b>authenticator</b> (switch) and <b>authentication server</b> (RADIUS). Until success, only <b>EAPOL</b> passes through the uncontrolled port.',
+ tblTitle:'Port status',legend:[[E,'EAPOL'],[R,'RADIUS'],[G,'Authorized'],[X,'Blocked']],tele:{PORT:'BLOCKED'},
+ nodes:[{id:'pc',x:100,y:235,i:'💻',l:'Supplicant',s:'client PC',c:C},{id:'sw',x:360,y:235,i:'🔐',l:'Authenticator',s:'switch port',c:A},{id:'srv',x:360,y:75,i:'🛡️',l:'Auth Server',s:'RADIUS',c:V},{id:'lan',x:700,y:235,i:'🌐',l:'Protected LAN',s:'servers · internet',c:G}],
+ links:[['pc','sw'],['sw','srv'],['sw','lan']],
+ sc:{ok:{name:'Authentication success',tbl:st(),init,intro:'Press <b>Play</b> to see the gate stay locked until the client proves who it is.',steps:[...pre,...open(true)]},
+  bad:{name:'Authentication failure',tbl:st(),init,intro:'The client sends invalid credentials, so the gate must stay shut.',steps:[...pre,...open(false)]},
+  off:{name:'Success then EAPOL-Logoff',tbl:st(),init,intro:'After logging off, the port locks again.',steps:[...pre,...open(true).slice(0,-1),
+   hop('pc','lan','DATA ✓',G,'Data flows','The port is authorized.',{via:'sw'}),
+   hop('pc','sw','EAPOL-Logoff',E,'Client logs off','EAPOL-Logoff returns the port to UNAUTHORIZED.',{gate:'closed',set:{sw:['port UNAUTHORIZED',X],pc:['logged off',D]},tbl:{'Controlled port':'BLOCKED','Auth state':'LOGOFF'},tele:{PORT:'BLOCKED'},end:'warn'})]}},
+ world:()=>`<rect x="60" y="222" width="300" height="26" rx="13" fill="rgba(34,211,238,.08)"/><rect class="cband" x="360" y="222" width="380" height="26" rx="13" fill="rgba(129,140,248,.1)"/>
+ <text x="210" y="276" class="wm" fill="#22d3ee">UNCONTROLLED PORT · EAPOL ONLY</text><text x="635" y="276" class="wm" fill="#818cf8">CONTROLLED PORT</text>
+ <rect x="528" y="104" width="24" height="98" rx="5" fill="rgba(129,140,248,.07)" stroke="rgba(129,140,248,.25)"/><rect x="524" y="266" width="32" height="8" rx="3" fill="#33405f"/>
+ <g class="door"><rect x="534" y="200" width="12" height="68" rx="3" fill="#6366f1" stroke="#a5b4fc"/></g>
+ <text class="lkc" x="540" y="298" text-anchor="middle" font-size="18">🔒</text><text class="lko" x="540" y="298" text-anchor="middle" font-size="18">🔓</text>
+ <text x="400" y="38" class="wm big" fill="#818cf8">PORT-BASED NETWORK ACCESS CONTROL</text>`};
+
+const NS='http://www.w3.org/2000/svg',$=s=>document.querySelector(s),svg=$('#svg');
+let SC,idx=0,busy=false,playing=false,speed=1,tok=0,pos={},count=0,TELE={},TBL={},HL='',layer;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/speed));
+const el=(t,a={},p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+const mv=(g,p,q,ms,t)=>new Promise(res=>{const s=performance.now(),d=ms/speed;(function f(n){if(t!==tok)return res();const u=Math.min(1,(n-s)/d),e=ease(u);g.setAttribute('transform',`translate(${p.x+(q.x-p.x)*e},${p.y+(q.y-p.y)*e})`);u<1?requestAnimationFrame(f):res()})(s)});
+async function fly(pts,labels,cols,bounce,t){
+  const pick=(v,i)=>Array.isArray(v)?v[Math.min(i,v.length-1)]:v;
+  const g=el('g',{},layer),r=el('rect',{y:-11,height:22,rx:11,fill:'#0b1222','stroke-width':1.8},g),tx=el('text',{class:'pl'},g);
+  g.setAttribute('transform',`translate(${pts[0].x},${pts[0].y})`);
+  const label=(l,c)=>{tx.textContent=l;const w=l.length*6.8+20;r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',c);g.style.filter=`drop-shadow(0 0 7px ${c})`};
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],last=i===pts.length-1;label(pick(labels,i-1),pick(cols,i-1));
+    if(last&&bounce){const m={x:a.x+(b.x-a.x)*.74,y:a.y+(b.y-a.y)*.74};await mv(g,a,m,750,t);if(t!==tok)return g.remove();label(pick(labels,i-1)+' ✗',X);await sleep(350);await mv(g,m,a,600,t)}
+    else await mv(g,a,b,750,t);
+    if(t!==tok)return g.remove();
+  }
+  g.style.transition='opacity .25s';g.style.opacity=0;await sleep(250);g.remove();
+}
+function pulse(id,c){const n=pos[id],e=el('circle',{cx:n.x,cy:n.y,r:36,class:'rip',stroke:c||n.c},layer);setTimeout(()=>e.remove(),1200)}
+function stat(id,txt,col){const g=$('#n_'+id+' .chip');if(!txt){g.style.opacity=0;return}g.style.opacity=1;const t=g.querySelector('text'),r=g.querySelector('rect'),w=txt.length*6.5+20;t.textContent=txt;t.setAttribute('fill',col);r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',col)}
+function build(){
+  svg.innerHTML='<defs><pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#fbbf24"/><rect x="6" width="6" height="12" fill="#1a1a1a"/></pattern></defs>';
+  svg.insertAdjacentHTML('beforeend',CFG.world());
+  CFG.links.forEach(([a,b])=>el('line',{x1:pos[a].x,y1:pos[a].y,x2:pos[b].x,y2:pos[b].y,class:'lk'}));
+  CFG.nodes.forEach(n=>{const g=el('g',{id:'n_'+n.id,transform:`translate(${n.x},${n.y})`});
+    el('circle',{r:42,class:'halo',stroke:n.c},g);el('circle',{r:32,class:'body',stroke:n.c},g);
+    el('text',{class:'em'},g).textContent=n.i;el('text',{class:'nl',y:52},g).textContent=n.l;el('text',{class:'ns',y:65},g).textContent=n.s;
+    const c=el('g',{class:'chip',transform:'translate(0,86)'},g);el('rect',{y:-10,height:20,rx:10,fill:'#0b1222','stroke-width':1.4},c);el('text',{class:'ct'},c)});
+  layer=el('g');
+}
+function hud(){const s=[['STEP',`${idx}/${SC.steps.length}`],['FRAMES',count],...Object.entries(TELE)];$('#hud').innerHTML=s.map(([k,v])=>`<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('')}
+function tbl(){$('#tb').innerHTML=Object.entries(TBL).map(([k,v])=>`<div class="row${k===HL?' hl':''}"><span>${k}</span><b>${v}</b></div>`).join('')}
+function narr(t,x,cls=''){$('#nt').textContent=t;$('#nx').innerHTML=x;$('#narr').className='card pad narr '+cls}
+function btn(){$('#play').textContent=playing?'⏸ Pause':idx>=SC.steps.length?'↻ Replay':'▶ Play'}
+function reset(){
+  tok++;busy=false;playing=false;idx=0;count=0;TELE={...CFG.tele};TBL={...SC.tbl};HL='';build();
+  svg.dataset.gate=SC.gate||'closed';CFG.nodes.forEach(n=>stat(n.id,''));for(const k in SC.init)stat(k,...SC.init[k]);
+  $('#tl').innerHTML=SC.steps.map((s,i)=>`<li id="t${i}"><i>${i+1}</i>${s.title}</li>`).join('');
+  narr('Ready',SC.intro);hud();tbl();btn();
+}
+async function run(s,t){
+  const li=$('#t'+idx);li.className='on';narr(s.title,s.text);
+  if(s.pulse)pulse(s.pulse,s.pc);
+  if(s.from){const tos=[].concat(s.to);await Promise.all(tos.map(to=>fly([pos[s.from],...(s.via?[pos[s.via]]:[]),pos[to]],s.label,s.color,s.bounce,t)));count+=tos.length}
+  else await sleep(1000);
+  if(t!==tok)return false;
+  for(const k in s.set)stat(k,...s.set[k]);Object.assign(TELE,s.tele||{});Object.assign(TBL,s.tbl||{});HL=s.hl||'';
+  if(s.gate)svg.dataset.gate=s.gate;if(s.end)narr(s.title,s.text,s.end);
+  li.className='done';await sleep(450);return t===tok;
+}
+async function next(){if(busy||idx>=SC.steps.length)return;busy=true;const t=tok;if(!await run(SC.steps[idx],t))return;busy=false;idx++;hud();tbl();btn()}
+$('#play').onclick=async()=>{if(playing){playing=false;btn();return}if(idx>=SC.steps.length)reset();playing=true;btn();while(playing&&idx<SC.steps.length)await next();if(tok)playing=false;btn()};
+$('#step').onclick=()=>{playing=false;btn();next()};$('#rst').onclick=reset;
+$('#spd').onchange=e=>speed=+e.target.value;
+$('#scn').onchange=e=>{SC=CFG.sc[e.target.value];reset()};
+CFG.nodes.forEach(n=>pos[n.id]=n);
+['--a1','--a2','--a3'].forEach((v,i)=>document.documentElement.style.setProperty(v,CFG.a[i]));
+$('#logo').textContent=CFG.icon;$('#cr').textContent=CFG.topic;$('#h1').textContent=CFG.title;$('#sub').textContent=CFG.sub;$('#idea').innerHTML=CFG.idea;$('#tt').textContent=CFG.tblTitle;
+$('#lg').innerHTML=CFG.legend.map(([c,t])=>`<div class="lg"><i style="background:${c}"></i>${t}</div>`).join('');
+$('#scn').innerHTML=Object.entries(CFG.sc).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+SC=Object.values(CFG.sc)[0];reset();
+</script></body></html>

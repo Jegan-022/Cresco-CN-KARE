@@ -1,50 +1,101 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Real-time student leaderboard & progress collection
+    // Sanitized public leaderboard projection (read-only to clients; authoritative updates by trusted backend)
+    match /public_leaderboard/{uid} {
+      // Allow public read for leaderboard standings and cohort benchmarking
+      allow read: if true;
+      // Client writes strictly denied to prevent tampering with XP, level, badges, or progress
+      allow write: if false;
+    }
+
+    // Private student profile & progress collection (strictly owner-isolated)
     match /students/{studentId} {
-      // Allow public read so all enrolled cohort members and friends see live standings
-      allow read: if true;
-      // Allow students to save and update their progress & XP
-      allow write: if request.auth != null || (studentId is string && studentId.size() > 0);
+      // Only the authenticated student owner may read their own private profile record
+      allow read: if request.auth != null && (request.auth.uid == studentId || request.auth.uid == resource.data.uid);
+      // Allow authenticated student to save and update their own progress & XP
+      allow write: if request.auth != null && (request.auth.uid == studentId || request.auth.uid == request.resource.data.uid);
     }
 
-    // Unique student username registry for open registration
+    // Unique student username registry for registration lookup (authenticated only)
     match /usernames/{username} {
-      allow read: if true;
-      allow write: if request.auth != null || (username is string && username.size() > 0);
+      // Require authenticated session to prevent unauthenticated harvesting of historical claims
+      allow read: if request.auth != null;
+      // Allow authenticated student to claim their own username
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
 
-    // User authentication profiles
+    // User authentication profiles & subcollections (strictly owner-isolated)
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      // Only the authenticated account owner may read or write their private user profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /lessonCompletions/{completionId} {
+        // Only the authenticated student may read or record their own lesson completions
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
-    // Dynamic curriculum, courses, units, and interactive learning modules
+    // Dynamic curriculum, courses, units, and learning modules (read-only for client sessions)
     match /courses/{courseId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /curriculum_units/{unitId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /modules/{moduleId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /curriculum_modules/{modId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /flashcards/{cardId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /course_management/{docId} {
       allow read: if true;
+      allow write: if false;
+    }
+
+    // Ephemeral live classroom polling state
+    match /live_classroom/{docId} {
+      allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Default fallback access
+    // Granular learning evidence append-only telemetry collection (strictly owner-isolated)
+    match /learning_events/{eventId} {
+      // Only authenticated owner can read their own historical learning events
+      allow read: if request.auth != null && request.auth.uid == resource.data.studentId;
+
+      // Only authenticated owner can create an event tied to their own identity (prevents spoofing)
+      allow create: if request.auth != null 
+                    && request.auth.uid == request.resource.data.studentId
+                    && request.resource.data.studentId is string
+                    && request.resource.data.eventId is string;
+
+      // Strictly append-only: historical evidence cannot be modified or deleted
+      allow update, delete: if false;
+    }
+
+    // Default fallback access: deny any unlisted collection to prevent wildcard bypass
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

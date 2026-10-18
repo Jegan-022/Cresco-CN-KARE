@@ -8,7 +8,7 @@ interface BottomNavProps {
   onNavigate: (tab: NavTab) => void;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onNavigate }) => {
+export const BottomNav: React.FC<BottomNavProps> = React.memo(({ activeTab, onNavigate }) => {
   const items = [
     { id: 'home' as NavTab, label: 'Home', icon: Home },
     { id: 'learn-map' as NavTab, label: 'Learn', icon: Compass },
@@ -47,4 +47,4 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onNavigate }) =
       </div>
     </nav>
   );
-};
+});

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Addressing – CRESCO CN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--card:rgba(255,255,255,.045);--cyan:#22d3ee;--blue:#60a5fa;--amber:#fbbf24;--green:#34d399;--violet:#a78bfa;--pink:#f472b6;--red:#fb7185;--indigo:#818cf8;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}button:disabled{opacity:.35;cursor:not-allowed}
+.aurora{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.28;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:#4f46e5;left:-15vmax;top:-20vmax}
+.aurora i:nth-child(2){background:#0891b2;right:-18vmax;top:10vmax;animation-duration:32s;animation-delay:-8s}
+.aurora i:nth-child(3){background:#be185d;left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s;animation-delay:-14s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#22d3ee);display:grid;place-items:center;font-weight:800;box-shadow:0 6px 24px -6px #6366f1}
+.crumbs{color:var(--muted);font-size:12px;font-weight:500}.crumbs b{color:var(--ink);font-weight:600}.crumbs span{margin:0 6px;opacity:.5}
+.title h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+.tbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.tbtn:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:14px;padding:0 18px 18px}
+.stage-col{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;min-height:0}.side>*{flex:none}
+.side::-webkit-scrollbar{width:7px}.side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.card h3{margin:0 0 10px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:14px 16px}
+.stage{flex:1;min-height:340px;position:relative;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.14),transparent 70%),radial-gradient(circle,rgba(255,255,255,.075) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+#svg{position:absolute;inset:0;width:100%;height:100%;user-select:none}
+.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;z-index:3;pointer-events:none}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.pill b{color:var(--ink);font-size:12.5px;letter-spacing:0;text-transform:none}
+.dot{width:8px;height:8px;border-radius:50%}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);backdrop-filter:blur(10px);min-width:92px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stat b{font:700 17px var(--mono);letter-spacing:-.02em}.stat em{font-style:normal;font-size:10px;color:var(--dim);margin-left:4px}
+.legend{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:3;max-width:75%}
+.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted);font-weight:500}
+.lg i{width:10px;height:10px;border-radius:50%;border:2px solid}
+.hint{position:absolute;right:14px;bottom:14px;z-index:3;font-size:11px;color:var(--dim);text-align:right;line-height:1.5;pointer-events:none}
+.hint kbd{font:600 10px var(--mono);padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--muted)}
+.dock{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dock-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.06);transition:.2s}
+.ib:hover:not(:disabled){background:rgba(255,255,255,.14);transform:translateY(-1px)}
+.ib svg,.play svg{width:19px;height:19px}
+.play{height:44px;padding:0 22px;border-radius:14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#6366f1,#06b6d4);box-shadow:0 8px 28px -8px #6366f1;transition:.25s;min-width:116px;justify-content:center}
+.play:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.play.on{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 28px -8px #f59e0b}
+.cbtn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:7px;transition:.2s}
+.cbtn:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.cbtn.glow{border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.16);color:#f0e1ff;animation:glowbtn 1.8s ease-in-out infinite}
+.cbtn.red{border-color:rgba(251,113,133,.6);background:rgba(251,113,133,.14);color:#fecdd3}
+@keyframes glowbtn{50%{box-shadow:0 0 22px -2px rgba(168,85,247,.7)}}
+.speed{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;font-weight:600}
+.speed output{font:600 12px var(--mono);color:var(--ink);min-width:38px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.14);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.5);cursor:pointer}
+.timeline{height:30px;cursor:pointer;touch-action:none;border-radius:8px;outline:none}.timeline:focus-visible{box-shadow:0 0 0 2px var(--indigo)}
+.ticks{display:flex;gap:3px;height:100%;align-items:flex-end}
+.tick{flex:1;min-width:2px;border-radius:3px;opacity:.28;transition:opacity .2s;height:60%}
+.tick.past{opacity:.95}.tick.on{opacity:1;height:100%;box-shadow:0 0 0 1.5px #fff,0 0 14px currentColor}
+.tl-key{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);align-items:center;margin-top:5px}
+.tl-key span{display:flex;align-items:center;gap:5px}.tl-key i{width:8px;height:8px;border-radius:3px}
+.tl-key .ctr{margin-left:auto;font:600 12px var(--mono);color:var(--ink)}
+.sw{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+.sw input{display:none}.knob{width:34px;height:20px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;transition:.25s}
+.knob::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
+.sw input:checked+.knob{background:linear-gradient(135deg,#6366f1,#06b6d4)}.sw input:checked+.knob::after{transform:translateX(14px)}
+.narr{position:relative;overflow:hidden}
+.narr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--nc,var(--cyan));box-shadow:0 0 22px var(--nc,var(--cyan))}
+.narr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nbadge{padding:3px 10px;border-radius:99px;font:800 10px Inter;letter-spacing:.12em;text-transform:uppercase;color:#05101c;background:var(--nc,var(--cyan))}
+.nstep{font:600 11px var(--mono);color:var(--muted)}
+.narr h2{margin:0 0 6px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.narr p{margin:0;line-height:1.62;color:#cdd6ec;font-size:13.5px}.narr p b{color:#fff}
+.tipbox{margin-top:11px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.14);font-size:12px;line-height:1.5;color:var(--muted)}.tipbox b{color:var(--amber)}
+.swap-in{animation:swapin .35s ease-out}@keyframes swapin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.kvs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.kv small{display:block;font:700 9.5px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.kv b{font:700 13.5px var(--mono)}
+.jbar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:10px}
+.jbar i{display:block;height:100%;background:linear-gradient(90deg,#f472b6,#a78bfa);box-shadow:0 0 12px #c084fc;transition:width .5s}
+.hops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hop{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);opacity:.45;transition:.35s}
+.hop .hn{font-weight:800}.hop .ha{color:var(--dim);font:500 11px var(--mono)}.hop .hc{margin-left:auto;font:700 12px var(--mono);color:var(--amber)}
+.hop.active{opacity:1;border-color:var(--amber);background:rgba(251,191,36,.1)}.hop.lit{opacity:1;border-color:rgba(192,132,252,.6);background:rgba(168,85,247,.14)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td{padding:7px 6px;border-top:1px solid rgba(255,255,255,.06);font-family:var(--mono)}td:first-child{font:700 12px Inter;color:var(--muted)}
+details summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+details summary::-webkit-details-marker{display:none}details summary::after{content:'+';font:600 16px var(--mono)}details[open] summary::after{content:'–'}details[open] summary{margin-bottom:10px}
+.log{max-height:170px;overflow-y:auto;font:12px/1.5 var(--mono);display:flex;flex-direction:column;gap:5px}.log div{display:flex;gap:8px;color:#aab6d3}.log .cur{color:#fff}
+.vocab{display:grid;gap:9px}.vocab div{font-size:12.5px;line-height:1.5;color:#b9c4de}.vocab b{color:#fff}
+.pop{animation:rip .9s ease-out forwards;fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center}
+@keyframes rip{from{transform:scale(.8);opacity:.95}to{transform:scale(2.8);opacity:0}}
+@keyframes flow{to{stroke-dashoffset:-30}}
+@media (max-width:1100px){body{overflow:auto}.app{height:auto;min-height:100vh}.layout{grid-template-columns:minmax(0,1fr)}.stage{flex:none;height:64vh;min-height:380px}.side{overflow:visible}.hint{display:none}.legend{max-width:100%;bottom:8px}}
+@media (max-width:560px){.stat{min-width:0;padding:5px 9px}.stat b{font-size:14px}.cbtn span.lbl{display:none}}
+@media (prefers-reduced-motion:reduce){.aurora i{animation:none}}
+
+.rl{font:800 9.5px Inter;letter-spacing:.1em;fill:#8e9bb8}.dec{font:600 12px var(--mono);fill:#cfd8ee}.bt{font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}
+.bc{transition:.3s}.hl{filter:drop-shadow(0 0 6px currentColor);stroke-width:1.8}
+.bd{stroke:#fff;stroke-dasharray:3 3;opacity:.7}.bl{font:800 10px Inter;letter-spacing:.1em}
+.dist{fill-opacity:.05;stroke-width:1.5;stroke-dasharray:6 6}.dt{font:800 10px Inter;letter-spacing:.12em}
+.hs .rc{fill:#0e1628;stroke:#33405f;stroke-width:1.5}.hs .em{font-size:24px;text-anchor:middle;dominant-baseline:central}
+.hs .ad{font:500 9.5px var(--mono);fill:#8e9bb8;text-anchor:middle}.hs.me .rc{stroke:var(--cyan);fill:#0b2a3a;filter:drop-shadow(0 0 10px var(--cyan))}
+.hs.to .rc{stroke:var(--pink);fill:#3a1230;filter:drop-shadow(0 0 10px var(--pink))}.hs.to .ad,.hs.me .ad{fill:#fff;font-weight:700}
+.tg{font:800 8.5px Inter;letter-spacing:.1em;text-anchor:middle}
+#lt text{font-size:13px;text-anchor:middle;dominant-baseline:central}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}.field label{font:700 10px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.field input[type=text]{width:100%;padding:9px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font:600 14px var(--mono);outline:none}
+.field input[type=text]:focus{border-color:var(--cyan)}.field input.bad{border-color:var(--red);background:rgba(251,113,133,.1)}
+.field input[type=range]{width:100%}
+.row{display:flex;gap:6px;flex-wrap:wrap}.mini{padding:6px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12px;transition:.2s}.mini:hover{background:rgba(255,255,255,.14)}
+.mini.c{border-color:rgba(34,211,238,.5);color:var(--cyan)}.mini.p{border-color:rgba(244,114,182,.5);color:var(--pink)}
+.verdict{margin-top:10px;padding:9px 12px;border-radius:12px;text-align:center;font-weight:600;font-size:12.5px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.verdict.ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:#a7f3d0}.verdict.no{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.4);color:#fecdd3}
+</style></head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">C</div><div class="title">
+    <div class="crumbs">CRESCO CN<span>/</span>Practice<span>/</span>Unit 3<span>/</span><b>Network Addressing</b></div>
+    <h1>Postal Address City <span style="color:var(--cyan)">· IP Addressing Lab</span></h1></div></div>
+  <div class="topbtns"><button class="tbtn" id="btn-def">↺ Reset addresses</button></div>
+</header>
+<main class="layout">
+<section class="stage-col">
+  <div class="card stage">
+    <div class="hud">
+      <div class="pill"><span class="dot" style="background:var(--cyan)"></span>Street (network)<span class="dot" style="background:var(--amber)"></span>House (host)<b id="cls"></b></div>
+      <div class="stats">
+        <div class="stat"><small>Network ID</small><b id="st-n"></b></div>
+        <div class="stat"><small>Mask</small><b id="st-m"></b></div>
+        <div class="stat"><small>Houses</small><b id="st-u"></b></div>
+      </div>
+    </div>
+    <svg id="svg" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Address bits and postal map">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+      <g id="bits"></g><g id="map"></g>
+      <g id="lt" style="filter:drop-shadow(0 0 10px #d946ef)"><circle r="14" fill="url(#dg)" stroke="#f5d0fe" stroke-width="1.5"/><text>✉</text></g>
+    </svg>
+    <div class="legend">
+      <span class="lg"><i style="border-color:var(--cyan);background:rgba(34,211,238,.25)"></i>Network bits</span>
+      <span class="lg"><i style="border-color:var(--amber);background:rgba(251,191,36,.2)"></i>Host bits</span>
+      <span class="lg"><i style="border-color:#33405f;background:#0e1628"></i>Cleared by mask</span>
+      <span class="lg"><i style="border-color:#f5d0fe;background:#8b5cf6"></i>Letter (packet)</span>
+    </div>
+    <div class="hint">Change the address or <b>/prefix</b> and the street redraws<br><kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> step · <kbd>R</kbd> restart</div>
+  </div>
+  <div class="card dock">
+    <div class="dock-row">
+      <div class="transport">
+        <button class="ib" id="b-reset" aria-label="Restart"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M4.6 15a8 8 0 100-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ib" id="b-prev" aria-label="Step back"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="play" id="b-play"></button>
+        <button class="ib" id="b-next" aria-label="Step forward"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="cbtn glow" id="b-skip">✉<span class="lbl">Deliver letter</span></button>
+      </div>
+      <div class="speed">Speed <input type="range" id="speed" min="1" max="10" value="5" aria-label="Speed"><output id="sp-o">1.5×</output></div>
+    </div>
+    <div><div class="timeline" id="tl" tabindex="0" role="slider" aria-label="Step timeline"><div class="ticks" id="ticks"></div></div>
+      <div class="tl-key"><span><i style="background:var(--cyan)"></i>Address</span><span><i style="background:var(--blue)"></i>Split</span><span><i style="background:var(--amber)"></i>Mask (AND)</span><span><i style="background:var(--violet)"></i>Compare</span><span><i style="background:var(--green)"></i>Deliver</span><span class="ctr">Step <span id="ctr"></span></span></div></div>
+    <div><label class="sw"><input type="checkbox" id="tips" checked><span class="knob"></span>Beginner tips</label></div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card pad narr" id="narr"></div>
+  <div class="card pad"><h3>Set the addresses</h3>
+    <div class="field"><label>Your IP address</label><input type="text" id="ip" value="192.168.10.25" spellcheck="false"></div>
+    <div class="field"><label>Prefix length <b id="pf" style="color:var(--cyan);font:700 12px var(--mono)"></b></label><input type="range" id="pre" min="8" max="30" value="24" style="width:100%"><div class="row"><button class="mini c" data-p="8">Class A /8</button><button class="mini c" data-p="16">Class B /16</button><button class="mini c" data-p="24">Class C /24</button></div></div>
+    <div class="field"><label>Destination IP</label><input type="text" id="dst" value="192.168.10.77" spellcheck="false"><div class="row"><button class="mini c" id="p-same">Same street</button><button class="mini p" id="p-other">Other street</button></div></div>
+  </div>
+  <div class="card pad"><h3>Address breakdown</h3><table id="tbl"></table></div>
+  <details class="card pad"><summary>Postal analogy</summary><div class="vocab">
+    <div><b>Network ID</b> = the street name. Everyone on the street shares it.</div>
+    <div><b>Host ID</b> = the house number, unique within the street.</div>
+    <div><b>Subnet mask</b> = the rule saying where the street name ends and the house number begins.</div>
+    <div><b>Default gateway</b> = the post office that forwards letters to other streets.</div>
+    <div><b>Broadcast address</b> = shouting to every house on the street at once.</div>
+  </div></details>
+</aside>
+</main></div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e};
+const parse=s=>{const m=s.trim().split('.');if(m.length!=4||m.some(x=>!/^\d{1,3}$/.test(x)||+x>255))return null;return m.reduce((a,x)=>a*256+ +x,0)>>>0};
+const str=n=>[24,16,8,0].map(s=>(n>>>s)&255).join('.'),mask=p=>(0xFFFFFFFF<<(32-p))>>>0,bit=(n,b)=>(n>>>(31-b))&1;
+const DIM=1e3,S=7;let ip=parse('192.168.10.25'),dst=parse('192.168.10.77'),P=24,idx=0,playing=false,timer=null,raf=0,busy=false,pos={x:0,y:0},H={};
+const sp=()=>+$('speed').value/3.3;
+function C(){const m=mask(P),net=(ip&m)>>>0,size=2**(32-P);return{m,net,size,bc:(net+size-1)>>>0,usable:size-2,dn:(dst&m)>>>0,gw:(net+1)>>>0,local:((dst&m)>>>0)==net}}
+const cls=n=>{const a=n>>>24;return a<128?'A':a<192?'B':a<224?'C':a<240?'D (multicast)':'E'};
+function nar(i){const c=C(),sn=str(c.net),dn=str(c.dn),hb=32-P;
+ const warn=(dst==c.dn||dst==((c.dn+c.size-1)>>>0))?` <b style="color:var(--red)">Note:</b> the destination is a network/broadcast address, not a normal house.`:'';
+ return[{b:'Address',c:'#22d3ee',h:'Two addresses, one letter',p:`You are <b>${str(ip)}</b> and want to reach <b>${str(dst)}</b>. Like a postal address, an IP address names a <b>street</b> (network) and a <b>house</b> (host). The mask tells us where one ends and the other begins.${warn}`,t:'IPv4 is 32 bits, written as four 8-bit octets.'},
+ {b:'Split',c:'#60a5fa',h:`Mask /${P} splits the address`,p:`The first <b>${P} bits</b> (cyan) are the <b>network ID</b> — the street name. The remaining <b>${hb} bits</b> (amber) are the <b>host ID</b> — the house number, giving <b>${c.usable.toLocaleString()}</b> usable houses.`,t:'Every house on one street shares the same network bits.'},
+ {b:'AND',c:'#fbbf24',h:'Find your street',p:`AND your IP with the mask. Host bits turn to 0, leaving your network address <b>${sn}</b>.`,t:'AND rule: 1 AND 1 = 1, everything else = 0.'},
+ {b:'AND',c:'#fbbf24',h:'Find the destination street',p:`Do the same for the destination: <b>${str(dst)}</b> AND the mask gives <b>${dn}</b>.`,t:'Same mask, different address — compare the results.'},
+ {b:'Compare',c:'#a78bfa',h:c.local?'Same street':'Different street',p:`<b>${sn}</b> ${c.local?'=':'≠'} <b>${dn}</b>.`,v:c.local?['ok','✔ Same network — deliver directly']:['no','✖ Different network — needs a router'],t:'This one comparison is how every host decides whether it needs a router.'},
+ c.local?{b:'Direct',c:'#818cf8',h:'Deliver on the street',p:`No router needed. Your host uses <b>ARP</b> to find the house's MAC address, then sends the frame straight to it.`,t:'Inside one network, delivery uses MAC addresses.'}:{b:'Gateway',c:'#818cf8',h:'Hand it to the post office',p:`You cannot walk to another street. The letter goes to the <b>default gateway</b> <b>${str(c.gw)}</b> — the router on your street.`,t:'The gateway must be on your own network.'},
+ c.local?{b:'Delivered',c:'#34d399',h:'Letter delivered',p:`The letter reached <b>${str(dst)}</b> inside network ${sn}/${P}.`,t:'Change the prefix to /16 and watch the street grow.'}:{b:'Delivered',c:'#34d399',h:'Router forwards it',p:`The router checks its routing table, forwards the packet toward network <b>${dn}</b>, and <b>${str(dst)}</b> receives it.`,t:'Routers read only the network part to decide the next hop.'}][i]}
+function houses(net,must){const u=C().usable,set=must.filter(x=>x!=null).filter((x,i,a)=>a.indexOf(x)==i);let k=2;const st=Math.max(1,Math.ceil((u-1)/8));
+ while(set.length<Math.min(8,Math.max(u-1,set.length))&&k<=u){const a=(net+k)>>>0;if(!set.includes(a))set.push(a);k+=st}return set.sort((a,b)=>a-b)}
+function stage(){const c=C(),bg=$('bits'),mp=$('map');bg.innerHTML='';mp.innerHTML='';
+ const cx=b=>100+b*19+Math.floor(b/8)*10,rows=[['YOUR IP',ip,0],['DEST IP',dst,0],['MASK',c.m,0],['YOUR NETWORK',c.net,1],['DEST NETWORK',c.dn,1]];
+ const hi={1:[0],2:[0,2,3],3:[1,2,4],4:[3,4]}[idx]||[];
+ rows.forEach((r,ri)=>{const y=62+ri*32,vis=ri<3||(ri==3&&idx>=2)||(ri==4&&idx>=3),g=el('g',{opacity:vis?1:.1,class:'bc'},bg);
+  el('text',{class:'rl',x:14,y:y+16},g).textContent=r[0];
+  for(let b=0;b<32;b++){const n=b<P,on=hi.includes(ri)&&(idx!=1||n),col=n?'#22d3ee':r[2]?'#33405f':'#fbbf24';
+   const k=el('g',{},g);el('rect',{x:cx(b),y,width:17,height:24,rx:5,fill:n?'rgba(34,211,238,.2)':r[2]?'rgba(255,255,255,.03)':'rgba(251,191,36,.16)',stroke:col,'stroke-opacity':on?1:.45,class:on?'hl':'',style:`color:${col}`},k);
+   el('text',{class:'bt',x:cx(b)+8.5,y:y+12,fill:n?'#a5f3fc':r[2]?'#4a5676':'#fde68a'},k).textContent=bit(r[1],b)}
+  el('text',{class:'dec',x:cx(31)+28,y:y+16},g).textContent=str(r[1])});
+ const bx=(P?cx(P-1)+18.5:98)+(P%8==0?5:0);el('line',{class:'bd',x1:bx,y1:52,x2:bx,y2:218,stroke:'#fff'},bg);
+ el('text',{class:'bl',x:bx-8,y:44,fill:'#22d3ee','text-anchor':'end'},bg).textContent='NETWORK ID';el('text',{class:'bl',x:bx+8,y:44,fill:'#fbbf24'},bg).textContent='HOST ID';
+ if(idx>=4){const g=el('g',{},bg);el('rect',{x:240,y:226,width:380,height:26,rx:13,fill:c.local?'rgba(52,211,153,.14)':'rgba(251,113,133,.12)',stroke:c.local?'#34d399':'#fb7185'},g);el('text',{x:430,y:240,fill:c.local?'#a7f3d0':'#fecdd3','text-anchor':'middle','dominant-baseline':'central',style:'font:700 12px Inter'},g).textContent=c.local?'Network IDs match → same street':'Network IDs differ → different street'}
+ const other=(c.net^(1<<(32-P)))>>>0,rn=c.local?other:c.dn;H={};
+ [[24,c.net,'#22d3ee','THIS STREET',houses(c.net,[ip,c.local?dst:null])],[476,rn,'#f472b6','OTHER STREET',houses(rn,[c.local?null:dst])]].forEach(d=>{
+  el('rect',{class:'dist',x:d[0],y:268,width:400,height:236,rx:18,fill:d[2],stroke:d[2]},mp);
+  el('text',{class:'dt',x:d[0]+16,y:290,fill:d[2]},mp).textContent=d[3]+' · '+str(d[1])+'/'+P;
+  d[4].forEach((a,i)=>{const x=d[0]+14+(i%4)*95,y=306+Math.floor(i/4)*92,g=el('g',{class:'hs'+(a==ip?' me':a==dst?' to':'')},mp);
+   el('rect',{class:'rc',x,y,width:86,height:76,rx:12},g);el('text',{class:'em',x:x+43,y:y+30},g).textContent='🏠';el('text',{class:'ad',x:x+43,y:y+62},g).textContent=str(a);
+   if(a==ip||a==dst){el('text',{class:'tg',x:x+43,y:y+10,fill:a==ip?'#22d3ee':'#f472b6'},g).textContent=a==ip?'YOU':'DEST'}H[a]={x:x+43,y:y+30}});
+  if(d[4].length<c.usable)el('text',{x:d[0]+200,y:496,fill:'#5b6785','text-anchor':'middle',style:'font:600 11px Inter'},mp).textContent='+ '+(c.usable-d[4].length).toLocaleString()+' more houses on this street'});
+ [[424,'M424 386H436'],[464,'M464 386H476']].forEach(r=>el('path',{d:r[1],stroke:'#4b5a7a','stroke-width':4},mp));
+ el('circle',{cx:450,cy:386,r:26,fill:'#0e1628',stroke:c.local?'#4b5a7a':'#818cf8','stroke-width':3,style:c.local?'':'filter:drop-shadow(0 0 12px #818cf8)'},mp);
+ el('text',{x:450,y:387,'text-anchor':'middle','dominant-baseline':'central',style:'font-size:24px'},mp).textContent='🏤';
+ el('text',{x:450,y:428,fill:'#c3cde4','text-anchor':'middle',style:'font:700 10.5px Inter'},mp).textContent='Post office';el('text',{x:450,y:441,fill:'#818cf8','text-anchor':'middle',style:'font:600 9.5px var(--mono)'},mp).textContent='gw '+str(c.gw);
+ H.gw={x:450,y:386}}
+function target(i){const c=C();return i<5?H[ip]:i==5?(c.local?H[dst]:H.gw):H[dst]}
+function info(){const c=C();$('cls').textContent='Class '+cls(ip)+' · /'+P;$('st-n').textContent=str(c.net);$('st-m').textContent=str(c.m);$('st-u').textContent=c.usable.toLocaleString();$('pf').textContent='/'+P;$('ctr').textContent=(idx+1)+' / '+S;
+ $('tbl').innerHTML=[['Network address',str(c.net)],['Subnet mask',str(c.m)+' (/'+P+')'],['Broadcast',str(c.bc)],['First house',str((c.net+1)>>>0)],['Last house',str((c.bc-1)>>>0)],['Usable hosts',c.usable.toLocaleString()],['Address class',cls(ip)]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
+function draw(){const nr=nar(idx),nb=$('narr');nb.style.setProperty('--nc',nr.c);
+ nb.innerHTML=`<div class="swap-in"><div class="narr-head"><span class="nbadge">${nr.b}</span><span class="nstep">Step ${idx+1} / ${S}</span></div><h2>${nr.h}</h2><p>${nr.p}</p>${nr.v?`<div class="verdict ${nr.v[0]}">${nr.v[1]}</div>`:''}${$('tips').checked?`<div class="tipbox"><b>Remember:</b> ${nr.t}</div>`:''}</div>`;
+ const cs=['#22d3ee','#60a5fa','#fbbf24','#fbbf24','#a78bfa','#818cf8','#34d399'];
+ $('ticks').innerHTML=cs.map((c,j)=>`<i class="tick ${j<idx?'past':''} ${j==idx?'on':''}" style="background:${c};color:${c}"></i>`).join('');
+ $('b-prev').disabled=idx==0;$('b-next').disabled=idx==S-1;const p=$('b-play');p.className='play'+(playing?' on':'');
+ p.innerHTML=playing?'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>Pause':'<svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>'+(idx==S-1?'Replay':'Play');info()}
+const put=(x,y)=>{pos={x,y};$('lt').setAttribute('transform',`translate(${x},${y})`)};
+function go(i,anim,cb){cancelAnimationFrame(raf);const from=idx;i=Math.max(0,Math.min(S-1,i));idx=i;stage();const t=target(i);
+ if(anim&&i==from+1&&i>=5){const a=target(from),d=900/sp(),t0=performance.now();busy=true;put(a.x,a.y);
+  (function f(now){const k=Math.min(1,(now-t0)/d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;put(a.x+(t.x-a.x)*e,a.y+(t.y-a.y)*e);if(k<1)raf=requestAnimationFrame(f);else{busy=false;cb&&cb()}})(t0);draw()}
+ else{busy=false;put(t.x,t.y);draw();cb&&cb()}}
+const stop=()=>{playing=false;clearTimeout(timer);draw()};
+function tick(){if(!playing)return;if(idx>=S-1){stop();return}go(idx+1,true,()=>{if(playing)timer=setTimeout(tick,1300/sp())})}
+function play(){if(idx>=S-1)go(0,false);playing=true;draw();tick()}
+const step=d=>{stop();go(idx+d,d>0)},rebuild=()=>{stop();go(0,false)};
+$('b-play').onclick=()=>playing?stop():play();$('b-next').onclick=()=>step(1);$('b-prev').onclick=()=>step(-1);$('b-reset').onclick=rebuild;
+$('b-skip').onclick=()=>{stop();go(S-1,false)};$('speed').oninput=()=>{$('sp-o').textContent=sp().toFixed(1)+'×'};$('tips').onchange=draw;
+function readIp(id,set){const v=parse($(id).value);$(id).classList.toggle('bad',v==null);if(v!=null){set(v);rebuild()}}
+$('ip').oninput=()=>readIp('ip',v=>ip=v);$('dst').oninput=()=>readIp('dst',v=>dst=v);
+$('pre').oninput=()=>{P=+$('pre').value;rebuild()};
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{P=+b.dataset.p;$('pre').value=P;rebuild()});
+const setDst=v=>{dst=v>>>0;$('dst').value=str(dst);$('dst').classList.remove('bad');rebuild()};
+$('p-same').onclick=()=>{const c=C(),h=(ip-c.net)>>>0;setDst(c.net+(h<c.size-2?h+1:h-1))};
+$('p-other').onclick=()=>setDst((ip^(1<<(32-P)))>>>0);
+$('btn-def').onclick=()=>{ip=parse('192.168.10.25');dst=parse('192.168.10.77');P=24;$('ip').value=str(ip);$('dst').value=str(dst);$('pre').value=24;$('ip').classList.remove('bad');rebuild()};
+let sc=false;const tl=$('tl'),scrub=e=>{const r=$('ticks').getBoundingClientRect(),i=Math.max(0,Math.min(S-1,Math.floor((e.clientX-r.left)/r.width*S)));if(i!=idx){stop();go(i,false)}};
+tl.onpointerdown=e=>{sc=true;tl.setPointerCapture(e.pointerId);scrub(e)};tl.onpointermove=e=>sc&&scrub(e);tl.onpointerup=()=>sc=false;
+addEventListener('keydown',e=>{if(e.target.matches('input'))return;if(e.key==' '){e.preventDefault();playing?stop():play()}else if(e.key=='ArrowRight')step(1);else if(e.key=='ArrowLeft')step(-1);else if(e.key=='r'||e.key=='R')rebuild()});
+$('pre').value=P;go(0,false);
+})();
+</script></body></html>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TeacherMetric, CourseSection, NavTab } from '../../types';
 import { db } from '../../lib/firebase';
-import { collection, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { isAuthorizedDeveloper } from '../../config/developers';
 import { useCurriculum } from '../../context/CurriculumContext';
 import { AddModuleModal } from '../modals/AddModuleModal';
@@ -72,26 +72,10 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     21: true, 22: true, 23: true
   });
 
-  // Real-time Firestore sync with students collection
+  // Direct client queries to 'students' collection are removed to protect student privacy.
+  // Private student records require trusted server-side Faculty authentication and role provisioning.
   useEffect(() => {
-    let unsubscribe = () => {};
-    try {
-      unsubscribe = onSnapshot(collection(db, 'students'), (snap) => {
-        const list: any[] = [];
-        snap.forEach((d) => {
-          const data = d.data();
-          if (data.role !== 'developer' && !isAuthorizedDeveloper(data.studentId || '') && !isAuthorizedDeveloper(d.id)) {
-            list.push({ id: d.id, ...data });
-          }
-        });
-        setRealStudents(list);
-      }, (err) => {
-        console.warn('Teacher dashboard firestore listener error:', err);
-      });
-    } catch (e) {
-      console.warn('Teacher dashboard firestore listener setup error:', e);
-    }
-    return () => unsubscribe();
+    setRealStudents([]);
   }, []);
 
   // Real-time Firestore sync for curriculum section published status
@@ -126,7 +110,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const quizScores = realStudents.filter((s) => s.quizAverage).map((s) => s.quizAverage);
   const avgQuizScore = quizScores.length > 0 
     ? Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length) 
-    : 88;
+    : null;
 
   const togglePublish = async (id: number) => {
     const nextVal = !publishedStatus[id];
@@ -207,8 +191,23 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
             <span>Average Quiz Score</span>
             <Award className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{avgQuizScore}%</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">Live from student quizzes</div>
+          <div className="text-3xl font-extrabold text-slate-900 font-mono">
+            {avgQuizScore !== null ? `${avgQuizScore}%` : 'N/A'}
+          </div>
+          <div className="text-[11px] text-slate-400 font-medium mt-1">
+            {avgQuizScore !== null ? 'Live from student quizzes' : 'Pending Faculty role auth'}
+          </div>
+        </div>
+      </div>
+
+      {/* Faculty Authorization Notice */}
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-start space-x-3 text-xs">
+        <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold">Faculty Authorization Required: </span>
+          <span>
+            Access to individual student personal records, quiz submissions, and live telemetry is restricted pending trusted institutional Faculty authentication and role provisioning. Course and section structure management remain active.
+          </span>
         </div>
       </div>
 
@@ -443,76 +442,13 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       {/* 6. Tab 3: Real-time Student Activity */}
       {activeTab === 'live-activity' && (
         <div className="space-y-6">
-          
-          {/* Live Status Summary Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <div className="flex items-center justify-between text-emerald-800 text-xs font-bold">
-                <span>Currently Learning</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              </div>
-              <div className="text-2xl font-extrabold text-emerald-950 mt-1">{metrics.currentlyLearning} students</div>
-              <div className="text-[11px] text-emerald-700 mt-0.5">Streaming video or interactive diagrams</div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-center justify-between text-blue-800 text-xs font-bold">
-                <span>Currently Taking Quiz</span>
-                <Activity className="w-4 h-4 text-blue-600" />
-              </div>
-              <div className="text-2xl font-extrabold text-blue-950 mt-1">{metrics.takingQuiz} students</div>
-              <div className="text-[11px] text-blue-700 mt-0.5">Knowledge checks in progress</div>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-              <div className="flex items-center justify-between text-slate-700 text-xs font-bold">
-                <span>Idle / Inactive</span>
-                <Clock className="w-4 h-4 text-slate-400" />
-              </div>
-              <div className="text-2xl font-extrabold text-slate-800 mt-1">{metrics.idle} students</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">No activity in last 60 minutes</div>
-            </div>
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+            <ShieldAlert className="w-10 h-10 text-amber-500 mx-auto" />
+            <h3 className="text-base font-bold text-slate-900">Student Roster & Activity Feed Restricted</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              Direct client-side access to individual student records, quiz submissions, and live presence telemetry has been restricted to protect student privacy. Accessing this feed requires trusted institutional Faculty authentication and role provisioning.
+            </p>
           </div>
-
-          {/* Live Activity Feed Table */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900 text-base">Live Activity Feed</h3>
-              <span className="text-xs text-slate-400">Updates dynamically</span>
-            </div>
-
-            <div className="divide-y divide-slate-100 text-xs">
-              {realStudents.length === 0 ? (
-                <div className="py-12 text-center text-slate-400">
-                  <p className="text-sm font-semibold">No student activity recorded yet.</p>
-                  <p className="text-xs text-slate-500 mt-1">Student progress will appear here in real time as students complete syllabus modules and quizzes.</p>
-                </div>
-              ) : (
-                realStudents.slice(0, 10).map((st) => (
-                  <div key={st.id} className="py-3 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-600 flex items-center justify-center font-bold text-xs">
-                        {(st.displayName || st.name || 'S')[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <span className="font-bold text-slate-900">{st.displayName || st.name || 'KLU Student'}</span>
-                        <span className="text-slate-600 ml-1.5">Completed {st.completedModules?.length || 0} modules:</span>
-                        <span className="font-medium text-blue-700 ml-1">{st.totalXP || st.xp || 0} XP</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                        {st.overallProgress || 0}% Progress
-                      </span>
-                      <span className="text-slate-400 text-[11px]">Real-time</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
         </div>
       )}
 

@@ -428,38 +428,46 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = () => {
     let unsubscribe = () => {};
 
     try {
-      const studentsRef = collection(db, 'students');
+      // Primary: sanitized public leaderboard projection (zero PII)
+      const leaderboardRef = collection(db, 'public_leaderboard');
       unsubscribe = onSnapshot(
-        studentsRef,
+        leaderboardRef,
         (snapshot) => {
-          const cloudData: FirestoreStudentEntry[] = [];
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data() as any;
-            const isCurrentEpoch = data.resetEpoch === GLOBAL_RESET_EPOCH;
-            const completedList = isCurrentEpoch ? (data.completedModules || []) : [];
-            const calculatedXP = isCurrentEpoch ? (data.totalXP ?? data.xp ?? 0) : 0;
-            const calculatedProgress = isCurrentEpoch ? (data.overallProgress ?? Math.min(100, Math.round((completedList.length / (TOTAL_MODULES_COUNT || 30)) * 100))) : 0;
+          if (!snapshot.empty) {
+            const cloudData: FirestoreStudentEntry[] = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data() as any;
+              const calculatedXP = Number(data.totalXP ?? data.xp ?? 0);
+              const calculatedProgress = Number(
+                data.overallProgress ?? Math.min(100, Math.round(((data.modulesCompleted || 0) / (TOTAL_MODULES_COUNT || 30)) * 100))
+              );
 
-            cloudData.push({
-              uid: docSnap.id,
-              ...data,
-              resetEpoch: data.resetEpoch,
-              totalXP: calculatedXP,
-              xp: calculatedXP,
-              overallProgress: calculatedProgress,
-              modulesCompleted: isCurrentEpoch ? (data.modulesCompleted ?? completedList.length) : 0,
-              courseCompletedAt: data.courseCompletedAt || data.completedAt,
-              updatedAt: data.updatedAt,
-              isOnline: !!data.isOnline,
-              lastLogin: data.lastLogin,
+              cloudData.push({
+                uid: docSnap.id,
+                name: data.displayName || 'NetQuest Cadet',
+                displayName: data.displayName || 'NetQuest Cadet',
+                totalXP: calculatedXP,
+                xp: calculatedXP,
+                overallProgress: calculatedProgress,
+                modulesCompleted: Number(data.modulesCompleted || 0),
+                courseCompletedAt: data.courseCompletedAt || null,
+                updatedAt: data.updatedAt,
+                streak: Number(data.streak || 0),
+              });
             });
-          });
-          setRemoteStudents(cloudData);
-          setLastSyncTime(new Date());
-          setLoading(false);
+            setRemoteStudents(cloudData);
+            setLastSyncTime(new Date());
+            setLoading(false);
+          } else {
+            // Public projection is empty or initializing: handle cleanly without reading private collections
+            setRemoteStudents([]);
+            setLastSyncTime(new Date());
+            setLoading(false);
+          }
         },
         (err) => {
-          console.warn("Real-time leaderboard snapshot fallback to local:", err);
+          console.warn("Real-time public leaderboard snapshot warning:", err);
+          setRemoteStudents([]);
           setLoading(false);
         }
       );

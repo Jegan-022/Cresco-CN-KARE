@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NavTab } from '../../types';
-import { COURSE_UNITS, ALL_PRACTICE_QUESTIONS, QUICK_REFERENCE_FLASHCARDS } from '../../data/courseContent';
+import { COURSE_UNITS, ALL_MODULES, ALL_PRACTICE_QUESTIONS, QUICK_REFERENCE_FLASHCARDS } from '../../data/courseContent';
 import { curriculumCloudService, CloudFlashcardItem } from '../../services/curriculumCloudService';
 import { useAuth } from '../../context/AuthContext';
 import { triggerSubtleSectionConfetti } from '../../utils/confetti';
@@ -10,7 +10,27 @@ import { CrescoMascot } from '../brand/CrescoMascot';
 import { PptDeckViewer } from '../practice/PptDeckViewer';
 import { MaterialsViewer } from '../practice/MaterialsViewer';
 import { VideoOverviewsViewer } from '../practice/VideoOverviewsViewer';
+import { AdaptationCard } from '../common/AdaptationCard';
+import { getBoundaryAdaptation } from '../../services/adaptationService';
+import { AdaptationViewModel } from '../../types/adaptationViewModel';
+import { recordLearningEvent } from '../../services/learningEventService';
+import { executeUnifiedLearningCycle } from '../../services/unifiedLearningLoopService';
 import { 
+  evaluateAssessmentSubmission, 
+  AssessmentQuestion, 
+  AssessmentSubmission, 
+  AssessmentEvaluationResult 
+} from '../../services/assessmentScoringService';
+import { MasteryStatusCard } from '../mastery/MasteryStatusCard';
+import { evaluateMastery } from '../../services/masteryEngineService';
+import { getStudentLearningEvents } from '../../services/learningEventReadService';
+import { MasteryEvaluationResult } from '../../types/mastery';
+import { RemediationRecommendationsView } from '../remediation/RemediationRecommendationsView';
+import { evaluateRemediation } from '../../services/remediationEngineService';
+import { trackRemediationStarted } from '../../services/remediationTrackingService';
+import { RemediationEvaluationResult } from '../../types/remediation';
+import { 
+  Bot,
   Activity, 
   RefreshCw, 
   Calculator, 
@@ -49,6 +69,7 @@ export interface QuizQuestionItem {
   unitId: 'unit_3' | 'unit_4' | 'unit_5' | 'general';
   unitTitle: string;
   topic: string;
+  moduleId?: string;
   question: string;
   options: string[];
   correctIndex: number;
@@ -123,8 +144,84 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
   onNavigate,
   initialTab = 'flashcards'
 }) => {
-  const { recordQuizAttempt } = useAuth();
+  const { recordQuizAttempt, recordPracticeAttempt, currentUser } = useAuth();
+  const [quizAdaptation, setQuizAdaptation] = useState<AdaptationViewModel | null>(null);
   const [activeTab, setActiveTab] = useState<PracticeTab>(initialTab);
+  const [selectedUnitOption, setSelectedUnitOption] = useState<'all' | 'unit_3' | 'unit_4' | 'unit_5'>('all');
+  const [selectedModuleOption, setSelectedModuleOption] = useState<string>('all');
+  const [evaluationResult, setEvaluationResult] = useState<AssessmentEvaluationResult | null>(null);
+  const [attemptId, setAttemptId] = useState<string>('');
+  const [startedAt, setStartedAt] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const submissionLockRef = useRef<boolean>(false);
+  const [unitMasteryMap, setUnitMasteryMap] = useState<Record<string, MasteryEvaluationResult>>({});
+  const [isMasteryLoading, setIsMasteryLoading] = useState<boolean>(false);
+  const [remediationEvaluation, setRemediationEvaluation] = useState<RemediationEvaluationResult | null>(null);
+  const [isRemediationLoading, setIsRemediationLoading] = useState<boolean>(false);
+
+  // Evaluate genuine mastery across units from real student learning events (Step 21 & Step 22)
+  useEffect(() => {
+    let mounted = true;
+    if (currentUser?.uid) {
+      setIsMasteryLoading(true);
+      setIsRemediationLoading(true);
+      getStudentLearningEvents(currentUser.uid, 'cs-4200').then((events) => {
+        if (!mounted) return;
+        const u3Eval = evaluateMastery({
+          studentId: currentUser.uid,
+          scopeId: 'unit_3',
+          scopeType: 'unit',
+          evidence: events,
+        });
+        const u4Eval = evaluateMastery({
+          studentId: currentUser.uid,
+          scopeId: 'unit_4',
+          scopeType: 'unit',
+          evidence: events,
+          config: {
+            prerequisites: ['unit_3']
+          }
+        });
+        const u5Eval = evaluateMastery({
+          studentId: currentUser.uid,
+          scopeId: 'unit_5',
+          scopeType: 'unit',
+          evidence: events,
+          config: {
+            prerequisites: ['unit_4']
+          }
+        });
+        setUnitMasteryMap({
+          unit_3: u3Eval,
+          unit_4: u4Eval,
+          unit_5: u5Eval,
+        });
+        setIsMasteryLoading(false);
+
+        // Step 22 Targeted Remediation Evaluation
+        const remEval = evaluateRemediation({
+          studentId: currentUser.uid,
+          scopeId: selectedUnitOption !== 'all' ? selectedUnitOption : 'unit_3',
+          courseId: 'cs-4200',
+          masteryResult: selectedUnitOption === 'unit_4' ? u4Eval : selectedUnitOption === 'unit_5' ? u5Eval : u3Eval,
+          evidence: events,
+          recentAssessment: evaluationResult || undefined
+        });
+        setRemediationEvaluation(remEval);
+        setIsRemediationLoading(false);
+      }).catch((err) => {
+        console.warn('[PracticeView] Mastery evaluation error:', err);
+        if (mounted) {
+          setIsMasteryLoading(false);
+          setIsRemediationLoading(false);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser?.uid, evaluationResult, selectedUnitOption]);
 
   // Sync initialTab when prop updates
   useEffect(() => {
@@ -190,7 +287,6 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
   // ==========================================
   
   // Quiz Options (Settings)
-  const [selectedUnitOption, setSelectedUnitOption] = useState<'all' | 'unit_3' | 'unit_4' | 'unit_5'>('all');
   const [questionCountOption, setQuestionCountOption] = useState<number>(5);
   const [quizModeOption, setQuizModeOption] = useState<'practice' | 'timed'>('practice');
 
@@ -221,6 +317,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
               unitId: uId,
               unitTitle: unit.title,
               topic: mod.title,
+              moduleId: mod.id,
               question: q.question,
               options: q.options,
               correctIndex: q.correctIndex,
@@ -235,11 +332,17 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     return [...list, ...SUPPLEMENTAL_QUESTIONS];
   }, []);
 
-  // Filtered pool based on selected options
+  // Filtered pool based on selected unit and module options
   const eligibleQuestions = useMemo(() => {
-    if (selectedUnitOption === 'all') return masterQuestionPool;
-    return masterQuestionPool.filter(q => q.unitId === selectedUnitOption);
-  }, [masterQuestionPool, selectedUnitOption]);
+    let pool = masterQuestionPool;
+    if (selectedUnitOption !== 'all') {
+      pool = pool.filter(q => q.unitId === selectedUnitOption);
+    }
+    if (selectedModuleOption !== 'all') {
+      pool = pool.filter(q => q.moduleId === selectedModuleOption);
+    }
+    return pool;
+  }, [masterQuestionPool, selectedUnitOption, selectedModuleOption]);
 
   // Start or Reset a Quiz Session
   const handleStartQuiz = () => {
@@ -249,6 +352,14 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     const count = questionCountOption === -1 ? shuffled.length : Math.min(questionCountOption, shuffled.length);
     const selected = shuffled.slice(0, count);
 
+    const newAttemptId = `quiz_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    setAttemptId(newAttemptId);
+    const nowIso = new Date().toISOString();
+    setStartedAt(nowIso);
+    submissionLockRef.current = false;
+    setIsSubmitting(false);
+    setEvaluationResult(null);
+
     setQuizQuestions(selected);
     setCurrentQIndex(0);
     setSelectedOptionByQ({});
@@ -256,8 +367,25 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     setScore(0);
     setStreak(0);
     setIsQuizCompleted(false);
+    setQuizAdaptation(null);
     setQuizStarted(true);
     setSecondsRemaining(30);
+
+    // Telemetry: PRACTICE_STARTED or ASSESSMENT_STARTED
+    if (currentUser?.uid) {
+      recordLearningEvent({
+        eventType: quizModeOption === 'timed' ? 'ASSESSMENT_STARTED' : 'PRACTICE_STARTED',
+        courseId: 'cs-4200',
+        unitId: selectedUnitOption !== 'all' ? selectedUnitOption : undefined,
+        lessonId: selectedModuleOption !== 'all' ? selectedModuleOption : undefined,
+        assessmentId: newAttemptId,
+        studentId: currentUser.uid,
+        metadata: {
+          questionCount: selected.length,
+          mode: quizModeOption
+        }
+      }).catch(err => console.warn('[PracticeView] Telemetry start warning:', err));
+    }
   };
 
   // Timer effect for Timed Mode
@@ -303,6 +431,23 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
       soundFx.playClick();
       setStreak(0);
     }
+
+    // Emit question answered telemetry
+    if (currentUser?.uid) {
+      recordLearningEvent({
+        eventType: 'QUESTION_ANSWERED',
+        courseId: 'cs-4200',
+        unitId: currentQuestion.unitId !== 'general' ? currentQuestion.unitId : undefined,
+        lessonId: currentQuestion.moduleId,
+        assessmentId: attemptId || 'practice_quiz',
+        studentId: currentUser.uid,
+        metadata: {
+          questionId: currentQuestion.id,
+          selectedAnswer: optionIndex,
+          correctness: isCorrect
+        }
+      }).catch(err => console.warn('[PracticeView] Telemetry question warning:', err));
+    }
   };
 
   // Advance to next question or complete quiz
@@ -316,25 +461,125 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     }
   };
 
-  // Finalize quiz, calculate XP, trigger celebration, and save to profile
-  const finishQuiz = () => {
-    setIsQuizCompleted(true);
+  // Finalize quiz with deterministic scoring and telemetry
+  const finishQuiz = async () => {
+    if (submissionLockRef.current || isSubmitting) return;
+    submissionLockRef.current = true;
+    setIsSubmitting(true);
+    setShowConfirmModal(false);
+
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const total = quizQuestions.length;
-    const accuracyPercent = Math.round((score / (total || 1)) * 100);
-    const passed = accuracyPercent >= 70;
-    const xpReward = Math.max(30, Math.round(accuracyPercent * 1.0));
+    const assessmentQuestions: AssessmentQuestion[] = quizQuestions.map(q => ({
+      id: q.id,
+      type: 'single_choice',
+      prompt: q.question,
+      options: q.options,
+      correctOptionIndex: q.correctIndex,
+      explanation: q.explanation,
+      moduleId: q.moduleId,
+      unitId: q.unitId,
+      conceptReference: q.topic,
+      points: 1
+    }));
 
-    if (passed) {
-      triggerSubtleSectionConfetti();
-    }
+    const finalAttemptId = attemptId || `quiz_${Date.now()}`;
+    const submission: AssessmentSubmission = {
+      assessmentId: `quiz_${selectedUnitOption}`,
+      studentId: currentUser?.uid || 'guest_student',
+      attemptId: finalAttemptId,
+      mode: quizModeOption === 'timed' ? 'formal_assessment' : 'practice',
+      unitId: selectedUnitOption !== 'all' ? selectedUnitOption : undefined,
+      moduleId: selectedModuleOption !== 'all' ? selectedModuleOption : undefined,
+      startedAt: startedAt || new Date().toISOString(),
+      submittedAt: new Date().toISOString(),
+      responses: quizQuestions.map((q, idx) => ({
+        questionId: q.id,
+        response: selectedOptionByQ[idx] !== undefined && selectedOptionByQ[idx] >= 0
+          ? selectedOptionByQ[idx]
+          : null
+      }))
+    };
 
-    // Persist attempt to AuthContext / Firestore
     try {
-      recordQuizAttempt(selectedUnitOption, accuracyPercent, passed, xpReward);
-    } catch (e) {
-      console.warn('Quiz recording caught fallback:', e);
+      const evalResult = evaluateAssessmentSubmission(submission, assessmentQuestions);
+      setEvaluationResult(evalResult);
+      setScore(evalResult.correctCount);
+      setIsQuizCompleted(true);
+
+      const passed = evalResult.percentageScore >= 70;
+      const xpReward = Math.max(30, Math.round(evalResult.percentageScore * 1.0));
+
+      if (passed) {
+        soundFx.playSuccess();
+        triggerSubtleSectionConfetti();
+      }
+
+      // Persist attempt to AuthContext
+      if (quizModeOption === 'timed') {
+        try {
+          await recordQuizAttempt(selectedUnitOption, evalResult.percentageScore, passed, xpReward);
+        } catch (e) {
+          console.warn('Quiz recording fallback:', e);
+        }
+      } else {
+        try {
+          const category = selectedModuleOption !== 'all' ? selectedModuleOption : selectedUnitOption;
+          await recordPracticeAttempt(category, evalResult.percentageScore, xpReward);
+        } catch (e) {
+          console.warn('Practice recording fallback:', e);
+        }
+      }
+
+      // Emit canonical telemetry
+      if (currentUser?.uid) {
+        recordLearningEvent({
+          eventType: quizModeOption === 'timed' ? 'ASSESSMENT_COMPLETED' : 'PRACTICE_COMPLETED',
+          courseId: 'cs-4200',
+          unitId: selectedUnitOption !== 'all' ? selectedUnitOption : undefined,
+          lessonId: selectedModuleOption !== 'all' ? selectedModuleOption : undefined,
+          assessmentId: finalAttemptId,
+          studentId: currentUser.uid,
+          metadata: {
+            score: evalResult.percentageScore,
+            correctness: passed,
+            totalPointsEarned: evalResult.totalPointsEarned,
+            totalPointsPossible: evalResult.totalPointsPossible,
+            correctCount: evalResult.correctCount,
+            incorrectCount: evalResult.incorrectCount,
+            unansweredCount: evalResult.unansweredCount
+          }
+        }).catch(err => console.warn('[PracticeView] Telemetry complete warning:', err));
+
+        // Step 25: Trigger Unified Adaptive Learning Loop
+        executeUnifiedLearningCycle({
+          actionId: finalAttemptId,
+          actionType: quizModeOption === 'timed' ? 'submit_assessment' : 'submit_practice',
+          studentId: currentUser.uid,
+          courseId: 'cs-4200',
+          unitId: selectedUnitOption !== 'all' ? selectedUnitOption : 'unit_3',
+          lessonId: selectedModuleOption !== 'all' ? selectedModuleOption : undefined,
+          score: evalResult.percentageScore,
+          assessmentResult: evalResult as any
+        }).catch(err => console.warn('[PracticeView] Unified learning loop warning:', err));
+      }
+
+      // Evaluate pedagogical boundary adaptation (Step 10)
+      if (currentUser?.uid) {
+        getBoundaryAdaptation(currentUser.uid, {
+          courseId: 'cs-4200',
+          unitId: selectedUnitOption !== 'all' ? selectedUnitOption : undefined,
+          targetScope: 'assessment',
+        }).then((res) => {
+          if (res) setQuizAdaptation(res);
+        }).catch((err) => {
+          console.warn('[Adaptation] Non-fatal quiz boundary adaptation error:', err);
+        });
+      }
+    } catch (err) {
+      console.error('[PracticeView] Evaluation error:', err);
+      submissionLockRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -406,79 +651,51 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             )}
           </div>
 
-          {/* 6 Specific Mastery Categories Specified in Prompt */}
+          {/* Evidence-Based Mastery Status (Step 21 - Five Pillars Evaluation) */}
           <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <span className="text-[11px] font-mono font-bold text-[#64748B] dark:text-slate-400 uppercase tracking-wider">
-              TOPOLOGY MASTERY LEVEL
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Routing 82% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🛣 Routing</span>
-                  <span className="font-mono text-[#3157D5] dark:text-[#6D8CFF]">82%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#3157D5]" style={{ width: '82%' }} />
-                </div>
-              </div>
-
-              {/* IP Addressing 68% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🔢 IP Addressing</span>
-                  <span className="font-mono text-[#35A86B]">68%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#35A86B]" style={{ width: '68%' }} />
-                </div>
-              </div>
-
-              {/* TCP / UDP 91% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🚚 TCP / UDP</span>
-                  <span className="font-mono text-[#3157D5] dark:text-[#6D8CFF]">91%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#3157D5]" style={{ width: '91%' }} />
-                </div>
-              </div>
-
-              {/* Security 54% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🔐 Security</span>
-                  <span className="font-mono text-[#F0A63A]">54%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#F0A63A]" style={{ width: '54%' }} />
-                </div>
-              </div>
-
-              {/* DNS 88% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🌐 DNS</span>
-                  <span className="font-mono text-[#7957C7]">88%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#7957C7]" style={{ width: '88%' }} />
-                </div>
-              </div>
-
-              {/* HTTP / HTTPS 76% */}
-              <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-[#111827] border border-[#E5E0D8] dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-black">
-                  <span>🔒 HTTP / HTTPS</span>
-                  <span className="font-mono text-[#35A86B]">76%</span>
-                </div>
-                <div className="w-full h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 border border-[#E5E0D8] dark:border-slate-700">
-                  <div className="h-full bg-[#35A86B]" style={{ width: '76%' }} />
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-[11px] font-mono font-bold text-[#64748B] dark:text-slate-400 uppercase tracking-wider">
+                EVIDENCE-BASED MASTERY STATUS (FIVE PILLARS EVALUATION)
+              </span>
+              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-semibold">
+                Governance Status: PENDING ACADEMIC APPROVAL (85% Cutoff)
+              </span>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <MasteryStatusCard
+                title="Unit 3: Network Layer"
+                evaluation={unitMasteryMap['unit_3']}
+                isLoading={isMasteryLoading}
+                onNavigate={onNavigate}
+              />
+              <MasteryStatusCard
+                title="Unit 4: Transport Layer"
+                evaluation={unitMasteryMap['unit_4']}
+                isLoading={isMasteryLoading}
+                onNavigate={onNavigate}
+              />
+              <MasteryStatusCard
+                title="Unit 5: Application Layer"
+                evaluation={unitMasteryMap['unit_5']}
+                isLoading={isMasteryLoading}
+                onNavigate={onNavigate}
+              />
+            </div>
+          </div>
+
+          {/* Targeted Remediation & Gap Recovery (Step 22) */}
+          <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+            <RemediationRecommendationsView
+              evaluation={remediationEvaluation}
+              isLoading={isRemediationLoading}
+              onNavigate={onNavigate}
+              onAcceptRecommendation={(rec) => {
+                if (currentUser?.uid) {
+                  trackRemediationStarted(rec, currentUser.uid);
+                }
+              }}
+            />
           </div>
         </div>
 
@@ -647,6 +864,27 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             <div className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider">
               {flashcards[currentCardIndex].type || 'Key Fact'} • {flashcards[currentCardIndex].domain || 'Quick Reference'}
             </div>
+
+            {/* Contextual AI Tutor Trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                const card = flashcards[currentCardIndex];
+                window.dispatchEvent(new CustomEvent('cresco:open-ai-tutor', {
+                  detail: {
+                    courseId: 'cs-4200',
+                    conceptTopic: card.domain || 'Networking Protocol Concept',
+                    questionPrompt: card.q,
+                    explanationSnippet: card.a,
+                    actionType: 'explain_concept'
+                  }
+                }));
+              }}
+              className="mt-4 px-4 py-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/40 text-cyan-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
+            >
+              <Bot className="w-4 h-4 text-cyan-400" />
+              <span>Ask ByteBot to explain this flashcard</span>
+            </button>
           </div>
         )}
 
@@ -704,10 +942,11 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
 
                     <button
                       onClick={handleStartQuiz}
-                      className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-sm hover:shadow-md transition-all transform-gpu flex items-center justify-center gap-3 text-lg shrink-0 group cursor-pointer"
+                      disabled={eligibleQuestions.length === 0}
+                      className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-sm hover:shadow-md transition-all transform-gpu flex items-center justify-center gap-3 text-lg shrink-0 group cursor-pointer"
                     >
                       <Play className="w-5 h-5 fill-current" />
-                      <span>Start Quiz</span>
+                      <span>{eligibleQuestions.length === 0 ? 'No Questions Available' : 'Start Quiz'}</span>
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
@@ -754,6 +993,29 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Specific Module / Lesson Filter */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                      <label htmlFor="practice-module-select" className="block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                        Drill by Specific Module:
+                      </label>
+                      <select
+                        id="practice-module-select"
+                        value={selectedModuleOption}
+                        onChange={(e) => {
+                          soundFx.playClick();
+                          setSelectedModuleOption(e.target.value);
+                        }}
+                        className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
+                      >
+                        <option value="all">All Modules ({eligibleQuestions.length} Qs)</option>
+                        {ALL_MODULES.filter(m => selectedUnitOption === 'all' || m.unitId === selectedUnitOption).map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.title}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -898,20 +1160,8 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                 <SplitMcqPlayer
                   questions={splitQuestions}
                   initialIndex={currentQIndex}
-                  onComplete={({ score: finalScore, accuracy }) => {
-                    setScore(finalScore);
-                    setIsQuizCompleted(true);
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    const passed = accuracy >= 70;
-                    const xpReward = Math.max(30, Math.round(accuracy * 1.0));
-                    if (passed) {
-                      triggerSubtleSectionConfetti();
-                    }
-                    try {
-                      recordQuizAttempt(selectedUnitOption, accuracy, passed, xpReward);
-                    } catch (e) {
-                      console.warn('Quiz recording caught fallback:', e);
-                    }
+                  onComplete={() => {
+                    finishQuiz();
                   }}
                   onExit={() => setQuizStarted(false)}
                 />
@@ -952,28 +1202,30 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
                     <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                       <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Score</span>
-                      <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white">{score}/{quizQuestions.length}</span>
+                      <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
+                        {evaluationResult ? `${evaluationResult.totalPointsEarned}/${evaluationResult.totalPointsPossible}` : `${score}/${quizQuestions.length}`}
+                      </span>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                       <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Accuracy</span>
                       <span className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                        {Math.round((score / (quizQuestions.length || 1)) * 100)}%
+                        {evaluationResult ? `${evaluationResult.percentageScore}%` : `${Math.round((score / (quizQuestions.length || 1)) * 100)}%`}
                       </span>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                       <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">XP Earned</span>
                       <span className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
-                        +{Math.max(30, Math.round((score / (quizQuestions.length || 1)) * 100))} XP
+                        +{evaluationResult ? Math.max(30, Math.round(evaluationResult.percentageScore * 1.0)) : Math.max(30, Math.round((score / (quizQuestions.length || 1)) * 100))} XP
                       </span>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                       <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Status</span>
                       <span className={`text-base font-bold ${
-                        Math.round((score / (quizQuestions.length || 1)) * 100) >= 70 
+                        (evaluationResult ? evaluationResult.percentageScore : Math.round((score / (quizQuestions.length || 1)) * 100)) >= 70 
                           ? 'text-emerald-600 dark:text-emerald-400' 
                           : 'text-amber-600 dark:text-amber-400'
                       }`}>
-                        {Math.round((score / (quizQuestions.length || 1)) * 100) >= 70 ? 'Passed' : 'Review'}
+                        {(evaluationResult ? evaluationResult.percentageScore : Math.round((score / (quizQuestions.length || 1)) * 100)) >= 70 ? 'Passed' : 'Review'}
                       </span>
                     </div>
                   </div>
@@ -1011,6 +1263,37 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Pedagogical Adaptive Guidance (Step 10) */}
+                  {quizAdaptation && (
+                    <div className="max-w-xl mx-auto mb-8">
+                      <AdaptationCard
+                        adaptation={quizAdaptation}
+                        onDismiss={() => setQuizAdaptation(null)}
+                        onAction={(action) => {
+                          if (action.targetTab && onNavigate) {
+                            onNavigate(action.targetTab);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Targeted Diagnostic Remediation (Step 22) */}
+                  {remediationEvaluation && remediationEvaluation.recommendations.length > 0 && (
+                    <div className="max-w-xl mx-auto mb-8 text-left">
+                      <RemediationRecommendationsView
+                        evaluation={remediationEvaluation}
+                        isLoading={false}
+                        onNavigate={onNavigate}
+                        onAcceptRecommendation={(rec) => {
+                          if (currentUser?.uid) {
+                            trackRemediationStarted(rec, currentUser.uid);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* CTAs */}
                   <div className="flex flex-wrap items-center justify-center gap-4">
@@ -1092,6 +1375,16 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
 
                           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed border border-slate-200 dark:border-slate-700">
                             <strong>Explanation: </strong>{q.explanation}
+                          </div>
+
+                          <div className="flex justify-end pt-1">
+                            <button
+                              onClick={() => onNavigate('lesson-player')}
+                              className="text-xs font-bold text-[#3157D5] dark:text-[#6D8CFF] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Review associated lesson in Animated Learning</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       );

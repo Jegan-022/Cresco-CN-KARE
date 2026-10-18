@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transport Service – CRESCO CN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060913;--ink:#e9eefb;--muted:#8e9bb8;--dim:#5b6785;--line:rgba(255,255,255,.09);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--a1:#4f46e5;--a2:#0891b2;--a3:#be185d}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit;cursor:pointer}
+.aurora{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.27;animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--a1);left:-15vmax;top:-20vmax}.aurora i:nth-child(2){background:var(--a2);right:-18vmax;top:10vmax;animation-duration:32s}
+.aurora i:nth-child(3){background:var(--a3);left:25vw;bottom:-32vmax;opacity:.16;animation-duration:38s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.app{position:relative;height:100vh;display:flex;flex-direction:column}
+.topbar{padding:12px 18px}.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;font-size:19px;box-shadow:0 6px 24px -6px var(--a1)}
+.crumbs{color:var(--muted);font-size:12px}.crumbs b{color:var(--ink)}.crumbs span{margin:0 6px;opacity:.5}
+h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}.title p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:0 18px 18px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px)}
+.card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pad{padding:13px 15px}
+.stage{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,rgba(99,102,241,.13),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/26px 26px,rgba(8,12,24,.7)}
+.hud{display:flex;gap:8px;flex-wrap:wrap;padding:12px 12px 0}
+.stat{padding:6px 12px;border-radius:14px;background:rgba(6,9,19,.72);border:1px solid var(--line);min-width:96px}
+.stat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.stat b{font:700 15px var(--mono)}
+.vp{flex:1;position:relative;min-height:300px}#svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px}.lg{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:rgba(6,9,19,.72);border:1px solid var(--line);font-size:11px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
+.side{overflow-y:auto;display:flex;flex-direction:column;gap:12px;min-height:0;padding-right:4px}.side>*{flex:none}
+.idea{font-size:12.5px;line-height:1.55;color:#c3cde6}.idea b{color:#fff}
+select{background:#0d1426;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:600;font-size:12.5px}#scn{width:100%}
+.ctl{display:flex;gap:8px;margin-top:10px}.btn{padding:8px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:600;font-size:12.5px;transition:.2s}.btn:hover{background:rgba(255,255,255,.12)}
+.btn.pri{background:linear-gradient(135deg,var(--a1),var(--a2));border:0;flex:1}
+.narr{border-left:3px solid var(--a2)}.narr.ok{border-left-color:#34d399}.narr.deny{border-left-color:#fb7185}.narr.warn{border-left-color:#fbbf24}
+.narr h3{color:var(--ink);font-size:12px;letter-spacing:.04em;text-transform:none}.narr p{margin:0;font-size:12.5px;line-height:1.55;color:#c3cde6}
+.tbl{display:grid;gap:5px;font:12px var(--mono)}.row{display:flex;justify-content:space-between;gap:10px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.04);transition:.3s}.row span{color:var(--muted)}.row.hl{background:rgba(52,211,153,.18);outline:1px solid #34d399}
+ol{margin:0;padding:0;list-style:none;display:grid;gap:4px}li{display:flex;gap:9px;align-items:center;padding:5px 8px;border-radius:9px;font-size:12px;color:var(--dim);transition:.3s}
+li i{font:700 10px var(--mono);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-style:normal}
+li.done{color:var(--muted)}li.done i{background:#34d399;color:#04281c;border:0}li.on{color:#fff;background:rgba(255,255,255,.08)}li.on i{background:var(--a2);color:#001;border:0}
+/* svg */
+.lk{stroke:#1f2a44;stroke-width:5;stroke-linecap:round}
+.body{fill:#0e1628;stroke-width:3}.halo{fill:none;stroke-width:2;opacity:.25}.em{font-size:28px;text-anchor:middle;dominant-baseline:central}
+.nl{font:700 13px Inter;fill:#fff;text-anchor:middle}.ns{font:500 10px Inter;fill:var(--muted);text-anchor:middle}.ct{font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}.chip{transition:opacity .3s}
+.pl{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.wm{font:700 11px Inter;letter-spacing:.2em;text-anchor:middle;opacity:.65}.big{font-size:13px}
+.rip{fill:none;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:rip 1.1s ease-out forwards}
+@keyframes rip{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.fl{animation:fl 14s linear infinite}@keyframes fl{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-380px);opacity:0}}
+.scan{animation:scan 2.4s ease-in-out infinite alternate}@keyframes scan{to{transform:translateX(14px)}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.barrier{transform-origin:500px 270px;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+svg[data-gate=open] .barrier{transform:rotate(88deg)}svg[data-gate=deny] .barrier,svg[data-gate=deny] .door{animation:shake .25s 3}
+.lamp{fill:#fb7185;transition:.4s;filter:drop-shadow(0 0 6px currentColor)}svg[data-gate=open] .lamp{fill:#34d399}
+.door{transition:transform .9s cubic-bezier(.3,1.2,.5,1)}svg[data-gate=open] .door{transform:translateY(-92px)}
+.lko{opacity:0}svg[data-gate=open] .lko{opacity:1}svg[data-gate=open] .lkc{opacity:0}.cband{opacity:.35;transition:.6s}svg[data-gate=open] .cband{opacity:1}
+.lc{font:700 11px var(--mono);fill:#cfd8ee;text-anchor:middle;dominant-baseline:central}.lk{transition:stroke .4s}
+.ph{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px 0}.ph:empty{display:none}.ph span{font:700 10px var(--mono);letter-spacing:.06em;padding:4px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim);transition:.3s}.ph span.on{color:#001;background:var(--a2);border-color:transparent}.ph span.dn{color:var(--muted);border-color:#34d399}
+.dl{stroke-dasharray:6 10;animation:dsh 1.2s linear infinite}@keyframes dsh{to{stroke-dashoffset:-32}}
+@media(max-width:900px){body{overflow:auto}.app{height:auto}.layout{grid-template-columns:1fr}.side{overflow:visible}}
+</style></head><body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="app">
+<header class="topbar"><div class="brand"><div class="logo" id="logo"></div><div class="title"><div class="crumbs">CRESCO CN<span>›</span>Unit III · Network Layer<span>›</span><b id="cr"></b></div><h1 id="h1"></h1><p id="sub"></p></div></div></header>
+<main class="layout">
+<section class="card stage"><div class="hud" id="hud"></div><div class="ph" id="ph"></div><div class="vp"><svg id="svg" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg></div><div class="legend" id="lg"></div></section>
+<aside class="side">
+<div class="card pad"><h3>Key idea</h3><div class="idea" id="idea"></div></div>
+<div class="card pad"><h3>Scenario</h3><select id="scn"></select><div class="ctl"><button class="btn pri" id="play"></button><button class="btn" id="step">⏭ Step</button><button class="btn" id="rst">↺</button><select id="spd"><option value=".6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select></div></div>
+<div class="card pad narr" id="narr"><h3 id="nt"></h3><p id="nx"></p></div>
+<div class="card pad"><h3 id="tt"></h3><div class="tbl" id="tb"></div></div>
+<div class="card pad"><h3>Event timeline</h3><ol id="tl"></ol></div>
+</aside></main></div>
+<script>
+const C='#22d3ee',G='#34d399',X='#fb7185',A='#fbbf24',V='#a78bfa',P='#f472b6',D='#5b6785';
+const hop=(from,to,label,color,title,text,x={})=>({from,to,label,color,title,text,...x});
+const PK='#f472b6',M='#8e9bb8';
+
+const nd=(id,x,y,i,l,s,c)=>({id,x,y,i,l,s,c});
+const T4=(c,n,over)=>[1,2,3,4].map((k,j)=>({p:['tA','net','tB'],l:'PKG '+k,c,d:over[k-1][0],b:over[k-1][1]}));
+const FAST=[[0],[150,'lose'],[900],[300]],REL=[[0],[200,'lose'],[400],[600]];
+const G4=['SEND()','segment','segment','RECEIVE()'],CG=[C,PK,PK,G];
+const CFG={topic:'Transport Service',title:'Transport Service',sub:'Smart delivery service · what the transport layer promises to applications',icon:'📦',a:['#6d28d9','#0891b2','#db2777'],
+ idea:'The <b>transport service</b> is what transport offers applications through a <b>service interface</b> (sockets). Two flavours: <b>reliable, ordered, connection-oriented</b> (TCP) and <b>fast, best-effort, connectionless</b> (UDP). Switch the scenario to compare delivery modes.',
+ tblTitle:'Delivery report',legend:[[C,'Reliable service'],[A,'Fast service'],[PK,'On the wire'],[G,'Delivered'],[X,'Lost']],tele:{SERVICE:'—',ORDER:'—'},
+ nodes:[nd('appA',70,235,'💻','Application A','sender',C),nd('tA',235,235,'📦','Transport service','sender side',V),nd('net',400,235,'🌐','Network','best effort',M),nd('tB',565,235,'📦','Transport service','receiver side',V),nd('appB',730,235,'🖥️','Application B','receiver',G)],
+ links:[['appA','tA'],['tA','net'],['net','tB'],['tB','appB']],
+ sc:{
+ rel:{name:'Reliable + ordered (TCP-style)',tbl:{Delivery:'—',Order:'—',Retransmit:'—',Setup:'—'},init:{},intro:'The app wants every byte, in order. Press <b>Play</b>.',steps:[
+  {title:'Choose a service',text:'App A asks for a <b>reliable, ordered</b> service. It does not care how, only that data arrives complete and in order.',pulse:'tA',pc:C,tele:{SERVICE:'RELIABLE',ORDER:'ordered'},tbl:{Delivery:'guaranteed',Order:'in order',Setup:'connection first'},set:{tA:['service: RELIABLE',C]}},
+  hop('appA','tA','PKG 1-4',C,'App hands over 4 packages','Data crosses the service interface into the transport layer.',{set:{tA:['numbering 1-4',C]}}),
+  {title:'Sent with sequence numbers',text:'Each package carries a number. Package 2 is lost in the network.',packets:T4(C,0,REL),set:{tB:['got 1,3,4 · missing 2',A]}},
+  hop('tB','tA','ACK · need PKG 2',A,'Receiver asks again','The receiver notices the gap and keeps asking for package 2.',{via:'net',tbl:{Retransmit:'PKG 2'},hl:'Retransmit',set:{tA:['resend PKG 2',A]}}),
+  hop('tA','tB','PKG 2 (retry)',A,'Retransmission','Transport A sends package 2 again.',{via:'net',set:{tB:['got 1-4 ✓',G]}}),
+  hop('tB','appB','PKG 1-4 in order',G,'Delivered in order','Transport held packages 3 and 4 until 2 arrived, then passed all four up in order. Cost: extra delay and bookkeeping.',{tbl:{Delivery:'all 4 ✓',Order:'1, 2, 3, 4 ✓'},set:{appB:['got 1-4 ✓',G]},end:'ok'})]},
+ fast:{name:'Fast + unordered (UDP-style)',tbl:{Delivery:'—',Order:'—',Setup:'—'},init:{},intro:'The app wants speed, not guarantees. Press <b>Play</b>.',steps:[
+  {title:'Choose a service',text:'App A asks for a <b>fast, no-frills</b> service: no connection, no waiting, no guarantees.',pulse:'tA',pc:A,tele:{SERVICE:'FAST',ORDER:'unordered'},tbl:{Delivery:'best effort',Order:'any order',Setup:'none'},set:{tA:['service: FAST',A]}},
+  hop('appA','tA','PKG 1-4',A,'App hands over 4 packages','Each package becomes an independent datagram.'),
+  {title:'Sent immediately, independently',text:'No numbering, no waiting. Package 2 is lost and package 3 takes a slow route.',packets:T4(A,0,FAST),set:{tB:['got 1, 4, 3',A]}},
+  hop('tB','appB','PKG 1, 4, 3',A,'Delivered as they arrive','Whatever arrives is passed up at once, in arrival order.',{tbl:{Delivery:'3 of 4',Order:'1, 4, 3'},hl:'Order',set:{appB:['gaps · reordered',X]},tele:{ORDER:'1, 4, 3'}}),
+  {title:'No recovery',text:'Package 2 is simply gone and nobody retries. That suits live video, voice and games, where speed matters more than perfection. The app handles gaps itself.',pulse:'appB',pc:X,end:'warn'}]},
+ cmp:{name:'Compare: same packages, both services',tbl:{'Fast service':'—','Reliable service':'—'},init:{},intro:'Identical network, identical packages, two different services. Press <b>Play</b>.',steps:[
+  {title:'Same network, same 4 packages',text:'The network is the same for both runs: it loses package 2 and delays package 3. Only the <b>service</b> differs.',pulse:'net',pc:M},
+  {title:'Fast service',text:'Four datagrams are sent at once, with no numbering and no waiting.',packets:T4(A,0,FAST),set:{tB:['got 1, 4, 3',A]}},
+  hop('tB','appB','PKG 1, 4, 3',A,'Fast result','The app receives 3 of 4, out of order, but with minimum delay.',{tbl:{'Fast service':'1, 4, 3 · #2 lost'},hl:'Fast service',set:{appB:['gaps · reordered',X]}}),
+  {title:'Reliable service',text:'The same packages, now numbered and acknowledged.',packets:T4(C,0,REL),set:{tB:['missing 2',A],appB:['',M]}},
+  hop('tA','tB','PKG 2 (retry)',A,'Detect and retransmit','Missing package 2 is requested and resent.',{via:'net',set:{tB:['got 1-4 ✓',G]}}),
+  hop('tB','appB','PKG 1-4 in order',G,'Reliable result','The app gets everything in order, but later. <b>Reliability costs time.</b>',{tbl:{'Reliable service':'1, 2, 3, 4 ✓ (slower)'},hl:'Reliable service',set:{appB:['got 1-4 ✓',G]},end:'ok'})]},
+ prim:{name:'Service primitives (socket calls)',tbl:{'App B (server)':'idle','App A (client)':'idle',Connection:'none'},init:{},intro:'Applications use a handful of calls to ask for the service. Press <b>Play</b>.',steps:[
+  hop('appB','tB','LISTEN()',G,'Server: LISTEN','Application B tells its transport entity to wait for incoming connections.',{set:{appB:['LISTEN',G],tB:['waiting',G]},tbl:{'App B (server)':'LISTEN'},tele:{SERVICE:'primitives'}}),
+  hop('appA','tA','CONNECT()',C,'Client: CONNECT','Application A asks its transport entity to open a connection to B.',{set:{appA:['CONNECT',C]},tbl:{'App A (client)':'CONNECT'}}),
+  hop('tA','tB','CONN REQUEST',A,'Transport entities negotiate','The two entities exchange a connection request. The applications never see these segments.',{via:'net',set:{tB:['request in',A]}}),
+  hop('tB','tA','CONN ACCEPTED',G,'Connection established','Both sides now share a connection.',{via:'net',set:{tA:['connected',G],tB:['connected',G],appA:['connected',G],appB:['connected',G]},tbl:{Connection:'ESTABLISHED','App A (client)':'connected','App B (server)':'connected'}}),
+  hop('appA','appB',G4,CG,'SEND → RECEIVE','A SEND() call becomes segments on the wire, then a RECEIVE() at the other end. The service hides the network.',{via:['tA','net','tB']}),
+  hop('appB','appA',G4,CG,'Reply travels back','The same primitives work in both directions.',{via:['tB','net','tA']}),
+  hop('appA','tB',['DISCONNECT()','FIN','FIN'],[C,A,A],'DISCONNECT','The client releases the connection. Transport tells the other side and both close.',{via:['tA','net'],set:{appA:['closed',M],appB:['closed',M],tA:['closed',M],tB:['closed',M]},tbl:{Connection:'CLOSED','App A (client)':'closed','App B (server)':'closed'},end:'ok'})]}},
+ world:()=>`<rect x="168" y="150" width="136" height="170" rx="22" fill="rgba(167,139,250,.05)" stroke="rgba(167,139,250,.22)"/><rect x="496" y="150" width="136" height="170" rx="22" fill="rgba(167,139,250,.05)" stroke="rgba(167,139,250,.22)"/>
+ <line class="dl" x1="304" x2="496" y1="235" y2="235" stroke="#22d3ee" stroke-width="2" opacity=".35"/>
+ <line x1="140" x2="140" y1="110" y2="360" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/><line x1="660" x2="660" y1="110" y2="360" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/>
+ <text x="140" y="100" class="wm" style="font-size:9px" fill="#8e9bb8">SERVICE INTERFACE</text><text x="660" y="100" class="wm" style="font-size:9px" fill="#8e9bb8">SERVICE INTERFACE</text>
+ <text x="236" y="140" class="wm" style="font-size:9px" fill="#a78bfa">DELIVERY DESK</text><text x="564" y="140" class="wm" style="font-size:9px" fill="#a78bfa">DELIVERY DESK</text>
+ <text x="400" y="38" class="wm big" fill="#a78bfa">SMART DELIVERY SERVICE</text><text x="400" y="420" class="wm" style="font-size:9.5px" fill="#8e9bb8">APPLICATIONS ASK · TRANSPORT DELIVERS</text>`};
+
+const NS='http://www.w3.org/2000/svg',$=s=>document.querySelector(s),svg=$('#svg');
+let LK={},SC,idx=0,busy=false,playing=false,speed=1,tok=0,pos={},count=0,TELE={},TBL={},HL='',layer;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/speed));
+const el=(t,a={},p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+const mv=(g,p,q,ms,t)=>new Promise(res=>{const s=performance.now(),d=ms/speed;(function f(n){if(t!==tok)return res();const u=Math.min(1,(n-s)/d),e=ease(u);g.setAttribute('transform',`translate(${p.x+(q.x-p.x)*e},${p.y+(q.y-p.y)*e})`);u<1?requestAnimationFrame(f):res()})(s)});
+async function fly(pts,labels,cols,bounce,t){
+  const pick=(v,i)=>Array.isArray(v)?v[Math.min(i,v.length-1)]:v;
+  const g=el('g',{},layer),r=el('rect',{y:-11,height:22,rx:11,fill:'#0b1222','stroke-width':1.8},g),tx=el('text',{class:'pl'},g);
+  g.setAttribute('transform',`translate(${pts[0].x},${pts[0].y})`);
+  const label=(l,c)=>{tx.textContent=l;const w=l.length*6.8+20;r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',c);g.style.filter=`drop-shadow(0 0 7px ${c})`};
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],last=i===pts.length-1;label(pick(labels,i-1),pick(cols,i-1));
+    if(last&&bounce==='lose'){const m={x:a.x+(b.x-a.x)*.55,y:a.y+(b.y-a.y)*.55};await mv(g,a,m,750,t);if(t!==tok)return g.remove();label(pick(labels,i-1)+' ✗',X);await sleep(500);return g.remove()}
+    if(last&&bounce){const m={x:a.x+(b.x-a.x)*.74,y:a.y+(b.y-a.y)*.74};await mv(g,a,m,750,t);if(t!==tok)return g.remove();label(pick(labels,i-1)+' ✗',X);await sleep(350);await mv(g,m,a,600,t)}
+    else await mv(g,a,b,750,t);
+    if(t!==tok)return g.remove();
+  }
+  g.style.transition='opacity .25s';g.style.opacity=0;await sleep(250);g.remove();
+}
+function pulse(id,c){const n=pos[id],e=el('circle',{cx:n.x,cy:n.y,r:36,class:'rip',stroke:c||n.c},layer);setTimeout(()=>e.remove(),1200)}
+function stat(id,txt,col){const g=$('#n_'+id+' .chip');if(!txt){g.style.opacity=0;return}g.style.opacity=1;const t=g.querySelector('text'),r=g.querySelector('rect'),w=txt.length*6.5+20;t.textContent=txt;t.setAttribute('fill',col);r.setAttribute('x',-w/2);r.setAttribute('width',w);r.setAttribute('stroke',col)}
+function lit(a,b,col,dash,txt){const k=LK[a+'|'+b];if(!k)return;const s=k.l.style;s.stroke=col||'';s.strokeWidth=col?7:'';s.strokeDasharray=dash?'3 9':'';s.filter=col?`drop-shadow(0 0 7px ${col})`:'';if(k.r)k.r.setAttribute('stroke',col||'#33405f');if(txt!=null&&k.t)k.t.textContent=txt}
+function build(){
+  svg.innerHTML='<defs><pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#fbbf24"/><rect x="6" width="6" height="12" fill="#1a1a1a"/></pattern></defs>';
+  svg.insertAdjacentHTML('beforeend',CFG.world());
+  LK={};CFG.links.forEach(([a,b])=>{LK[a+'|'+b]=LK[b+'|'+a]={l:el('line',{x1:pos[a].x,y1:pos[a].y,x2:pos[b].x,y2:pos[b].y,class:'lk'})}});
+  CFG.links.forEach(([a,b,w])=>{if(w==null)return;const g=el('g',{transform:`translate(${(pos[a].x+pos[b].x)/2},${(pos[a].y+pos[b].y)/2})`}),ww=String(w).length*7.4+14,k=LK[a+'|'+b];
+   k.r=el('rect',{x:-ww/2,y:-10,width:ww,height:20,rx:7,fill:'#0b1222',stroke:'#33405f','stroke-width':1.3},g);k.t=el('text',{class:'lc'},g);k.t.textContent=w});
+  CFG.nodes.forEach(n=>{const g=el('g',{id:'n_'+n.id,transform:`translate(${n.x},${n.y})`});
+    el('circle',{r:42,class:'halo',stroke:n.c},g);el('circle',{r:32,class:'body',stroke:n.c},g);
+    el('text',{class:'em'},g).textContent=n.i;el('text',{class:'nl',y:52},g).textContent=n.l;el('text',{class:'ns',y:65},g).textContent=n.s;
+    const c=el('g',{class:'chip',transform:'translate(0,86)'},g);el('rect',{y:-10,height:20,rx:10,fill:'#0b1222','stroke-width':1.4},c);el('text',{class:'ct'},c);if(CFG.flows&&CFG.flows[n.id]){g.style.cursor='pointer';g.addEventListener('click',()=>flow(n.id))}});
+  layer=el('g');
+}
+function flow(id){const f=CFG.flows[id],t=tok;f.path.slice(1).forEach((b,i)=>lit(f.path[i],b,f.color));narr(f.title,f.text);fly(f.path.map(k=>pos[k]),f.label,f.color,false,t);count++;hud();setTimeout(()=>f.path.slice(1).forEach((b,i)=>lit(f.path[i],b,'')),3300/speed)}
+function setPh(i){$('#ph').innerHTML=(SC.phases||[]).map((p,k)=>`<span class="${k<i?'dn':k===i?'on':''}">${p}</span>`).join('')}
+function hud(){const s=[['STEP',`${idx}/${SC.steps.length}`],['FRAMES',count],...Object.entries(TELE)];$('#hud').innerHTML=s.map(([k,v])=>`<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('')}
+function tbl(){$('#tb').innerHTML=Object.entries(TBL).map(([k,v])=>`<div class="row${k===HL?' hl':''}"><span>${k}</span><b>${v}</b></div>`).join('')}
+function narr(t,x,cls=''){$('#nt').textContent=t;$('#nx').innerHTML=x;$('#narr').className='card pad narr '+cls}
+function btn(){$('#play').textContent=playing?'⏸ Pause':idx>=SC.steps.length?'↻ Replay':'▶ Play'}
+function reset(){
+  tok++;busy=false;playing=false;idx=0;count=0;TELE={...CFG.tele};TBL={...SC.tbl};HL='';build();
+  svg.dataset.gate=SC.gate||'closed';CFG.nodes.forEach(n=>stat(n.id,''));for(const k in SC.init)stat(k,...SC.init[k]);
+  $('#tl').innerHTML=SC.steps.map((s,i)=>`<li id="t${i}"><i>${i+1}</i>${s.title}</li>`).join('');
+  narr('Ready',SC.intro);hud();tbl();btn();setPh(-1);
+}
+async function run(s,t){
+  const li=$('#t'+idx);li.className='on';narr(s.title,s.text);if(s.ph!=null)setPh(s.ph);
+  if(s.lkReset)CFG.links.forEach(([a,b,w])=>lit(a,b,'',0,w));for(const e of s.lk||[])lit(...e);
+  if(s.pulse)pulse(s.pulse,s.pc);
+  const fl=s.packets||(s.from?[].concat(s.to).map(to=>({p:[s.from,...[].concat(s.via||[]),to],l:s.label,c:s.color,b:s.bounce})):[]);
+  if(fl.length){await Promise.all(fl.map(async f=>{if(f.d)await sleep(f.d);await fly(f.p.map(k=>pos[k]),f.l,f.c,f.b,t)}));count+=fl.length}
+  else await sleep(1000);
+  if(t!==tok)return false;
+  for(const k in s.set)stat(k,...s.set[k]);Object.assign(TELE,s.tele||{});Object.assign(TBL,s.tbl||{});HL=s.hl||'';
+  if(s.gate)svg.dataset.gate=s.gate;if(s.end)narr(s.title,s.text,s.end);
+  li.className='done';await sleep(450);return t===tok;
+}
+async function next(){if(busy||idx>=SC.steps.length)return;busy=true;const t=tok;if(!await run(SC.steps[idx],t))return;busy=false;idx++;hud();tbl();btn()}
+$('#play').onclick=async()=>{if(playing){playing=false;btn();return}if(idx>=SC.steps.length)reset();playing=true;btn();while(playing&&idx<SC.steps.length)await next();if(tok)playing=false;btn()};
+$('#step').onclick=()=>{playing=false;btn();next()};$('#rst').onclick=reset;
+$('#spd').onchange=e=>speed=+e.target.value;
+$('#scn').onchange=e=>{SC=CFG.sc[e.target.value];reset()};
+CFG.nodes.forEach(n=>pos[n.id]=n);
+['--a1','--a2','--a3'].forEach((v,i)=>document.documentElement.style.setProperty(v,CFG.a[i]));
+$('#logo').textContent=CFG.icon;$('#cr').textContent=CFG.topic;$('#h1').textContent=CFG.title;$('#sub').textContent=CFG.sub;$('#idea').innerHTML=CFG.idea;$('#tt').textContent=CFG.tblTitle;
+$('#lg').innerHTML=CFG.legend.map(([c,t])=>`<div class="lg"><i style="background:${c}"></i>${t}</div>`).join('');
+$('#scn').innerHTML=Object.entries(CFG.sc).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+SC=Object.values(CFG.sc)[0];reset();
+</script></body></html>

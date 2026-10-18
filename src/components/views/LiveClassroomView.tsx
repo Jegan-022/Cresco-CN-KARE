@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LiveClassroomState, NavTab, UserRole } from '../../types';
 import { INITIAL_LIVE_CLASSROOM } from '../../data/networkCourse';
 import { useAuth } from '../../context/AuthContext';
-import { doc, onSnapshot, setDoc, collection } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { 
   Radio, 
@@ -69,30 +69,8 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
   const [questionIndex, setQuestionIndex] = useState<number>(0);
   const [explanation, setExplanation] = useState<string>(SAMPLE_QUESTIONS[0].explanation);
   const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
-  const [connectedStudentsCount, setConnectedStudentsCount] = useState<number>(1);
 
-  // 1. Listen to real-time student presence / count
-  useEffect(() => {
-    try {
-      const studentsRef = collection(db, 'students');
-      const unsubscribeStudents = onSnapshot(studentsRef, (snapshot) => {
-        if (!snapshot.empty) {
-          let countOnline = 0;
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.isOnline) countOnline++;
-          });
-          setConnectedStudentsCount(Math.max(countOnline, 1));
-        }
-      }, (err) => console.warn('LiveClassroom: students count warning', err));
-
-      return () => unsubscribeStudents();
-    } catch (e) {
-      console.warn('LiveClassroom: error attaching students listener', e);
-    }
-  }, []);
-
-  // 2. Connect to live Firestore poll document
+  // Connect to live Firestore poll document (zero private student collection dependencies)
   useEffect(() => {
     try {
       const pollDocRef = doc(db, 'live_classroom', 'current_poll');
@@ -102,7 +80,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           setLiveState((prev) => ({
             ...prev,
             isActive: data.isActive ?? true,
-            connectedCount: data.connectedCount ?? connectedStudentsCount,
+            connectedCount: data.connectedCount ?? 1,
             totalEnrolled: data.totalEnrolled ?? 66,
             currentQuestion: data.currentQuestion || SAMPLE_QUESTIONS[0].question,
             options: data.options || SAMPLE_QUESTIONS[0].options,
@@ -220,7 +198,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
 
     const nextState = {
       isActive: true,
-      connectedCount: Math.max(connectedStudentsCount, 1),
+      connectedCount: Math.max(liveState.connectedCount || 1, 1),
       totalEnrolled: 66,
       currentQuestion: nextQ.question,
       explanation: nextQ.explanation,
@@ -274,7 +252,7 @@ export const LiveClassroomView: React.FC<LiveClassroomViewProps> = ({
           </div>
           <div className="flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-700 dark:text-slate-300 text-xs font-semibold">
             <Users className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span><strong className="text-slate-900 dark:text-white font-mono">{connectedStudentsCount}</strong> / 66 Online</span>
+            <span><strong className="text-slate-900 dark:text-white font-mono">{liveState.isActive ? 'Active Session' : 'Offline'}</strong></span>
           </div>
         </div>
       </div>

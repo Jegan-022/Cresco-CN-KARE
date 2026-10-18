@@ -89,6 +89,8 @@ export interface LevelDefinition {
   totalLessonsInUnit: number; // 8
   title: string; // 'Network Layer — Need and Issues'
   subtitle: string;
+  description?: string;
+  objectives?: string[];
   estimatedDuration: string;
   mascotQuote: string;
   mascotTip: string;
@@ -99,8 +101,16 @@ export interface LevelDefinition {
   // 4 Core Stages matching the design reference
   concept: {
     tabs: ConceptTabContent[];
+    heading?: string;
+    body?: string;
+    highlightWords?: { word: string; explanation: string }[];
   };
   interactive: SimulationConfig;
+  animatedLearning?: {
+    diagramType?: string;
+    animationTopicId?: string;
+    description?: string;
+  };
   quiz: {
     title: string;
     subtitle: string;
@@ -108,4 +118,10 @@ export interface LevelDefinition {
     quickTips: string[];
   };
   summary: SummaryConfig;
+  completionState?: {
+    isCompleted?: boolean;
+    minScore?: number;
+    requiredBadge?: string;
+  };
+  phases?: any[];
 }

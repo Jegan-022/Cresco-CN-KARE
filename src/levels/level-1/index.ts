@@ -10,11 +10,27 @@ export const level1Data: LevelDefinition = {
   totalLessonsInUnit: 8,
   title: 'Network Layer — Need and Issues',
   subtitle: 'Understand why the network layer is required, what services it provides, and the key design challenges it addresses.',
+  description: 'Store-and-forward packet switching, connectionless datagram vs virtual circuit services, and Layer 3 design issues.',
+  objectives: [
+    'Understand why multi-hop networks require Layer 3 host-to-host routing',
+    'Contrast connectionless datagram packet switching with virtual circuits',
+    'Examine store-and-forward packet processing and router forwarding tables',
+    'Analyze primary network layer design challenges: routing, congestion, and QoS'
+  ],
   estimatedDuration: '4–5 min',
   mascotQuote: "Let's understand why the Network Layer exists!",
   mascotTip: "Drag and send a message to see how routing works!",
   xpReward: 100,
   nextLevelSlug: 'level-2',
+  completionState: {
+    isCompleted: false,
+    minScore: 70,
+  },
+  animatedLearning: {
+    diagramType: 'routing-topology',
+    animationTopicId: 'store-and-forward',
+    description: 'Visualizing packet buffering, routing table lookup, and forwarding across router hops.'
+  },
 
   concept: {
     tabs: [

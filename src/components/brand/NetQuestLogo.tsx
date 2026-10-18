@@ -45,6 +45,7 @@ export const NetQuestLogo: React.FC<NetQuestLogoProps> = ({
       <img
         src="/assets/mascot/cresco-mascot.png"
         alt="Cresco CN Octopus Mascot"
+        decoding="async"
         className="w-full h-full object-contain relative z-10 p-0.5 filter drop-shadow-[0_2px_8px_rgba(6,182,212,0.35)]"
       />
     </div>

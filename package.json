@@ -11,6 +11,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "tsx test_curriculum_and_gamification.ts",
+    "test:step27": "tsx test_step27_production_readiness.ts",
     "sync:cloud": "tsx scripts/sync_curriculum_to_cloud.ts"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",

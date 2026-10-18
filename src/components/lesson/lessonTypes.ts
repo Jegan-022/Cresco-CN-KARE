@@ -67,7 +67,10 @@ export interface LessonPhase {
     | 'save-the-packet'
     | 'http-request'
     | 'https-tls'
-    | 'eap-8021x';
+    | 'eap-8021x'
+    | 'osi-encapsulation'
+    | 'csmacd-collision'
+    | 'sliding-window';
 
   // Question specific properties
   questionText?: string;
@@ -104,4 +107,7 @@ export interface LessonDefinition {
   nextLessonId?: string;
   nextLessonTitle?: string;
   masteryRating: number; // 0–100%
+  objectives?: string[];
+  isUnavailable?: boolean;
+  unavailableReason?: string;
 }
