@@ -70,7 +70,7 @@ export async function handleAiTutorRequest(reqBody: any): Promise<{
 
   const tutorContext: TutorContextPayload = context || {};
   const startTime = Date.now();
-  const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
   // 1. Build Socratic System Prompt grounded in CRESCO Curriculum
   const systemInstruction = `
