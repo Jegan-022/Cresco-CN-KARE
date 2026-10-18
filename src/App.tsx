@@ -59,6 +59,9 @@ const DeveloperDashboardView = React.lazy(() => import('./components/views/Devel
 const AnalyticsView = React.lazy(() => import('./components/views/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
 const MyLearningView = React.lazy(() => import('./components/views/MyLearningView').then(m => ({ default: m.MyLearningView })));
 const LoginView = React.lazy(() => import('./components/views/LoginView').then(m => ({ default: m.LoginView })));
+const TermsView = React.lazy(() => import('./components/views/TermsView').then(m => ({ default: m.TermsView })));
+const PrivacyView = React.lazy(() => import('./components/views/PrivacyView').then(m => ({ default: m.PrivacyView })));
+const AdminPortalView = React.lazy(() => import('./components/views/AdminPortalView').then(m => ({ default: m.AdminPortalView })));
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -82,6 +85,11 @@ function MainApp() {
   const getInitialRoute = () => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
+      if (path === '/terms') return { tab: 'terms' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/privacy') return { tab: 'privacy' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/admin') return { tab: 'admin' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/login') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+
       const routeInfo = parseLevelFromPath(path);
       if (routeInfo) {
         return { tab: 'lesson-player' as NavTab, lessonId: routeInfo.lessonId, sectionId: routeInfo.sectionId };
@@ -173,6 +181,10 @@ function MainApp() {
           return;
         }
       }
+      if (path === '/terms') { setCurrentTab('terms'); return; }
+      if (path === '/privacy') { setCurrentTab('privacy'); return; }
+      if (path === '/admin') { setCurrentTab('admin'); return; }
+      if (path === '/login') { setCurrentTab('login'); return; }
       if (path === '/' || path === '') {
         setCurrentTab(currentUser ? 'home' : 'landing');
       }
@@ -191,7 +203,14 @@ function MainApp() {
       return;
     }
 
-    if (!currentUser && !pendingRegistration && currentTab !== 'landing' && currentTab !== 'login' && currentTab !== 'welcome' && currentTab !== 'lesson-player') {
+    if (!currentUser && !pendingRegistration && 
+        currentTab !== 'landing' && 
+        currentTab !== 'login' && 
+        currentTab !== 'welcome' && 
+        currentTab !== 'lesson-player' &&
+        currentTab !== 'terms' &&
+        currentTab !== 'privacy' &&
+        currentTab !== 'admin') {
       initialRedirectDoneRef.current = false;
       setCurrentTab('landing');
       setTabHistory(['landing']);
@@ -465,6 +484,50 @@ function MainApp() {
             setTabHistory(['home']);
           }}
         />
+      </React.Suspense>
+    );
+  }
+
+  // Terms & Conditions View
+  if (currentTab === 'terms') {
+    return (
+      <React.Suspense fallback={<FullScreenLoader message="Loading Terms & Conditions..." />}>
+        <TermsView onBack={() => {
+          if (typeof window !== 'undefined' && window.history.length > 1) {
+            window.history.back();
+          } else {
+            setCurrentTab(currentUser ? 'home' : 'landing');
+          }
+        }} />
+      </React.Suspense>
+    );
+  }
+
+  // Privacy Policy View
+  if (currentTab === 'privacy') {
+    return (
+      <React.Suspense fallback={<FullScreenLoader message="Loading Privacy Policy..." />}>
+        <PrivacyView onBack={() => {
+          if (typeof window !== 'undefined' && window.history.length > 1) {
+            window.history.back();
+          } else {
+            setCurrentTab(currentUser ? 'home' : 'landing');
+          }
+        }} />
+      </React.Suspense>
+    );
+  }
+
+  // Admin Portal View
+  if (currentTab === 'admin') {
+    return (
+      <React.Suspense fallback={<FullScreenLoader message="Loading Administrator Console..." />}>
+        <AdminPortalView onNavigate={(tab) => {
+          setCurrentTab(tab);
+          if (typeof window !== 'undefined') {
+            window.history.pushState({ tab }, '', tab === 'home' ? '/' : `/${tab}`);
+          }
+        }} />
       </React.Suspense>
     );
   }

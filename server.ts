@@ -57,6 +57,37 @@ async function startServer() {
     }
   });
 
+  // Administrator Oversight Endpoints (Part 5, 6, 7)
+  app.get("/api/admin/overview", async (req, res) => {
+    const { handleAdminOverview } = await import("./api/admin");
+    return handleAdminOverview(req, res);
+  });
+
+  app.get("/api/admin/students", async (req, res) => {
+    const { handleAdminStudents } = await import("./api/admin");
+    return handleAdminStudents(req, res);
+  });
+
+  app.get("/api/admin/faculty", async (req, res) => {
+    const { handleAdminFaculty } = await import("./api/admin");
+    return handleAdminFaculty(req, res);
+  });
+
+  app.get("/api/admin/curriculum", async (req, res) => {
+    const { handleAdminCurriculum } = await import("./api/admin");
+    return handleAdminCurriculum(req, res);
+  });
+
+  app.get("/api/admin/assessments", async (req, res) => {
+    const { handleAdminAssessments } = await import("./api/admin");
+    return handleAdminAssessments(req, res);
+  });
+
+  app.get("/api/admin/system", async (req, res) => {
+    const { handleAdminSystemStatus } = await import("./api/admin");
+    return handleAdminSystemStatus(req, res);
+  });
+
   // Standalone Animated Learning modules (served directly, independent from React SPA)
   app.get("/animated_learn_:num", (req, res, next) => {
     const isProd = process.env.NODE_ENV === "production";

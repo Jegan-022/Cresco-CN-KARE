@@ -15,7 +15,8 @@ import {
   Film,
   LogIn,
   LogOut,
-  Globe
+  Globe,
+  Shield
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 import { useAuth } from '../context/AuthContext';
@@ -110,11 +111,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     { id: 'animated-learning', label: 'Animated Learning', icon: Film, badge: 'New', index: '08' },
   ];
 
+  const isAdmin = userProfile?.role === 'developer' || userProfile?.role === 'teacher' || (currentUser as any)?.admin === true;
+
   const bottomItems: {
     id: NavTab;
     label: string;
     icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   }[] = [
+    ...(isAdmin ? [{ id: 'admin' as NavTab, label: 'Admin Portal', icon: Shield }] : []),
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

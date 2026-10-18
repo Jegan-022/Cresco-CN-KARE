@@ -92,6 +92,9 @@ export interface UserProfileData {
   unlockedUnits: string[];
   courseCompletedAt?: string;
   resetEpoch?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
+  termsVersion?: string;
   updatedAt?: string;
 }
 
@@ -157,6 +160,8 @@ interface AuthContextType {
     studentId: string;
     department: string;
     year: string;
+    termsAccepted?: boolean;
+    termsVersion?: string;
   }) => Promise<UserProfileData>;
   cancelRegistration: () => void;
 }
@@ -796,6 +801,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     studentId,
     department,
     year,
+    termsAccepted = true,
+    termsVersion = '1.0',
   }: {
     username: string;
     password: string;
@@ -803,9 +810,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     studentId: string;
     department: string;
     year: string;
+    termsAccepted?: boolean;
+    termsVersion?: string;
   }): Promise<UserProfileData> => {
     if (!pendingRegistration) {
       throw new Error('No pending registration session found.');
+    }
+
+    if (!termsAccepted) {
+      throw new Error('You must accept CRESCO CN\'s Terms & Conditions and Privacy Policy to register.');
     }
 
     const email = pendingRegistration.email.toLowerCase().trim();
@@ -853,6 +866,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       department: department || 'CSE',
       year: year || '3rd Year (UG)',
       profileCompleted: true,
+      termsAccepted: true,
+      termsAcceptedAt: now,
+      termsVersion,
       resetEpoch: GLOBAL_RESET_EPOCH,
       updatedAt: now,
     };
@@ -894,6 +910,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       department: department || 'CSE',
       year: year || '3rd Year (UG)',
       profileCompleted: true,
+      termsAccepted: true,
+      termsAcceptedAt: serverTimestamp(),
+      termsVersion,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

@@ -35,7 +35,10 @@ export type NavTab =
   | 'animated-learning'
   | 'prelaunch'
   | 'landing'
-  | 'login';
+  | 'login'
+  | 'terms'
+  | 'privacy'
+  | 'admin';
 
 export interface LearningNode {
   id: string;

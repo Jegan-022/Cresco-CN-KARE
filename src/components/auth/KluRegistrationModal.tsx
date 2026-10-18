@@ -48,6 +48,7 @@ export const KluRegistrationModal: React.FC<KluRegistrationModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [termsAgreed, setTermsAgreed] = useState(true);
 
   const verifiedEmail = (pendingRegistration?.email || '').toLowerCase().trim();
 
@@ -116,6 +117,11 @@ export const KluRegistrationModal: React.FC<KluRegistrationModalProps> = ({
       return;
     }
 
+    if (!termsAgreed) {
+      setFormError("You must agree to CRESCO CN's Terms & Conditions and Privacy Policy to complete registration.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Fix Register Number permanently as username, and save password (changeable in profile settings)
@@ -126,6 +132,8 @@ export const KluRegistrationModal: React.FC<KluRegistrationModalProps> = ({
         studentId: cleanReg,
         department,
         year,
+        termsAccepted: true,
+        termsVersion: '1.0',
       });
 
       try {
@@ -403,11 +411,44 @@ export const KluRegistrationModal: React.FC<KluRegistrationModalProps> = ({
             </div>
           </div>
 
+          {/* Terms & Conditions Acceptance Checkbox */}
+          <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700/80 flex items-start gap-2.5">
+            <input
+              id="modal-terms-checkbox"
+              type="checkbox"
+              checked={termsAgreed}
+              onChange={(e) => setTermsAgreed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-cyan-400 cursor-pointer accent-cyan-500 shrink-0"
+            />
+            <label htmlFor="modal-terms-checkbox" className="text-[11px] text-slate-300 leading-snug cursor-pointer select-none">
+              <span>I agree to CRESCO CN's </span>
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Terms &amp; Conditions
+              </a>
+              <span> and </span>
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Privacy Policy
+              </a>.
+            </label>
+          </div>
+
           {/* Action Buttons */}
           <div className="pt-2 space-y-2">
             <button
               type="submit"
-              disabled={submitting || registerNumber.length < 10}
+              disabled={submitting || registerNumber.length < 10 || !termsAgreed}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:via-teal-500 hover:to-emerald-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-cyan-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {submitting ? (

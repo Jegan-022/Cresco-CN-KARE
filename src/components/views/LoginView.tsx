@@ -32,6 +32,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const { 
     loginWithStudentId, 
     loginWithGoogle,
+    resetPassword,
     authError, 
     clearAuthError 
   } = useAuth();
@@ -44,7 +45,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showForgotHint, setShowForgotHint] = useState(false);
-  const [showFirstTimeInfo, setShowFirstTimeInfo] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [termsAgreed, setTermsAgreed] = useState(true);
 
   const displayError = localError || authError;
 
@@ -61,6 +66,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   // First-time signup with Google to fix Register Number and Password
   const handleFirstTimeGoogleSignup = async () => {
+    if (!termsAgreed) {
+      setLocalError("Please agree to CRESCO CN's Terms & Conditions and Privacy Policy before continuing.");
+      return;
+    }
     clearAuthError();
     setLocalError(null);
     setGoogleLoading(true);
@@ -73,6 +82,31 @@ export const LoginView: React.FC<LoginViewProps> = ({
       }
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  // Real Firebase Password Reset
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToReset = resetEmail.trim();
+    if (!emailToReset) {
+      setLocalError('Please enter your student email address.');
+      return;
+    }
+    setResetLoading(true);
+    setResetSuccess(null);
+    setLocalError(null);
+    try {
+      let resolvedEmail = emailToReset;
+      if (!resolvedEmail.includes('@')) {
+        resolvedEmail = `${resolvedEmail}@klu.ac.in`;
+      }
+      await resetPassword(resolvedEmail);
+      setResetSuccess('Password reset link sent! Please check your official student inbox.');
+    } catch (err: any) {
+      setLocalError(err.message || 'Unable to send password reset. Please check the email address or contact support.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -210,18 +244,21 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div>
               
               {/* Header Title */}
-              <div className="px-6 pb-3 text-left">
+              <div className="px-6 pb-2 text-left">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                    <Key size={18} className="text-cyan-400" />
-                    <span>Student Login</span>
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold">
+                  <span className="text-[10px] font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
+                    Join CRESCO CN to start coding
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-bold">
                     KLU
                   </span>
                 </div>
+                <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2 mt-2">
+                  <Key size={18} className="text-cyan-400" />
+                  <span>Student Sign In</span>
+                </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Enter your <strong>Register Number (Username)</strong> &amp; <strong>Password</strong> to access your portal.
+                  Access your course via official Google account or Register Number &amp; Password.
                 </p>
               </div>
 
@@ -261,124 +298,182 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               )}
 
-              {/* STRICTLY USERNAME & PASSWORD LOGIN FORM */}
-              <form onSubmit={handleStudentLogin} className="px-6 space-y-3">
-                
-                {showForgotHint && (
-                  <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] flex items-start gap-1.5 leading-snug animate-in fade-in">
-                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
-                    <span>
-                      If you have not configured a portal password or forgot it, sign in with your official KLU Google account below ('KLU Sign Up') to activate your account or configure a password in Settings.
-                    </span>
-                  </div>
-                )}
-
-                {/* Username Input (Strictly Register Number) */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                    <User size={13} className="text-cyan-400" />
-                    <span>Register Number (Username)</span>
-                  </label>
-                  <input 
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
-                    type="text" 
-                    id="username-input" 
-                    value={studentIdInput}
-                    onChange={(e) => setStudentIdInput(e.target.value)}
-                    placeholder="e.g. 992400xxxxx"
-                    required 
-                    autoFocus
-                  />
-                </div>
-
-                {/* Password Input */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <Lock size={13} className="text-cyan-400" />
-                      <span>Password</span>
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowForgotHint(!showForgotHint)}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 underline bg-transparent border-0 cursor-pointer"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input 
-                      className="w-full px-3.5 pr-9 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
-                      type={showPassword ? 'text' : 'password'} 
-                      id="password-input" 
-                      value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
-                      placeholder="Enter your portal password"
-                      required 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Primary Submit Button: Strictly Username & Password */}
-                <button 
-                  type="submit" 
-                  className="w-full py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
-                  disabled={loading || googleLoading}
-                >
-                  {loading ? (
-                    <Loader size="1.25em" />
-                  ) : (
-                    <>
-                      <Key size={14} />
-                      <span>Log In with Password</span>
-                    </>
-                  )}
-                </button>
-
-              </form>
-
-            </div>
-
-            {/* FIRST-TIME SETUP CALLOUT (Only for brand new users) */}
-            <div className="px-6 pt-3 border-t border-slate-800/80 space-y-2">
-              <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/25 flex items-center justify-between gap-3">
-                <div className="text-left">
-                  <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
-                    <Sparkles size={13} className="text-cyan-400 shrink-0" />
-                    <span>First-time KLU Student?</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Sign up with your KLU mail to fix your Register Number &amp; Password.
-                  </p>
-                </div>
-
+              {/* Google Sign In Callout */}
+              <div className="px-6 space-y-2">
                 <button
                   type="button"
                   onClick={handleFirstTimeGoogleSignup}
                   disabled={loading || googleLoading}
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white text-[11px] font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
-                  title="First-time one-click activation with official KLU mail"
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-white text-xs font-semibold transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+                  title="Sign in with your official KLU institutional Google account"
                 >
                   {googleLoading ? (
-                    <Loader size="1.1em" />
+                    <Loader size="1.2em" />
                   ) : (
                     <>
-                      <ShieldCheck size={13} />
-                      <span>KLU Sign Up</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                      </svg>
+                      <span>Continue with Google</span>
+                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                        KLU Sign Up
+                      </span>
                     </>
                   )}
                 </button>
+
+                {/* OR Divider */}
+                <div className="flex items-center gap-2 py-0.5">
+                  <div className="flex-1 h-px bg-slate-800" />
+                  <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">OR</span>
+                  <div className="flex-1 h-px bg-slate-800" />
+                </div>
               </div>
 
-              <div className="text-center text-[10px] text-slate-500 font-mono">
-                Subsequent logins: strictly Register Number &amp; Password
+              {/* Password Reset Form OR Username & Password Login Form */}
+              {showForgotPassword ? (
+                <form onSubmit={handlePasswordReset} className="px-6 space-y-3">
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Key size={13} className="text-cyan-400" />
+                        <span>Reset Student Password</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setShowForgotPassword(false); setResetSuccess(null); }}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
+                      >
+                        Back to Login
+                      </button>
+                    </div>
+
+                    {resetSuccess && (
+                      <div className="p-2 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] leading-snug">
+                        {resetSuccess}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        Registered Student Email
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="e.g. 992400xxxxx@klu.ac.in"
+                        className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={resetLoading}
+                      className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {resetLoading ? 'Sending Instructions...' : 'Send Password Reset Link'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleStudentLogin} className="px-6 space-y-3">
+                  {/* Username Input (Strictly Register Number) */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+                      <User size={13} className="text-cyan-400" />
+                      <span>Register Number (Username)</span>
+                    </label>
+                    <input 
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                      type="text" 
+                      id="username-input" 
+                      value={studentIdInput}
+                      onChange={(e) => setStudentIdInput(e.target.value)}
+                      placeholder="e.g. 992400xxxxx"
+                      required 
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Password Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <Lock size={13} className="text-cyan-400" />
+                        <span>Password</span>
+                      </label>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 underline bg-transparent border-0 cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input 
+                        className="w-full px-3.5 pr-9 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                        type={showPassword ? 'text' : 'password'} 
+                        id="password-input" 
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="Enter your portal password"
+                        required 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                      >
+                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Primary Submit Button: Strictly Username & Password */}
+                  <button 
+                    type="submit" 
+                    className="w-full py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
+                    disabled={loading || googleLoading}
+                  >
+                    {loading ? (
+                      <Loader size="1.25em" />
+                    ) : (
+                      <>
+                        <Key size={14} />
+                        <span>Log In with Password</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Terms and Privacy Policy Agreement Notice */}
+              <div className="px-6 pt-3 pb-1 text-center text-[10.5px] text-slate-400">
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    id="login-terms-checkbox"
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-cyan-400 cursor-pointer accent-cyan-500"
+                  />
+                  <label htmlFor="login-terms-checkbox" className="cursor-pointer select-none leading-snug">
+                    <span>I agree to CRESCO CN's </span>
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                      Terms &amp; Conditions
+                    </a>
+                    <span> and </span>
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                      Privacy Policy
+                    </a>.
+                  </label>
+                </div>
               </div>
             </div>
 
