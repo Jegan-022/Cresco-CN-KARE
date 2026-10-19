@@ -16,7 +16,8 @@ import {
   LogIn,
   LogOut,
   Globe,
-  Shield
+  Shield,
+  Layers
 } from 'lucide-react';
 import { ThemeToggleSwitch } from './ThemeToggleSwitch';
 import { useAuth } from '../context/AuthContext';
@@ -87,8 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     { id: 'learn-map', label: 'Learn', icon: Map, badge: 'Flight', index: '02' },
     { id: 'practice', label: 'Practice', icon: Terminal, index: '03' },
     { id: 'leaderboard', label: 'Leaderboard', icon: Award, index: '04' },
-    { id: 'review', label: 'Notes', icon: BookOpen, index: '05' },
-    { id: 'profile', label: 'Profile', icon: User, index: '06' },
+    { id: 'udl-learning', label: 'UDL Studio', icon: Layers, badge: 'Live', index: '05' },
+    { id: 'review', label: 'Notes', icon: BookOpen, index: '06' },
+    { id: 'profile', label: 'Profile', icon: User, index: '07' },
   ];
 
   const secondaryItems: {

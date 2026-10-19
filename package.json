@@ -11,6 +11,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "tsx test_curriculum_and_gamification.ts",
+    "test:udl": "tsx test_udl_curriculum.ts",
     "test:step27": "tsx test_step27_production_readiness.ts",
     "sync:cloud": "tsx scripts/sync_curriculum_to_cloud.ts"
   },

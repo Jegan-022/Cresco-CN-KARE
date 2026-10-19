@@ -38,7 +38,8 @@ export type NavTab =
   | 'login'
   | 'terms'
   | 'privacy'
-  | 'admin';
+  | 'admin'
+  | 'udl-learning';
 
 export interface LearningNode {
   id: string;

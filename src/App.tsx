@@ -62,6 +62,7 @@ const LoginView = React.lazy(() => import('./components/views/LoginView').then(m
 const TermsView = React.lazy(() => import('./components/views/TermsView').then(m => ({ default: m.TermsView })));
 const PrivacyView = React.lazy(() => import('./components/views/PrivacyView').then(m => ({ default: m.PrivacyView })));
 const AdminPortalView = React.lazy(() => import('./components/views/AdminPortalView').then(m => ({ default: m.AdminPortalView })));
+const UdlLearningView = React.lazy(() => import('./components/views/UdlLearningView').then(m => ({ default: m.UdlLearningView })));
 
 import { BootTerminal } from './components/BootTerminal';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
@@ -88,6 +89,7 @@ function MainApp() {
       if (path === '/terms') return { tab: 'terms' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/privacy') return { tab: 'privacy' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/admin') return { tab: 'admin' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/udl') return { tab: 'udl-learning' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/login') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
 
       const routeInfo = parseLevelFromPath(path);
@@ -708,6 +710,10 @@ function MainApp() {
 
               {currentTab === 'developer-dashboard' && (
                 <DeveloperDashboardView onNavigate={handleNavigate} />
+              )}
+
+              {currentTab === 'udl-learning' && (
+                <UdlLearningView />
               )}
 
               {currentTab === '403' && (
