@@ -152,10 +152,35 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   }, [currentUser?.uid]);
 
-  // Weekly bar chart (Mon=0..Sun=6)
+  // Authentic Weekly activity computation (Mon=0..Sun=6)
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const todayIdx = (new Date().getDay() + 6) % 7;
-  const weeklyHeights = [45, 70, 30, 85, 60, 50, 95];
+  const today = new Date();
+  const todayIdx = (today.getDay() + 6) % 7; // Monday = 0, Sunday = 6
+  
+  // Calculate start of current week (Monday)
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - todayIdx);
+  monday.setHours(0, 0, 0, 0);
+
+  const studentActivityDates: string[] = Array.isArray((userProfile as any)?.activityDates) 
+    ? (userProfile as any).activityDates 
+    : [];
+
+  const weeklyActiveDays = [0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + dayOffset);
+    const dateStr = d.toISOString().split('T')[0];
+    const isToday = dayOffset === todayIdx;
+    const hasActivity = studentActivityDates.includes(dateStr) || (isToday && currentXp > 0);
+    return {
+      dayOffset,
+      hasActivity,
+      isToday,
+      height: hasActivity ? (isToday ? 95 : 75) : 8
+    };
+  });
+
+  const activeDaysCount = weeklyActiveDays.filter(d => d.hasActivity).length;
 
   return (
     <div className="w-full max-w-7xl mx-auto pt-4 pb-16 px-6 text-on-surface select-none">
@@ -488,15 +513,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                 <div className="grid grid-cols-7 gap-2 items-end h-28 pt-4 pb-1 px-1 bg-surface-container-low rounded-xl">
                   {days.map((dayLabel, idx) => {
-                    const isCurrent = idx === todayIdx;
-                    const barHeight = currentXp > 0 ? (isCurrent ? 95 : weeklyHeights[idx]) : 8;
+                    const dayState = weeklyActiveDays[idx];
+                    const isCurrent = dayState.isToday;
+                    const barHeight = dayState.height;
                     return (
                       <div key={idx} className="flex flex-col items-center gap-1.5 h-full justify-end group">
                         <div 
                           className={`w-full max-w-[16px] rounded-t-md transition-all ${
                             isCurrent
                               ? 'bg-gradient-to-t from-primary to-primary-container shadow-[0_0_8px_#ff6b00]'
-                              : 'bg-surface-container-highest group-hover:bg-primary-container'
+                              : dayState.hasActivity
+                              ? 'bg-primary/80 group-hover:bg-primary'
+                              : 'bg-surface-container-highest'
                           }`} 
                           style={{ height: `${barHeight}%` }}
                         />
@@ -509,8 +537,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm text-[12px] pt-1">
-                  <span>{currentStreak > 0 ? `Goal met: ${Math.min(7, currentStreak)} of 7 days` : 'Goal met: 0 of 7 days'}</span>
-                  <span className="text-tertiary-container font-semibold">Sunday Peak</span>
+                  <span>{activeDaysCount > 0 ? `Active: ${activeDaysCount} of 7 days` : '0 days active this week'}</span>
+                  <span className="text-tertiary-container font-semibold">
+                    {activeDaysCount > 0 ? `${activeDaysCount}d Streak Target` : 'No study logged yet'}
+                  </span>
                 </div>
               </div>
             </section>

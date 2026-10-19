@@ -170,9 +170,9 @@ export const AnalyticsView: React.FC = () => {
         <div className="bg-white dark:bg-[#172033] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 opacity-5"><Target className="w-16 h-16 text-emerald-500" /></div>
           <span className="text-[11px] font-bold font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">Completed</span>
-          <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{completedModules.length}/45</div>
+          <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{completedModules.length}/30</div>
           <div className="mt-2 flex items-center text-[11px] font-bold text-emerald-600">
-            <span>{Math.round((completedModules.length / 45) * 100)}% Syllabus Done</span>
+            <span>{Math.round((completedModules.length / 30) * 100)}% Syllabus Done</span>
           </div>
         </div>
 
