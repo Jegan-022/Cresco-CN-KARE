@@ -13,7 +13,17 @@ export default defineConfig(() => {
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      watch: process.env.DISABLE_HMR === 'true' ? null : {
+        // Exclude locked download and CSV files that crash the watcher
+        ignored: [
+          '**/public/assets/mascot/network AI_files/**',
+          '**/*.download',
+          '**/*.csv',
+          '**/students_credentials.csv',
+          '**/*.xlsx',
+          '**/*.xls',
+        ],
+      },
     },
     build: {
       chunkSizeWarningLimit: 1200,

@@ -17,12 +17,13 @@ const ThemeContext = createContext<ThemeContextType>({
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('netquest_theme');
-      if (saved === 'dark' || saved === 'light') return saved;
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
+      const explicit = localStorage.getItem('cresco_theme_explicit');
+      if (explicit === 'true') {
+        const saved = localStorage.getItem('netquest_theme');
+        if (saved === 'dark' || saved === 'light') return saved;
       }
     }
+    // By default, set theme in bright (light) for everything
     return 'light';
   });
 
@@ -53,10 +54,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cresco_theme_explicit', 'true');
+      }
+      return next;
+    });
   };
 
   const setTheme = (newTheme: Theme) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cresco_theme_explicit', 'true');
+    }
     setThemeState(newTheme);
   };
 

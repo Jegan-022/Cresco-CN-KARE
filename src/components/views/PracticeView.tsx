@@ -651,120 +651,176 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             )}
           </div>
 
-          {/* Evidence-Based Mastery Status (Step 21 - Five Pillars Evaluation) */}
-          <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-[11px] font-mono font-bold text-[#64748B] dark:text-slate-400 uppercase tracking-wider">
-                EVIDENCE-BASED MASTERY STATUS (FIVE PILLARS EVALUATION)
-              </span>
-              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-semibold">
-                Governance Status: PENDING ACADEMIC APPROVAL (85% Cutoff)
-              </span>
-            </div>
+          {/* ── Practice Mode Cards Grid ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {/* Flashcards */}
+            <button
+              onClick={() => { soundFx.playClick(); setActiveTab('flashcards'); }}
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer overflow-hidden ${
+                activeTab === 'flashcards'
+                  ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/30 scale-[1.02]'
+                  : 'bg-white dark:bg-[#1A2235] border-[#E5E0D8] dark:border-slate-700 hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/10 hover:scale-[1.01]'
+              }`}
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                activeTab === 'flashcards' ? 'opacity-0' : ''
+              } bg-gradient-to-br from-blue-50/60 to-transparent dark:from-blue-900/10`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeTab === 'flashcards' ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/40'
+              }`}>
+                <BookOpen className={`w-5 h-5 ${
+                  activeTab === 'flashcards' ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                }`} />
+              </div>
+              <div className="relative z-10">
+                <div className={`text-sm font-extrabold tracking-tight ${
+                  activeTab === 'flashcards' ? 'text-white' : 'text-[#172033] dark:text-slate-100'
+                }`}>Flashcards</div>
+                <div className={`text-[11px] mt-0.5 font-medium leading-snug ${
+                  activeTab === 'flashcards' ? 'text-blue-100' : 'text-[#64748B] dark:text-slate-400'
+                }`}>Flip-card quick drills</div>
+              </div>
+              {activeTab === 'flashcards' && (
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-white/70 shadow-sm" />
+              )}
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MasteryStatusCard
-                title="Unit 3: Network Layer"
-                evaluation={unitMasteryMap['unit_3']}
-                isLoading={isMasteryLoading}
-                onNavigate={onNavigate}
-              />
-              <MasteryStatusCard
-                title="Unit 4: Transport Layer"
-                evaluation={unitMasteryMap['unit_4']}
-                isLoading={isMasteryLoading}
-                onNavigate={onNavigate}
-              />
-              <MasteryStatusCard
-                title="Unit 5: Application Layer"
-                evaluation={unitMasteryMap['unit_5']}
-                isLoading={isMasteryLoading}
-                onNavigate={onNavigate}
-              />
-            </div>
-          </div>
+            {/* PPT Slides */}
+            <button
+              onClick={() => { soundFx.playClick(); setActiveTab('ppt'); }}
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer overflow-hidden ${
+                activeTab === 'ppt'
+                  ? 'bg-violet-600 border-violet-500 shadow-lg shadow-violet-500/30 scale-[1.02]'
+                  : 'bg-white dark:bg-[#1A2235] border-[#E5E0D8] dark:border-slate-700 hover:border-violet-400 hover:shadow-md hover:shadow-violet-500/10 hover:scale-[1.01]'
+              }`}
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                activeTab === 'ppt' ? 'opacity-0' : ''
+              } bg-gradient-to-br from-violet-50/60 to-transparent dark:from-violet-900/10`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeTab === 'ppt' ? 'bg-white/20' : 'bg-violet-100 dark:bg-violet-900/40'
+              }`}>
+                <Presentation className={`w-5 h-5 ${
+                  activeTab === 'ppt' ? 'text-white' : 'text-violet-600 dark:text-violet-400'
+                }`} />
+              </div>
+              <div className="relative z-10">
+                <div className={`text-sm font-extrabold tracking-tight ${
+                  activeTab === 'ppt' ? 'text-white' : 'text-[#172033] dark:text-slate-100'
+                }`}>PPT Slides</div>
+                <div className={`text-[11px] mt-0.5 font-medium leading-snug ${
+                  activeTab === 'ppt' ? 'text-violet-100' : 'text-[#64748B] dark:text-slate-400'
+                }`}>Slide deck presentations</div>
+              </div>
+              {activeTab === 'ppt' && (
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-white/70 shadow-sm" />
+              )}
+            </button>
 
-          {/* Targeted Remediation & Gap Recovery (Step 22) */}
-          <div className="bg-white dark:bg-[#1F2937] border-2 border-[#E5E0D8] dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-            <RemediationRecommendationsView
-              evaluation={remediationEvaluation}
-              isLoading={isRemediationLoading}
-              onNavigate={onNavigate}
-              onAcceptRecommendation={(rec) => {
-                if (currentUser?.uid) {
-                  trackRemediationStarted(rec, currentUser.uid);
-                }
-              }}
-            />
+            {/* Materials */}
+            <button
+              onClick={() => { soundFx.playClick(); setActiveTab('materials'); }}
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer overflow-hidden ${
+                activeTab === 'materials'
+                  ? 'bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-500/30 scale-[1.02]'
+                  : 'bg-white dark:bg-[#1A2235] border-[#E5E0D8] dark:border-slate-700 hover:border-emerald-400 hover:shadow-md hover:shadow-emerald-500/10 hover:scale-[1.01]'
+              }`}
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                activeTab === 'materials' ? 'opacity-0' : ''
+              } bg-gradient-to-br from-emerald-50/60 to-transparent dark:from-emerald-900/10`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeTab === 'materials' ? 'bg-white/20' : 'bg-emerald-100 dark:bg-emerald-900/40'
+              }`}>
+                <FileText className={`w-5 h-5 ${
+                  activeTab === 'materials' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'
+                }`} />
+              </div>
+              <div className="relative z-10">
+                <div className={`text-sm font-extrabold tracking-tight ${
+                  activeTab === 'materials' ? 'text-white' : 'text-[#172033] dark:text-slate-100'
+                }`}>Materials</div>
+                <div className={`text-[11px] mt-0.5 font-medium leading-snug ${
+                  activeTab === 'materials' ? 'text-emerald-100' : 'text-[#64748B] dark:text-slate-400'
+                }`}>Study sheets & references</div>
+              </div>
+              {activeTab === 'materials' && (
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-white/70 shadow-sm" />
+              )}
+            </button>
+
+            {/* Video Overviews */}
+            <button
+              onClick={() => { soundFx.playClick(); setActiveTab('videos'); }}
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer overflow-hidden ${
+                activeTab === 'videos'
+                  ? 'bg-rose-600 border-rose-500 shadow-lg shadow-rose-500/30 scale-[1.02]'
+                  : 'bg-white dark:bg-[#1A2235] border-[#E5E0D8] dark:border-slate-700 hover:border-rose-400 hover:shadow-md hover:shadow-rose-500/10 hover:scale-[1.01]'
+              }`}
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                activeTab === 'videos' ? 'opacity-0' : ''
+              } bg-gradient-to-br from-rose-50/60 to-transparent dark:from-rose-900/10`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeTab === 'videos' ? 'bg-white/20' : 'bg-rose-100 dark:bg-rose-900/40'
+              }`}>
+                <Video className={`w-5 h-5 ${
+                  activeTab === 'videos' ? 'text-white' : 'text-rose-600 dark:text-rose-400'
+                }`} />
+              </div>
+              <div className="relative z-10">
+                <div className={`text-sm font-extrabold tracking-tight ${
+                  activeTab === 'videos' ? 'text-white' : 'text-[#172033] dark:text-slate-100'
+                }`}>Video Overview</div>
+                <div className={`text-[11px] mt-0.5 font-medium leading-snug ${
+                  activeTab === 'videos' ? 'text-rose-100' : 'text-[#64748B] dark:text-slate-400'
+                }`}>Curated lesson videos</div>
+              </div>
+              {activeTab === 'videos' && (
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-white/70 shadow-sm" />
+              )}
+            </button>
+
+            {/* Adaptive Quiz */}
+            <button
+              onClick={() => { soundFx.playClick(); setActiveTab('quiz'); }}
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer overflow-hidden ${
+                activeTab === 'quiz'
+                  ? 'bg-amber-500 border-amber-400 shadow-lg shadow-amber-500/30 scale-[1.02]'
+                  : 'bg-white dark:bg-[#1A2235] border-[#E5E0D8] dark:border-slate-700 hover:border-amber-400 hover:shadow-md hover:shadow-amber-500/10 hover:scale-[1.01]'
+              }`}
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                activeTab === 'quiz' ? 'opacity-0' : ''
+              } bg-gradient-to-br from-amber-50/60 to-transparent dark:from-amber-900/10`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeTab === 'quiz' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/40'
+              }`}>
+                <HelpCircle className={`w-5 h-5 ${
+                  activeTab === 'quiz' ? 'text-white' : 'text-amber-600 dark:text-amber-400'
+                }`} />
+              </div>
+              <div className="relative z-10">
+                <div className={`text-sm font-extrabold tracking-tight flex items-center gap-1.5 ${
+                  activeTab === 'quiz' ? 'text-white' : 'text-[#172033] dark:text-slate-100'
+                }`}>
+                  Adaptive Quiz
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider ${
+                    activeTab === 'quiz' ? 'bg-white/25 text-white' : 'bg-emerald-500 text-white'
+                  }`}>RFC</span>
+                </div>
+                <div className={`text-[11px] mt-0.5 font-medium leading-snug ${
+                  activeTab === 'quiz' ? 'text-amber-100' : 'text-[#64748B] dark:text-slate-400'
+                }`}>AI-adaptive MCQ drills</div>
+              </div>
+              {activeTab === 'quiz' && (
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-white/70 shadow-sm" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Section Tab Switchers - 5 Core Practice Modes */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 inline-flex shadow-xs">
-          <button
-            onClick={() => { soundFx.playClick(); setActiveTab('flashcards'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'flashcards' 
-                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" /> 
-            <span>Flashcards</span>
-          </button>
 
-          <button
-            onClick={() => { soundFx.playClick(); setActiveTab('ppt'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'ppt' 
-                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Presentation className="w-4 h-4" /> 
-            <span>PPT Slides</span>
-          </button>
-
-          <button
-            onClick={() => { soundFx.playClick(); setActiveTab('materials'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'materials' 
-                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <FileText className="w-4 h-4" /> 
-            <span>Materials</span>
-          </button>
-
-          <button
-            onClick={() => { soundFx.playClick(); setActiveTab('videos'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'videos' 
-                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Video className="w-4 h-4" /> 
-            <span>Video Overviews</span>
-          </button>
-
-          {/* Adaptive Quiz */}
-          <button
-            onClick={() => { soundFx.playClick(); setActiveTab('quiz'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
-              activeTab === 'quiz' 
-                ? 'bg-blue-600 text-white shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <HelpCircle className="w-4 h-4" /> 
-            <span>Adaptive Quiz</span>
-            <span className="ml-1 px-1.5 py-0.2 bg-emerald-500 text-[10px] uppercase tracking-wider text-white font-extrabold rounded-full">
-              RFC
-            </span>
-          </button>
-        </div>
 
         {/* ==================================================== */}
         {/* SECTION 1: FLASHCARDS (CLEAN 3D FLIP)               */}
@@ -880,10 +936,10 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                   }
                 }));
               }}
-              className="mt-4 px-4 py-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/40 text-cyan-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
+              className="mt-4 px-4 py-2 rounded-xl bg-violet-950/40 hover:bg-violet-900/50 border border-violet-800/40 text-violet-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
             >
-              <Bot className="w-4 h-4 text-cyan-400" />
-              <span>Ask ByteBot to explain this flashcard</span>
+              <img src="/assets/mascot/network AI.png" alt="Network AI" className="w-4 h-4 object-contain" />
+              <span>Ask Network AI to explain this flashcard</span>
             </button>
           </div>
         )}

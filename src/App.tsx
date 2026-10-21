@@ -670,7 +670,7 @@ function MainApp() {
               )}
 
               {currentTab === 'leaderboard' && (
-                <LeaderboardView />
+                <LeaderboardView onNavigate={handleNavigate} />
               )}
 
               {currentTab === 'profile' && (
@@ -813,19 +813,34 @@ function MainApp() {
         />
       )}
 
-      {/* Floating AI Tutor Trigger Button (Step 23) */}
+      {/* Floating Network AI Tutor Trigger Button (Boxless Logo) */}
       <button
         type="button"
         onClick={() => {
           setAiTutorContext(undefined);
           setIsAiTutorOpen(true);
         }}
-        className="fixed bottom-20 right-6 sm:bottom-6 sm:right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-xl hover:shadow-cyan-500/25 flex items-center gap-2 font-bold text-xs transition-all transform hover:-translate-y-0.5 cursor-pointer group border border-cyan-400/30"
-        title="Open ByteBot AI Personal Tutor"
+        className="fixed bottom-20 right-6 sm:bottom-6 sm:right-6 z-40 bg-transparent border-0 p-0 outline-none cursor-pointer select-none group focus:outline-none transition-transform duration-300 active:scale-95"
+        title="Open Network AI"
+        aria-label="Open Network AI"
       >
-        <Bot className="w-5 h-5 text-cyan-200 group-hover:scale-110 transition-transform" />
-        <span className="hidden sm:inline">Ask AI Tutor</span>
-        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+        <div className="relative flex items-center justify-center">
+          {/* Ambient soft glow aura behind transparent PNG */}
+          <div className="absolute inset-0 rounded-full bg-violet-600/30 blur-xl scale-90 group-hover:scale-125 group-hover:bg-violet-500/50 transition-all duration-500 pointer-events-none" />
+          
+          {/* Only the Network AI PNG logo */}
+          <img
+            src="/assets/mascot/network AI.png"
+            alt="Network AI"
+            className="relative w-14 h-14 sm:w-16 sm:h-16 object-contain filter drop-shadow-[0_4px_16px_rgba(139,92,246,0.5)] group-hover:drop-shadow-[0_8px_24px_rgba(147,51,234,0.85)] group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 ease-out"
+          />
+
+          {/* Subtle online pulse indicator */}
+          <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-400 border-2 border-slate-900 shadow-sm" />
+          </span>
+        </div>
       </button>
 
       {/* AI Personal Tutor Drawer (Step 23) */}

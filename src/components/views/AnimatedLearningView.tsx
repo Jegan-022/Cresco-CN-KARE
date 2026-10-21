@@ -1,921 +1,816 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Play, 
-  Pause, 
-  RotateCcw, 
-  SkipForward, 
-  SkipBack, 
-  Layers, 
-  Radio, 
-  Sliders, 
-  ShieldCheck, 
-  Cpu, 
+  Search, 
+  Clock, 
   ArrowRight, 
-  Globe, 
-  Server, 
-  Laptop, 
-  Zap, 
-  FileCode, 
-  Sparkles,
-  CheckCircle2,
-  AlertTriangle,
-  Info
+  Sparkles, 
+  X, 
+  Maximize2, 
+  ExternalLink,
+  SlidersHorizontal,
+  Box,
+  Layers,
+  ShieldCheck,
+  Cpu,
+  Radio,
+  BookOpen,
+  BarChart3,
+  Flame,
+  CheckCircle2
 } from 'lucide-react';
-import { soundFx } from '../../utils/soundEffects';
-import { CrescoMascot } from '../brand/CrescoMascot';
-import { ANIMATED_MODULES } from '../../data/animatedModulesData';
+import { soundFx } from '../../utils/audio';
+import { ANIMATED_MODULES, AnimatedModuleMetadata } from '../../data/animatedModulesData';
 
 interface AnimatedLearningViewProps {
   onNavigateHome?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-type SimulationTopic = 'tcp-handshake' | 'osi-encapsulation' | 'csmacd-collision' | 'sliding-window' | 'dns-resolution';
+type CategoryFilter = 'All' | 'Transport Layer' | 'Network Layer' | 'Security' | 'Algorithms' | 'Routing';
+
+// Durations and specific theme metadata matching the reference design
+interface ModuleCardTheme {
+  duration: string;
+  categoryTag: string;
+  badgeBg: string;
+  badgeText: string;
+  layerBadgeBg: string;
+  layerBadgeText: string;
+  btnGradient: string;
+  cardBorder: string;
+  cardBg: string;
+  illustrationType: string;
+}
+
+const MODULE_THEMES: Record<number, ModuleCardTheme> = {
+  1: {
+    duration: '12 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-sky-50 dark:bg-sky-950/60',
+    badgeText: 'text-sky-600 dark:text-sky-300',
+    layerBadgeBg: 'bg-teal-50 dark:bg-teal-950/60',
+    layerBadgeText: 'text-teal-600 dark:text-teal-300',
+    btnGradient: 'bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 shadow-blue-500/25',
+    cardBorder: 'border-blue-100/80 dark:border-blue-900/40',
+    cardBg: 'bg-gradient-to-br from-blue-50/40 via-white to-cyan-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'server-layers'
+  },
+  2: {
+    duration: '15 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-purple-50 dark:bg-purple-950/60',
+    badgeText: 'text-purple-600 dark:text-purple-300',
+    layerBadgeBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/60',
+    layerBadgeText: 'text-fuchsia-600 dark:text-fuchsia-300',
+    btnGradient: 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-purple-500/25',
+    cardBorder: 'border-purple-100/80 dark:border-purple-900/40',
+    cardBg: 'bg-gradient-to-br from-purple-50/40 via-white to-violet-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'code-laptop'
+  },
+  3: {
+    duration: '14 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-amber-50 dark:bg-amber-950/60',
+    badgeText: 'text-amber-700 dark:text-amber-300',
+    layerBadgeBg: 'bg-orange-50 dark:bg-orange-950/60',
+    layerBadgeText: 'text-orange-600 dark:text-orange-300',
+    btnGradient: 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 shadow-orange-500/25',
+    cardBorder: 'border-orange-100/80 dark:border-orange-900/40',
+    cardBg: 'bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'geometric-cubes'
+  },
+  4: {
+    duration: '10 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-emerald-50 dark:bg-emerald-950/60',
+    badgeText: 'text-emerald-600 dark:text-emerald-300',
+    layerBadgeBg: 'bg-teal-50 dark:bg-teal-950/60',
+    layerBadgeText: 'text-teal-600 dark:text-teal-300',
+    btnGradient: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-500/25',
+    cardBorder: 'border-emerald-100/80 dark:border-emerald-900/40',
+    cardBg: 'bg-gradient-to-br from-emerald-50/40 via-white to-teal-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'ack-seq-nodes'
+  },
+  5: {
+    duration: '18 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-rose-50 dark:bg-rose-950/60',
+    badgeText: 'text-rose-600 dark:text-rose-300',
+    layerBadgeBg: 'bg-red-50 dark:bg-red-950/60',
+    layerBadgeText: 'text-red-600 dark:text-red-300',
+    btnGradient: 'bg-gradient-to-r from-rose-500 via-red-500 to-pink-600 shadow-rose-500/25',
+    cardBorder: 'border-rose-100/80 dark:border-rose-900/40',
+    cardBg: 'bg-gradient-to-br from-rose-50/40 via-white to-red-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'tcp-handshake'
+  },
+  6: {
+    duration: '10 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-sky-50 dark:bg-sky-950/60',
+    badgeText: 'text-sky-600 dark:text-sky-300',
+    layerBadgeBg: 'bg-blue-50 dark:bg-blue-950/60',
+    layerBadgeText: 'text-blue-600 dark:text-blue-300',
+    btnGradient: 'bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 shadow-blue-500/25',
+    cardBorder: 'border-sky-100/80 dark:border-sky-900/40',
+    cardBg: 'bg-gradient-to-br from-sky-50/40 via-white to-blue-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'udp-paper-plane'
+  },
+  7: {
+    duration: '16 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-purple-50 dark:bg-purple-950/60',
+    badgeText: 'text-purple-600 dark:text-purple-300',
+    layerBadgeBg: 'bg-indigo-50 dark:bg-indigo-950/60',
+    layerBadgeText: 'text-indigo-600 dark:text-indigo-300',
+    btnGradient: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 shadow-indigo-500/25',
+    cardBorder: 'border-purple-100/80 dark:border-purple-900/40',
+    cardBg: 'bg-gradient-to-br from-purple-50/40 via-white to-indigo-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'purple-shield'
+  },
+  8: {
+    duration: '14 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-teal-50 dark:bg-teal-950/60',
+    badgeText: 'text-teal-600 dark:text-teal-300',
+    layerBadgeBg: 'bg-cyan-50 dark:bg-cyan-950/60',
+    layerBadgeText: 'text-cyan-600 dark:text-cyan-300',
+    btnGradient: 'bg-gradient-to-r from-teal-500 via-emerald-500 to-green-600 shadow-teal-500/25',
+    cardBorder: 'border-teal-100/80 dark:border-teal-900/40',
+    cardBg: 'bg-gradient-to-br from-teal-50/40 via-white to-emerald-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'teal-shield'
+  },
+  9: {
+    duration: '16 min',
+    categoryTag: 'Transport Layer',
+    badgeBg: 'bg-amber-50 dark:bg-amber-950/60',
+    badgeText: 'text-amber-700 dark:text-amber-300',
+    layerBadgeBg: 'bg-yellow-50 dark:bg-yellow-950/60',
+    layerBadgeText: 'text-yellow-600 dark:text-yellow-300',
+    btnGradient: 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 shadow-amber-500/25',
+    cardBorder: 'border-amber-100/80 dark:border-amber-900/40',
+    cardBg: 'bg-gradient-to-br from-amber-50/40 via-white to-yellow-50/30 dark:from-slate-900 dark:via-[#0c1424] dark:to-slate-900',
+    illustrationType: 'golden-padlock'
+  }
+};
 
 export const AnimatedLearningView: React.FC<AnimatedLearningViewProps> = ({ onNavigateHome }) => {
-  const [activeTopic, setActiveTopic] = useState<SimulationTopic>('tcp-handshake');
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentStep, setCurrentStep] = useState<number>(0);
-  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
-  const [showPacketDetails, setShowPacketDetails] = useState<boolean>(true);
-  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('All');
+  const [activeSimulationModal, setActiveSimulationModal] = useState<AnimatedModuleMetadata | null>(null);
 
-  // Topics Metadata
-  const topics = [
-    {
-      id: 'tcp-handshake' as SimulationTopic,
-      title: 'TCP 3-Way Handshake & Teardown',
-      category: 'Transport Layer',
-      rfc: 'RFC 793',
-      description: 'Interactive visualization of SYN, SYN-ACK, ACK connection establishment and graceful 4-way FIN termination.',
-      totalSteps: 6,
-    },
-    {
-      id: 'osi-encapsulation' as SimulationTopic,
-      title: '7-Layer Protocol Encapsulation',
-      category: 'OSI & TCP/IP Model',
-      rfc: 'ISO/IEC 7498-1',
-      description: 'Watch raw Application data get encapsulated layer-by-layer with L4, L3, and L2 headers, then decapsulated on arrival.',
-      totalSteps: 7,
-    },
-    {
-      id: 'csmacd-collision' as SimulationTopic,
-      title: 'CSMA/CD & Collision Backoff',
-      category: 'Data Link Layer',
-      rfc: 'IEEE 802.3',
-      description: 'Carrier sense multi-access with collision detection, jamming signal broadcast, and binary exponential backoff timer.',
-      totalSteps: 5,
-    },
-    {
-      id: 'sliding-window' as SimulationTopic,
-      title: 'Sliding Window (Go-Back-N)',
-      category: 'Flow & Error Control',
-      rfc: 'ARQ Protocols',
-      description: 'Dynamic pipelined transmission window sliding forward as cumulative ACKs arrive, handling packet loss and timeouts.',
-      totalSteps: 6,
-    },
-    {
-      id: 'dns-resolution' as SimulationTopic,
-      title: 'DNS Resolution Journey',
-      category: 'Application Layer',
-      rfc: 'RFC 1034 / 1035',
-      description: 'Step through recursive and iterative DNS queries from Client Browser to Root (.), TLD (.in), and Authoritative Servers.',
-      totalSteps: 5,
-    },
-  ];
+  // Filter modules based on Search Query and Category
+  const filteredModules = useMemo(() => {
+    return ANIMATED_MODULES.filter((mod) => {
+      // Search matching
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch = !q || 
+        mod.title.toLowerCase().includes(q) || 
+        mod.description.toLowerCase().includes(q) || 
+        `module ${mod.id}`.includes(q);
 
-  const currentTopicData = topics.find((t) => t.id === activeTopic) || topics[0];
+      if (!matchSearch) return false;
 
-  // Stop playback when changing topics
-  useEffect(() => {
-    setIsPlaying(false);
-    setCurrentStep(0);
-    if (animationTimerRef.current) {
-      clearInterval(animationTimerRef.current);
-    }
-  }, [activeTopic]);
+      // Category matching
+      if (selectedCategory === 'All') return true;
+      if (selectedCategory === 'Transport Layer') return mod.unit.includes('Transport Layer');
+      if (selectedCategory === 'Network Layer') return mod.unit.includes('Network Layer');
+      if (selectedCategory === 'Security') return mod.title.includes('Security') || mod.title.includes('SSL') || mod.title.includes('TLS') || mod.title.includes('SSH');
+      if (selectedCategory === 'Algorithms') return mod.title.toLowerCase().includes('algorithm') || mod.description.toLowerCase().includes('algorithm') || mod.id === 12;
+      if (selectedCategory === 'Routing') return mod.title.toLowerCase().includes('routing') || mod.description.toLowerCase().includes('routing');
 
-  // Handle Play/Pause Auto-Play
-  useEffect(() => {
-    if (isPlaying) {
-      const stepDuration = 2200 / speedMultiplier;
-      animationTimerRef.current = setInterval(() => {
-        setCurrentStep((prev) => {
-          if (prev >= currentTopicData.totalSteps - 1) {
-            setIsPlaying(false);
-            return prev;
-          }
-          try {
-            soundFx.playClick();
-          } catch {}
-          return prev + 1;
-        });
-      }, stepDuration);
-    } else {
-      if (animationTimerRef.current) {
-        clearInterval(animationTimerRef.current);
-      }
-    }
-    return () => {
-      if (animationTimerRef.current) {
-        clearInterval(animationTimerRef.current);
-      }
+      return true;
+    });
+  }, [searchQuery, selectedCategory]);
+
+  const handleLaunchSimulation = (mod: AnimatedModuleMetadata) => {
+    soundFx.playClick();
+    setActiveSimulationModal(mod);
+  };
+
+  // Helper to render customized 3D vector illustrations matching the exact reference image
+  const renderCardIllustration = (modId: number) => {
+    const theme = MODULE_THEMES[modId] || {
+      illustrationType: modId % 2 === 0 ? 'server-layers' : 'code-laptop'
     };
-  }, [isPlaying, speedMultiplier, currentTopicData.totalSteps]);
 
-  const handleStepForward = () => {
-    try {
-      soundFx.playClick();
-    } catch {}
-    setIsPlaying(false);
-    setCurrentStep((prev) => Math.min(currentTopicData.totalSteps - 1, prev + 1));
-  };
-
-  const handleStepBackward = () => {
-    try {
-      soundFx.playClick();
-    } catch {}
-    setIsPlaying(false);
-    setCurrentStep((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleReset = () => {
-    try {
-      soundFx.playClick();
-    } catch {}
-    setIsPlaying(false);
-    setCurrentStep(0);
-  };
-
-  const handleTogglePlay = () => {
-    try {
-      soundFx.playClick();
-    } catch {}
-    if (currentStep >= currentTopicData.totalSteps - 1) {
-      setCurrentStep(0);
-    }
-    setIsPlaying((prev) => !prev);
-  };
-
-  // Specific simulation step details
-  const renderSimulationCanvas = () => {
-    switch (activeTopic) {
-      case 'tcp-handshake':
-        return renderTcpSimulation();
-      case 'osi-encapsulation':
-        return renderOsiSimulation();
-      case 'csmacd-collision':
-        return renderCsmaSimulation();
-      case 'sliding-window':
-        return renderSlidingWindowSimulation();
-      case 'dns-resolution':
-        return renderDnsSimulation();
-      default:
-        return renderTcpSimulation();
-    }
-  };
-
-  // 1. TCP 3-Way Handshake Simulation
-  const renderTcpSimulation = () => {
-    const stepsInfo = [
-      {
-        phase: 'Step 1: SYN Packet',
-        sender: 'Client (192.168.1.10:49152)',
-        receiver: 'Web Server (142.250.190.46:80)',
-        flags: 'SYN = 1, ACK = 0',
-        seq: '1000',
-        ack: '0',
-        packetPos: 15,
-        stateClient: 'SYN_SENT',
-        stateServer: 'LISTEN',
-        description: 'Client generates initial sequence number ISN=1000 and sends SYN to request synchronized connection establishment.',
-      },
-      {
-        phase: 'Step 2: SYN-ACK Response',
-        sender: 'Web Server (142.250.190.46:80)',
-        receiver: 'Client (192.168.1.10:49152)',
-        flags: 'SYN = 1, ACK = 1',
-        seq: '5000',
-        ack: '1001',
-        packetPos: 85,
-        stateClient: 'SYN_SENT',
-        stateServer: 'SYN_RCVD',
-        description: 'Server allocates buffer space, generates its own ISN=5000, and acknowledges Client sequence number (Ack = 1000 + 1 = 1001).',
-      },
-      {
-        phase: 'Step 3: ACK Confirmation',
-        sender: 'Client (192.168.1.10:49152)',
-        receiver: 'Web Server (142.250.190.46:80)',
-        flags: 'SYN = 0, ACK = 1',
-        seq: '1001',
-        ack: '5001',
-        packetPos: 35,
-        stateClient: 'ESTABLISHED',
-        stateServer: 'ESTABLISHED',
-        description: 'Client acknowledges Server sequence number (Ack = 5000 + 1 = 5001). The bidirectional reliable TCP socket is now ESTABLISHED!',
-      },
-      {
-        phase: 'Step 4: Application HTTP Data Transfer',
-        sender: 'Client (192.168.1.10:49152)',
-        receiver: 'Web Server (142.250.190.46:80)',
-        flags: 'PSH = 1, ACK = 1',
-        seq: '1001',
-        ack: '5001',
-        payload: 'GET /index.html (384 Bytes)',
-        packetPos: 65,
-        stateClient: 'ESTABLISHED',
-        stateServer: 'ESTABLISHED',
-        description: 'Client transmits HTTP GET request payload. Sequence numbers track every single transmitted byte reliably.',
-      },
-      {
-        phase: 'Step 5: Connection Teardown (FIN)',
-        sender: 'Client (192.168.1.10:49152)',
-        receiver: 'Web Server (142.250.190.46:80)',
-        flags: 'FIN = 1, ACK = 1',
-        seq: '1385',
-        ack: '5001',
-        packetPos: 25,
-        stateClient: 'FIN_WAIT_1',
-        stateServer: 'CLOSE_WAIT',
-        description: 'Client finishes transmission and initiates graceful active close with FIN flag.',
-      },
-      {
-        phase: 'Step 6: Final Termination ACK',
-        sender: 'Web Server (142.250.190.46:80)',
-        receiver: 'Client (192.168.1.10:49152)',
-        flags: 'ACK = 1',
-        seq: '5001',
-        ack: '1386',
-        packetPos: 90,
-        stateClient: 'TIME_WAIT',
-        stateServer: 'CLOSED',
-        description: 'Server acknowledges FIN. Both endpoints cleanly flush buffers and terminate socket allocations.',
-      },
-    ];
-
-    const activeInfo = stepsInfo[currentStep] || stepsInfo[0];
-
-    return (
-      <div className="space-y-6">
-        {/* Node Wire Representation */}
-        <div className="relative py-8 px-4 sm:px-12 bg-slate-900/80 rounded-2xl border border-cyan-500/25 overflow-hidden shadow-inner">
-          
-          {/* Background Grid Accent */}
-          <div className="absolute inset-0 bg-[radial-gradient(#06B6D4_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
-
-          {/* Connected Medium Wire */}
-          <div className="absolute top-1/2 left-24 right-24 h-1 bg-gradient-to-r from-cyan-500/40 via-teal-400 to-cyan-500/40 -translate-y-1/2 z-0">
-            <div className="absolute inset-0 bg-cyan-400/30 blur-xs" />
-          </div>
-
-          {/* Interactive Traveling Packet */}
-          <div 
-            className="absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-700 ease-out"
-            style={{ left: `${Math.max(12, Math.min(84, (currentStep / (stepsInfo.length - 1)) * 72 + 12))}%` }}
-          >
-            <div className="relative group cursor-pointer animate-pulse">
-              <div className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-mono font-black text-xs shadow-[0_0_20px_rgba(6,182,212,0.8)] border border-white/60 flex items-center gap-1.5 whitespace-nowrap">
-                <Zap size={13} className="fill-slate-950" />
-                <span>{activeInfo.flags}</span>
-              </div>
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-cyan-300 font-bold whitespace-nowrap">
-                Seq={activeInfo.seq} Ack={activeInfo.ack}
-              </div>
-            </div>
-          </div>
-
-          {/* Hosts Row */}
-          <div className="relative z-10 flex items-center justify-between">
-            {/* Client Node */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-cyan-500/50 flex items-center justify-center p-3 text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)]">
-                <Laptop size={32} />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xs text-white">Client Host</div>
-                <div className="text-[10px] font-mono text-slate-400">192.168.1.10</div>
-                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                  {activeInfo.stateClient}
-                </span>
-              </div>
-            </div>
-
-            {/* Middle Packet Flight Indicator */}
-            <div className="hidden md:flex flex-col items-center gap-1">
-              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                Full-Duplex Wire Transmission
-              </span>
-              <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold">
-                <span>RTT ~12ms</span>
-                <span>•</span>
-                <span>Window=65535</span>
-              </div>
-            </div>
-
-            {/* Server Node */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-teal-500/50 flex items-center justify-center p-3 text-teal-400 shadow-[0_0_25px_rgba(20,184,166,0.25)]">
-                <Server size={32} />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xs text-white">Web Server</div>
-                <div className="text-[10px] font-mono text-slate-400">142.250.190.46:80</div>
-                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-teal-500/15 text-teal-400 border border-teal-500/30">
-                  {activeInfo.stateServer}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Real-Time Packet Inspector & Educational Explainer */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 md:col-span-2">
-            <div className="flex items-center justify-between">
-              <span className="font-headline font-bold text-xs text-cyan-400 uppercase tracking-wider">
-                {activeInfo.phase}
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/40">
-                Step {currentStep + 1} of {stepsInfo.length}
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {activeInfo.description}
-            </p>
-            <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-              <span className="text-slate-400">Source: <strong className="text-slate-200">{activeInfo.sender}</strong></span>
-              <span className="text-slate-500">→</span>
-              <span className="text-slate-400">Dest: <strong className="text-slate-200">{activeInfo.receiver}</strong></span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-            <span className="font-headline font-bold text-xs text-teal-400 uppercase tracking-wider block">
-              Packet Header Inspector
-            </span>
-            <div className="space-y-1.5 text-[11px] font-mono">
-              <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Control Flags:</span>
-                <span className="text-cyan-300 font-bold">{activeInfo.flags}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Sequence No:</span>
-                <span className="text-white font-bold">{activeInfo.seq}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Acknowledgment:</span>
-                <span className="text-teal-300 font-bold">{activeInfo.ack}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Checksum Status:</span>
-                <span className="text-emerald-400 font-bold">Valid (0x7A4C)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 2. OSI 7-Layer Encapsulation Simulation
-  const renderOsiSimulation = () => {
-    const layers = [
-      { num: 7, name: 'Application', unit: 'Data', header: 'HTTP GET /index.html', color: 'from-purple-500 to-indigo-500' },
-      { num: 6, name: 'Presentation', unit: 'Data', header: 'TLS / Encryption / UTF-8', color: 'from-indigo-500 to-blue-500' },
-      { num: 5, name: 'Session', unit: 'Data', header: 'RPC / Socket Session Token', color: 'from-blue-500 to-cyan-500' },
-      { num: 4, name: 'Transport', unit: 'Segment', header: 'TCP [Src:49152, Dst:80, Seq:100]', color: 'from-cyan-500 to-teal-500' },
-      { num: 3, name: 'Network', unit: 'Packet', header: 'IP [Src:192.168.1.10, Dst:142.250.190.46, TTL:64]', color: 'from-teal-500 to-emerald-500' },
-      { num: 2, name: 'Data Link', unit: 'Frame', header: 'Ethernet [MAC 00:1A:2B → 50:C7:BF, FCS: CRC32]', color: 'from-emerald-500 to-amber-500' },
-      { num: 1, name: 'Physical', unit: 'Bits', header: '01001000 01110100 01110100 01110000 (NRZ Signal)', color: 'from-amber-500 to-rose-500' },
-    ];
-
-    const activeLayer = layers[Math.min(currentStep, layers.length - 1)];
-
-    return (
-      <div className="space-y-6">
-        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
-          <div className="text-center mb-6">
-            <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">
-              Encapsulation Stage {currentStep + 1} of 7: Layer {activeLayer.num} ({activeLayer.name})
-            </span>
-            <h3 className="text-lg font-bold text-white mt-1">
-              Adding Layer {activeLayer.num} Protocol Header to Protocol Data Unit (PDU)
-            </h3>
-          </div>
-
-          {/* Visual Stack Accumulation */}
-          <div className="max-w-xl mx-auto space-y-2">
-            {layers.slice(0, currentStep + 1).map((l) => (
-              <div 
-                key={l.num}
-                className={`p-3 rounded-xl bg-gradient-to-r ${l.color} text-white font-mono text-xs flex items-center justify-between shadow-md transition-all duration-300 animate-scaleUp`}
-              >
-                <div className="flex items-center gap-2 font-bold">
-                  <span className="w-6 h-6 rounded-lg bg-black/30 flex items-center justify-center text-[11px]">
-                    L{l.num}
-                  </span>
-                  <span>{l.name} Layer Header</span>
-                </div>
-                <span className="text-[11px] bg-black/25 px-2 py-0.5 rounded font-mono truncate max-w-[260px]">
-                  {l.header}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Explainer card */}
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400 shrink-0">
-            <Layers size={18} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-white">How PDU Encapsulation Works</h4>
-            <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-              As user data travels down the stack, each layer prepends its own control metadata header (and Layer 2 adds an FCS error-checking trailer). When received by the destination node, the reverse process (decapsulation) strips headers layer-by-layer up to the Application layer.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 3. CSMA/CD Ethernet Collision Simulation
-  const renderCsmaSimulation = () => {
-    const states = [
-      { title: '1. Channel Sensing (Listening)', desc: 'Node A and Node C both check if the shared coax cable is idle. Neither detects carrier signals.', status: 'Sensing Carrier' },
-      { title: '2. Simultaneous Transmission', desc: 'Both nodes transmit frames simultaneously. Electromagnetic waves travel toward each other across the medium.', status: 'Transmitting' },
-      { title: '3. Mid-Wire Collision Event', desc: 'Voltages superimpose in the center of the bus wire, creating an abnormal signal energy surge exceeding the collision threshold!', status: 'COLLISION DETECTED!' },
-      { title: '4. Jamming Signal Broadcast', desc: 'Transmitting nodes detect collision, halt payload transmission, and emit a 32-bit jam sequence so all stations know the wire is corrupt.', status: 'Jam Signal Broadcasted' },
-      { title: '5. Binary Exponential Backoff', desc: 'Node A selects random slot R=1 (51.2μs), Node C selects R=2 (102.4μs). Node A retransmits first without collision!', status: 'Backoff Resolved & Successful' },
-    ];
-
-    const currentCsmaState = states[currentStep] || states[0];
-
-    return (
-      <div className="space-y-6">
-        <div className="p-8 bg-slate-900/80 rounded-2xl border border-cyan-500/25 relative overflow-hidden">
-          
-          {/* Main Bus Line */}
-          <div className="relative py-12">
-            <div className="h-2 w-full bg-slate-700 rounded-full relative">
+    switch (theme.illustrationType) {
+      case 'server-layers':
+        // 3D Layered Server Disks (Module 1)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              <defs>
+                <linearGradient id="diskBlueTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38BDF8" />
+                  <stop offset="100%" stopColor="#2563EB" />
+                </linearGradient>
+                <linearGradient id="diskBlueSide" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#1D4ED8" />
+                  <stop offset="100%" stopColor="#1E40AF" />
+                </linearGradient>
+                <linearGradient id="diskPurpleTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#A855F7" />
+                  <stop offset="100%" stopColor="#7C3AED" />
+                </linearGradient>
+                <linearGradient id="diskPurpleSide" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#6D28D9" />
+                  <stop offset="100%" stopColor="#4C1D95" />
+                </linearGradient>
+              </defs>
+              {/* Bottom disk */}
+              <path d="M25 80 C25 72 95 72 95 80 L95 90 C95 98 25 98 25 90 Z" fill="url(#diskBlueSide)" />
+              <ellipse cx="60" cy="80" rx="35" ry="12" fill="url(#diskBlueTop)" />
               
-              {/* Collision Wave Indicator */}
-              {currentStep === 2 && (
-                <div className="absolute left-1/2 -top-4 -translate-x-1/2 flex items-center justify-center animate-ping">
-                  <div className="w-12 h-12 rounded-full bg-rose-500/80 blur-xs" />
-                </div>
-              )}
-              {currentStep === 2 && (
-                <div className="absolute left-1/2 -top-2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-mono font-black text-[10px] animate-bounce z-20">
-                  💥 COLLISION!
-                </div>
-              )}
-            </div>
+              {/* Middle disk */}
+              <path d="M25 58 C25 50 95 50 95 58 L95 68 C95 76 25 76 25 68 Z" fill="url(#diskPurpleSide)" />
+              <ellipse cx="60" cy="58" rx="35" ry="12" fill="url(#diskPurpleTop)" />
 
-            {/* Connected Stations along bus */}
-            <div className="flex justify-between items-start mt-6">
-              {['Node A (Transmitter)', 'Node B (Idle)', 'Node C (Transmitter)', 'Node D (Idle)'].map((name, i) => (
-                <div key={name} className="flex flex-col items-center gap-1.5">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all ${
-                    (i === 0 || i === 2) && currentStep > 0
-                      ? currentStep === 2 ? 'bg-rose-950 border-rose-500 text-rose-400' : 'bg-cyan-950 border-cyan-500 text-cyan-400'
-                      : 'bg-slate-800 border-slate-700 text-slate-400'
-                  }`}>
-                    <Laptop size={22} />
-                  </div>
-                  <span className="text-[11px] font-bold text-white">{name.split(' ')[0]} {name.split(' ')[1]}</span>
-                  <span className="text-[9px] font-mono text-slate-400">{name.split(' ')[2]}</span>
-                </div>
-              ))}
-            </div>
+              {/* Top disk */}
+              <path d="M25 36 C25 28 95 28 95 36 L95 46 C95 54 25 54 25 46 Z" fill="url(#diskBlueSide)" />
+              <ellipse cx="60" cy="36" rx="35" ry="12" fill="url(#diskBlueTop)" />
+
+              {/* Floating isometric data cubes */}
+              <polygon points="18,48 24,44 30,48 24,52" fill="#67E8F9" />
+              <polygon points="18,48 24,52 24,58 18,54" fill="#06B6D4" />
+              <polygon points="30,48 24,52 24,58 30,54" fill="#0891B2" />
+
+              <polygon points="90,32 96,28 102,32 96,36" fill="#F472B6" />
+              <polygon points="90,32 96,36 96,42 90,38" fill="#EC4899" />
+              <polygon points="102,32 96,36 96,42 102,38" fill="#DB2777" />
+            </svg>
           </div>
+        );
 
-          <div className="mt-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
-            <span className="font-bold text-cyan-300">{currentCsmaState.title}</span>
-            <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
-              currentStep === 2 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-            }`}>
-              {currentCsmaState.status}
-            </span>
+      case 'code-laptop':
+        // 3D Open Laptop with glowing windows (Module 2)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              <defs>
+                <linearGradient id="laptopScreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#4F46E5" />
+                  <stop offset="100%" stopColor="#7C3AED" />
+                </linearGradient>
+                <linearGradient id="docPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#E9D5FF" />
+                  <stop offset="100%" stopColor="#C084FC" />
+                </linearGradient>
+              </defs>
+              {/* Floating code window document */}
+              <rect x="20" y="24" width="28" height="38" rx="4" fill="url(#docPurple)" transform="rotate(-10 34 43)" opacity="0.9" />
+              <line x1="24" y1="32" x2="42" y2="29" stroke="#7E22CE" strokeWidth="2" strokeLinecap="round" />
+              <line x1="25" y1="38" x2="40" y2="35" stroke="#7E22CE" strokeWidth="2" strokeLinecap="round" />
+              <line x1="26" y1="44" x2="38" y2="41" stroke="#7E22CE" strokeWidth="2" strokeLinecap="round" />
+
+              {/* 3D Isometric Laptop Screen */}
+              <polygon points="45,35 95,20 105,62 55,75" fill="#1E1B4B" rx="2" />
+              <polygon points="48,37 92,24 101,60 57,72" fill="url(#laptopScreen)" />
+              
+              {/* Screen code lines */}
+              <line x1="56" y1="45" x2="84" y2="36" stroke="#A5B4FC" strokeWidth="2" strokeLinecap="round" />
+              <line x1="58" y1="52" x2="90" y2="42" stroke="#67E8F9" strokeWidth="2" strokeLinecap="round" />
+              <line x1="60" y1="59" x2="78" y2="53" stroke="#F472B6" strokeWidth="2" strokeLinecap="round" />
+
+              {/* Laptop Keyboard Base */}
+              <polygon points="55,75 105,62 88,88 38,98" fill="#475569" />
+              <polygon points="56,76 102,64 86,86 42,96" fill="#334155" />
+              {/* Trackpad */}
+              <polygon points="60,86 75,82 72,90 57,93" fill="#64748B" />
+            </svg>
           </div>
-        </div>
+        );
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
-          {currentCsmaState.desc}
-        </div>
-      </div>
-    );
-  };
+      case 'geometric-cubes':
+        // 3D Isometric Geometric Cubes (Module 3)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              {/* Top gold cube */}
+              <g transform="translate(68, 26)">
+                <polygon points="16,0 32,8 16,16 0,8" fill="#FDE047" />
+                <polygon points="0,8 16,16 16,34 0,26" fill="#EAB308" />
+                <polygon points="16,16 32,8 32,26 16,34" fill="#CA8A04" />
+              </g>
 
-  // 4. Sliding Window Simulation
-  const renderSlidingWindowSimulation = () => {
-    const frames = [0, 1, 2, 3, 4, 5, 6, 7];
-    const windowStart = Math.min(4, Math.floor(currentStep / 1.5));
-    const windowSize = 4;
+              {/* Middle orange cube */}
+              <g transform="translate(42, 48)">
+                <polygon points="16,0 32,8 16,16 0,8" fill="#FDBA74" />
+                <polygon points="0,8 16,16 16,34 0,26" fill="#F97316" />
+                <polygon points="16,16 32,8 32,26 16,34" fill="#EA580C" />
+              </g>
 
-    return (
-      <div className="space-y-6">
-        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
-              Go-Back-N Protocol (Window Size N = 4)
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              Active Sender Window: [{windowStart} ... {windowStart + windowSize - 1}]
-            </span>
+              {/* Bottom pink-red cube */}
+              <g transform="translate(76, 62)">
+                <polygon points="16,0 32,8 16,16 0,8" fill="#F472B6" />
+                <polygon points="0,8 16,16 16,34 0,26" fill="#EC4899" />
+                <polygon points="16,16 32,8 32,26 16,34" fill="#DB2777" />
+              </g>
+
+              <circle cx="34" cy="38" r="2.5" fill="#FBBF24" />
+              <circle cx="106" cy="46" r="3" fill="#FB923C" />
+            </svg>
           </div>
+        );
 
-          {/* Sequence Buffers */}
-          <div className="grid grid-cols-8 gap-2 py-4">
-            {frames.map((f) => {
-              const inWindow = f >= windowStart && f < windowStart + windowSize;
-              const isAcked = f < windowStart;
+      case 'ack-seq-nodes':
+        // ACK & SEQ Nodes Channel (Module 4)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              {/* Connection stream line */}
+              <line x1="38" y1="62" x2="88" y2="76" stroke="#2DD4BF" strokeWidth="2.5" strokeDasharray="4 3" />
+              
+              {/* Left Green Node */}
+              <g transform="translate(18, 52)">
+                <polygon points="14,0 28,7 14,14 0,7" fill="#6EE7B7" />
+                <polygon points="0,7 14,14 14,28 0,21" fill="#10B981" />
+                <polygon points="14,14 28,7 28,21 14,28" fill="#059669" />
+              </g>
 
-              return (
-                <div 
-                  key={f}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    inWindow 
-                      ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] ring-2 ring-cyan-400/50'
-                      : isAcked
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                      : 'bg-slate-800/50 border-slate-700 text-slate-500'
-                  }`}
-                >
-                  <div className="text-[10px] font-mono opacity-60">FRAME</div>
-                  <div className="text-lg font-black font-mono">{f}</div>
-                  <div className="text-[9px] font-mono font-bold mt-1">
-                    {isAcked ? 'ACKED' : inWindow ? 'IN FLIGHT' : 'QUEUED'}
-                  </div>
-                </div>
-              );
-            })}
+              {/* Right Purple Node */}
+              <g transform="translate(76, 66)">
+                <polygon points="14,0 28,7 14,14 0,7" fill="#A5B4FC" />
+                <polygon points="0,7 14,14 14,28 0,21" fill="#6366F1" />
+                <polygon points="14,14 28,7 28,21 14,28" fill="#4F46E5" />
+              </g>
+
+              {/* Floating ACK pill badge */}
+              <g transform="translate(44, 38)">
+                <rect width="28" height="15" rx="4" fill="#10B981" />
+                <text x="14" y="11" textAnchor="middle" fill="#FFFFFF" fontSize="8" fontWeight="bold" fontFamily="monospace">ACK</text>
+              </g>
+
+              {/* Floating SEQ pill badge */}
+              <g transform="translate(74, 46)">
+                <rect width="28" height="15" rx="4" fill="#06B6D4" />
+                <text x="14" y="11" textAnchor="middle" fill="#FFFFFF" fontSize="8" fontWeight="bold" fontFamily="monospace">SEQ</text>
+              </g>
+            </svg>
           </div>
-        </div>
+        );
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
-          Sliding window protocols achieve high network efficiency by allowing multiple frames to be in flight without waiting for individual ACKs. As cumulative acknowledgments return from the receiver, the transmission window slides forward across sequence numbers.
-        </div>
-      </div>
-    );
-  };
+      case 'tcp-handshake':
+        // Red Monoliths with SYN, ACK, FIN badges (Module 5)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              {/* Left red server tower */}
+              <path d="M22 45 C22 40 38 40 38 45 L38 85 C38 90 22 90 22 85 Z" fill="#E11D48" />
+              <ellipse cx="30" cy="45" rx="8" ry="4" fill="#FB7185" />
+              <ellipse cx="30" cy="58" rx="8" ry="3" fill="#BE123C" />
+              <ellipse cx="30" cy="72" rx="8" ry="3" fill="#9F1239" />
 
-  // 5. DNS Resolution Journey Simulation
-  const renderDnsSimulation = () => {
-    const dnsSteps = [
-      { query: '1. Client queries Local Resolver for klu.ac.in', target: 'Local DNS Resolver (Cache Miss)', response: 'Recursion requested' },
-      { query: '2. Resolver queries Root Server (.)', target: 'Root Nameserver (a.root-servers.net)', response: 'Referral to .in TLD Nameserver' },
-      { query: '3. Resolver queries .in TLD Server', target: '.in TLD Registry Server', response: 'Referral to ns1.klu.ac.in Authoritative Server' },
-      { query: '4. Resolver queries Authoritative Server', target: 'Authoritative Nameserver (ns1.klu.ac.in)', response: 'A-Record: 104.21.32.18 (TTL 300)' },
-      { query: '5. Final IP returned to Client Browser', target: 'Client Browser (192.168.1.10)', response: 'Connection ready! Browser connects via IP' },
-    ];
+              {/* Right red server tower */}
+              <path d="M82 45 C82 40 98 40 98 45 L98 85 C98 90 82 90 82 85 Z" fill="#E11D48" />
+              <ellipse cx="90" cy="45" rx="8" ry="4" fill="#FB7185" />
+              <ellipse cx="90" cy="58" rx="8" ry="3" fill="#BE123C" />
+              <ellipse cx="90" cy="72" rx="8" ry="3" fill="#9F1239" />
 
-    const currentDns = dnsSteps[currentStep] || dnsSteps[0];
+              {/* Middle SYN, ACK, FIN badges */}
+              <g transform="translate(48, 38)">
+                <rect width="24" height="12" rx="6" fill="#F43F5E" />
+                <text x="12" y="9" textAnchor="middle" fill="#FFFFFF" fontSize="7" fontWeight="bold" fontFamily="monospace">SYN</text>
+              </g>
 
-    return (
-      <div className="space-y-6">
-        <div className="p-6 bg-slate-900/80 rounded-2xl border border-cyan-500/25">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
-              DNS Resolution Flow: "klu.ac.in"
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              Query Hop {currentStep + 1} of 5
-            </span>
+              <g transform="translate(48, 55)">
+                <rect width="24" height="12" rx="6" fill="#E11D48" />
+                <text x="12" y="9" textAnchor="middle" fill="#FFFFFF" fontSize="7" fontWeight="bold" fontFamily="monospace">ACK</text>
+              </g>
+
+              <g transform="translate(48, 72)">
+                <rect width="24" height="12" rx="6" fill="#BE123C" />
+                <text x="12" y="9" textAnchor="middle" fill="#FFFFFF" fontSize="7" fontWeight="bold" fontFamily="monospace">FIN</text>
+              </g>
+            </svg>
           </div>
+        );
 
-          <div className="space-y-3">
-            {dnsSteps.map((d, idx) => (
-              <div 
-                key={idx}
-                className={`p-3 rounded-xl border text-xs flex items-center justify-between transition-all ${
-                  idx === currentStep
-                    ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md'
-                    : idx < currentStep
-                    ? 'bg-slate-900 border-emerald-500/30 text-emerald-300 opacity-80'
-                    : 'bg-slate-900/40 border-slate-800 text-slate-500'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 font-mono">
-                  <span className="w-5 h-5 rounded-md bg-slate-800 flex items-center justify-center font-bold text-[10px]">
-                    {idx + 1}
-                  </span>
-                  <span>{d.query}</span>
-                </div>
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 font-bold">
-                  {d.response}
-                </span>
-              </div>
-            ))}
+      case 'udp-paper-plane':
+        // Supersonic 3D Paper Airplane with Speed Trail (Module 6)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              {/* Cyan Speed Lines */}
+              <line x1="15" y1="62" x2="48" y2="62" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+              <line x1="22" y1="72" x2="62" y2="72" stroke="#0284C7" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+              <line x1="18" y1="52" x2="52" y2="52" stroke="#7DD3FC" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+
+              {/* 3D Paper Airplane */}
+              <g transform="translate(45, 30)">
+                <polygon points="58,18 0,48 24,52" fill="#0284C7" />
+                <polygon points="58,18 24,52 22,66" fill="#0369A1" />
+                <polygon points="58,18 24,52 42,42" fill="#38BDF8" />
+                <polygon points="58,18 42,42 20,40" fill="#BAE6FD" />
+              </g>
+
+              {/* Trailing data cubes */}
+              <polygon points="20,80 25,77 30,80 25,83" fill="#38BDF8" />
+              <polygon points="10,42 15,39 20,42 15,45" fill="#7DD3FC" />
+            </svg>
           </div>
-        </div>
+        );
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
-          The Domain Name System (DNS) translates human-readable hostnames into IP addresses using a globally distributed hierarchical database architecture.
-        </div>
-      </div>
-    );
+      case 'purple-shield':
+        // Glowing Purple Shield with Padlock (Module 7)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              <defs>
+                <linearGradient id="shieldPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#818CF8" />
+                  <stop offset="100%" stopColor="#4F46E5" />
+                </linearGradient>
+              </defs>
+              {/* Orbital aura ring */}
+              <ellipse cx="60" cy="62" rx="42" ry="14" fill="none" stroke="#C084FC" strokeWidth="1.5" strokeDasharray="6 4" transform="rotate(-15 60 62)" opacity="0.8" />
+              
+              {/* Outer Shield */}
+              <path d="M60 22 C78 22 92 32 92 48 C92 74 60 96 60 96 C60 96 28 74 28 48 C28 32 42 22 60 22 Z" fill="url(#shieldPurple)" filter="drop-shadow(0 4px 10px rgba(79, 70, 229, 0.4))" />
+              
+              {/* Padlock Icon Inside Shield */}
+              <rect x="50" y="54" width="20" height="16" rx="3" fill="#FFFFFF" />
+              <path d="M54 54 V46 C54 42.5 66 42.5 66 46 V54" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="60" cy="62" r="2" fill="#4F46E5" />
+            </svg>
+          </div>
+        );
+
+      case 'teal-shield':
+        // Glowing Cyan/Teal Shield with Radar Pulse (Module 8)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              <defs>
+                <linearGradient id="shieldTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#2DD4BF" />
+                  <stop offset="100%" stopColor="#0D9488" />
+                </linearGradient>
+              </defs>
+              {/* Concentric radar pulse arcs */}
+              <circle cx="60" cy="60" r="42" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeDasharray="5 5" opacity="0.6" />
+              <circle cx="60" cy="60" r="32" fill="none" stroke="#2DD4BF" strokeWidth="1" strokeDasharray="3 3" opacity="0.8" />
+
+              {/* Outer Shield */}
+              <path d="M60 25 C76 25 88 34 88 48 C88 72 60 92 60 92 C60 92 32 72 32 48 C32 34 44 25 60 25 Z" fill="url(#shieldTeal)" filter="drop-shadow(0 4px 10px rgba(13, 148, 136, 0.4))" />
+
+              {/* Padlock Inside */}
+              <rect x="52" y="54" width="16" height="14" rx="2.5" fill="#FFFFFF" />
+              <path d="M55 54 V47 C55 44 65 44 65 47 V54" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="60" cy="61" r="1.5" fill="#0D9488" />
+            </svg>
+          </div>
+        );
+
+      case 'golden-padlock':
+      default:
+        // 3D Golden Padlock on Beveled Pedestal (Module 9)
+        return (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex items-center justify-center pointer-events-none select-none shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-md">
+              <defs>
+                <linearGradient id="goldPadlock" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FDE047" />
+                  <stop offset="50%" stopColor="#FACC15" />
+                  <stop offset="100%" stopColor="#CA8A04" />
+                </linearGradient>
+              </defs>
+              {/* Pedestal Base */}
+              <polygon points="60,82 98,68 60,54 22,68" fill="#FEF08A" />
+              <polygon points="22,68 60,82 60,94 22,80" fill="#FACC15" />
+              <polygon points="60,82 98,68 98,80 60,94" fill="#EAB308" />
+
+              {/* Golden Padlock Body */}
+              <g transform="translate(42, 28)">
+                {/* Shackle */}
+                <path d="M10 26 V15 C10 6 26 6 26 15 V26" fill="none" stroke="#FDE047" strokeWidth="5" strokeLinecap="round" />
+                <path d="M10 26 V15 C10 6 26 6 26 15 V26" fill="none" stroke="#CA8A04" strokeWidth="2" strokeLinecap="round" />
+                
+                {/* Body */}
+                <rect x="4" y="24" width="28" height="26" rx="5" fill="url(#goldPadlock)" filter="drop-shadow(0 4px 6px rgba(202, 138, 4, 0.4))" />
+                {/* Keyhole */}
+                <circle cx="18" cy="34" r="2.5" fill="#713F12" />
+                <polygon points="17,34 19,34 20,41 16,41" fill="#713F12" />
+              </g>
+
+              {/* Sparkles */}
+              <polygon points="24,36 26,30 28,36 34,38 28,40 26,46 24,40 18,38" fill="#FBBF24" />
+              <polygon points="94,44 95,40 96,44 100,45 96,46 95,50 94,46 90,45" fill="#FDE047" />
+            </svg>
+          </div>
+        );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-surface-container-lowest dark:bg-[#070D18] text-on-surface dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors">
+    <div className="w-full min-h-screen py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans select-none animate-in fade-in duration-300">
       
-      {/* View Header */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-outline-variant/30 dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
-              <Sparkles size={12} />
-              VISUAL PROTOCOL SIMULATION
-            </span>
-            <span className="text-xs font-mono text-outline dark:text-slate-400">
-              Interactive Labs
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-headline font-black text-slate-900 dark:text-white mt-1 tracking-tight">
-            Animated Learning
-          </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-            Step-by-step visual protocol state-machines, packet travel simulations, and RFC mechanics.
-          </p>
-        </div>
-
-        {/* Mascot Tip */}
-        <div className="hidden sm:flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-surface-container dark:bg-slate-900 border border-outline-variant/30 dark:border-slate-800 shadow-xs">
-          <div className="w-8 h-8 relative shrink-0">
-            <img
-              src="/assets/mascot/cresco-mascot.png"
-              alt="Cresco"
-              className="w-full h-full object-contain filter drop-shadow-xs"
-            />
-          </div>
-          <div className="text-left">
-            <div className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase leading-none">CRESCO TIP</div>
-            <div className="text-[11px] font-medium text-slate-700 dark:text-slate-300 leading-tight mt-0.5">
-              Press Play or step forward to inspect packet fields!
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Topic Switcher Ribbon */}
-      <div className="max-w-7xl mx-auto overflow-x-auto pb-2">
-        <div className="flex items-center gap-2 min-w-max">
-          {topics.map((t) => {
-            const isSelected = activeTopic === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  try {
-                    soundFx.playClick();
-                  } catch {}
-                  setActiveTopic(t.id);
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-headline font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  isSelected
-                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                    : 'bg-surface-container dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-outline-variant/30 dark:border-slate-800'
-                }`}
-              >
-                <span>{t.title}</span>
-                <span className="text-[10px] font-mono opacity-80 px-1.5 py-0.2 rounded bg-black/20">
-                  {t.rfc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Main Interactive Stage */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Left: Active Simulation Canvas & Controls (3 cols) */}
-        <div className="lg:col-span-3 space-y-4">
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER & 3D NETWORK HERO GRAPHIC                                   */}
+      {/* ========================================================================= */}
+      <div className="relative mb-8 pb-6 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           
-          {/* Active Simulation View */}
-          <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 shadow-xl">
-            {renderSimulationCanvas()}
-          </div>
-
-          {/* Universal Playback Control Bar */}
-          <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-            
-            {/* Play / Pause / Step Controls */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-                title="Reset Simulation"
-              >
-                <RotateCcw size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStepBackward}
-                disabled={currentStep === 0}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
-                title="Step Backward"
-              >
-                <SkipBack size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleTogglePlay}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/30 active:scale-95 transition-all cursor-pointer"
-              >
-                {isPlaying ? <Pause size={15} /> : <Play size={15} className="fill-white" />}
-                <span>{isPlaying ? 'Pause' : 'Play Simulation'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStepForward}
-                disabled={currentStep >= currentTopicData.totalSteps - 1}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
-                title="Step Forward"
-              >
-                <SkipForward size={16} />
-              </button>
-            </div>
-
-            {/* Timeline Progress Bar */}
-            <div className="flex items-center gap-3 flex-1 max-w-xs">
-              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-bold">
-                {currentStep + 1}/{currentTopicData.totalSteps}
-              </span>
-              <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-cyan-500 transition-all duration-300 rounded-full"
-                  style={{ width: `${((currentStep + 1) / currentTopicData.totalSteps) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Speed Toggle */}
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              {[0.5, 1, 2].map((spd) => (
-                <button
-                  key={spd}
-                  type="button"
-                  onClick={() => setSpeedMultiplier(spd)}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                    speedMultiplier === spd
-                      ? 'bg-cyan-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {spd}x
-                </button>
-              ))}
-            </div>
-
-          </div>
-        </div>
-
-        {/* Right: Academic Context & RFC Guide (1 col) */}
-        <div className="space-y-4">
-          
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#0c1424] border border-outline-variant/30 dark:border-slate-800 shadow-lg space-y-4">
-            <div>
-              <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest block">
-                {currentTopicData.category}
-              </span>
-              <h3 className="font-headline font-black text-base text-slate-900 dark:text-white mt-0.5">
-                {currentTopicData.title}
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                {currentTopicData.description}
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block">
-                CORE PROTOCOL INVARIANTS
-              </span>
-              
-              <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
-                  <span>Sequence numbers byte-orient reliability without overhead.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
-                  <span>State machines prevent half-open and zombie socket leaks.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
-                  <span>Full-duplex channels manage independent stream counters.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/40 text-[11px] text-cyan-900 dark:text-cyan-200 space-y-1">
-              <div className="font-bold flex items-center gap-1.5">
-                <Info size={13} className="text-cyan-600 dark:text-cyan-400" />
-                <span>KLU University Curriculum</span>
-              </div>
-              <p className="text-[10px] leading-relaxed">
-                Matches syllabus unit requirements for Transport layer handshakes, framing, and CSMA/CD mechanisms.
-              </p>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* Standalone Animated Learning Modules 1–30 */}
-      <div className="max-w-7xl mx-auto pt-8 border-t border-outline-variant/30 dark:border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+          {/* Left: Titles, Badges, Features */}
+          <div className="space-y-3.5 max-w-2xl">
+            {/* Top Pill Badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold font-mono bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 uppercase tracking-wider">
                 CURRICULUM SIMULATIONS
               </span>
-              <span className="text-xs font-mono text-slate-500">
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-400 font-mono">
                 Modules 1–30
               </span>
             </div>
-            <h2 className="text-lg sm:text-xl font-headline font-black text-slate-900 dark:text-white mt-1">
-              Standalone Animated Learning Labs
-            </h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+
+            {/* Headline */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              Standalone{' '}
+              <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                Animated Learning
+              </span>{' '}
+              Labs
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
               Dedicated isolated visual simulations for networking protocols, packet journeys, and security mechanisms.
             </p>
-          </div>
-          <div className="text-xs font-mono text-slate-500">
-            21 Active Modules · 9 In Preparation
-          </div>
-        </div>
 
-        {/* Modules 1–30 Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-          {ANIMATED_MODULES.map((mod) => (
-            <div
-              key={mod.id}
-              className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                mod.available
-                  ? 'bg-white dark:bg-[#0c1424] border-outline-variant/30 dark:border-slate-800 hover:border-cyan-500/50 hover:shadow-lg dark:hover:shadow-cyan-950/20 shadow-xs'
-                  : 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800/50 opacity-70'
-              }`}
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    Module {mod.id}
-                  </span>
-                  <span
-                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      mod.available
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                    }`}
-                  >
-                    {mod.tag}
-                  </span>
-                </div>
-                <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
-                  {mod.unit}
-                </div>
-                <h4 className="font-headline font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-1" title={mod.title}>
-                  {mod.title}
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2" title={mod.description}>
-                  {mod.description}
-                </p>
+            {/* Feature Pills Row */}
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap pt-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-800/40 text-[11px] font-bold text-blue-700 dark:text-blue-300">
+                <Box className="w-3.5 h-3.5 text-blue-500" />
+                <span>30+ Interactive Labs</span>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80">
-                {mod.available ? (
-                  <a
-                    href={mod.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-1.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer group"
-                  >
-                    <span>Launch Simulation</span>
-                    <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    type="button"
-                    className="w-full py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
-                  >
-                    <span>Coming Soon</span>
-                  </button>
-                )}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50/80 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/40 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                <Play className="w-3 h-3 fill-emerald-500 text-emerald-500" />
+                <span>Visual Simulations</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50/80 dark:bg-purple-950/50 border border-purple-200/60 dark:border-purple-800/40 text-[11px] font-bold text-purple-700 dark:text-purple-300">
+                <BookOpen className="w-3.5 h-3.5 text-purple-500" />
+                <span>Self-Paced Learning</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50/80 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/40 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+                <span>Concept to Visualization</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50/80 dark:bg-rose-950/50 border border-rose-200/60 dark:border-rose-800/40 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+                <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
+                <span>Network & Security Focused</span>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Right: 3D Isometric Laptop & Server Stack Illustration (Matching reference image) */}
+          <div className="hidden lg:flex items-center justify-center shrink-0 w-80 h-44 relative pointer-events-none select-none">
+            <svg viewBox="0 0 320 180" className="w-full h-full drop-shadow-xl">
+              <defs>
+                <linearGradient id="heroLaptopScreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1E1B4B" />
+                  <stop offset="100%" stopColor="#312E81" />
+                </linearGradient>
+                <linearGradient id="heroServerBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38BDF8" />
+                  <stop offset="100%" stopColor="#1D4ED8" />
+                </linearGradient>
+              </defs>
+
+              {/* Ambient Glow */}
+              <ellipse cx="160" cy="110" rx="110" ry="40" fill="#38BDF8" opacity="0.15" filter="blur(20px)" />
+
+              {/* 3D Isometric Laptop */}
+              <g transform="translate(60, 20)">
+                {/* Screen */}
+                <polygon points="30,40 120,10 135,75 45,105" fill="#0F172A" />
+                <polygon points="34,43 116,15 130,73 48,101" fill="url(#heroLaptopScreen)" />
+                {/* Graph topology lines on screen */}
+                <line x1="60" y1="55" x2="85" y2="45" stroke="#38BDF8" strokeWidth="2" />
+                <line x1="85" y1="45" x2="110" y2="60" stroke="#38BDF8" strokeWidth="2" />
+                <line x1="60" y1="55" x2="80" y2="80" stroke="#818CF8" strokeWidth="2" />
+                <circle cx="60" cy="55" r="4" fill="#67E8F9" />
+                <circle cx="85" cy="45" r="4" fill="#38BDF8" />
+                <circle cx="110" cy="60" r="4" fill="#818CF8" />
+                <circle cx="80" cy="80" r="4" fill="#C084FC" />
+
+                {/* Base */}
+                <polygon points="45,105 135,75 110,120 20,150" fill="#334155" />
+                <polygon points="47,106 131,77 107,118 25,147" fill="#1E293B" />
+              </g>
+
+              {/* 3D Isometric Server Stack Disks on Right */}
+              <g transform="translate(230, 30)">
+                {/* Bottom disk */}
+                <path d="M10 80 C10 70 60 70 60 80 L60 92 C60 102 10 102 10 92 Z" fill="#1E40AF" />
+                <ellipse cx="35" cy="80" rx="25" ry="9" fill="#2563EB" />
+
+                {/* Middle disk */}
+                <path d="M10 55 C10 45 60 45 60 55 L60 67 C60 77 10 77 10 67 Z" fill="#1D4ED8" />
+                <ellipse cx="35" cy="55" rx="25" ry="9" fill="#38BDF8" />
+
+                {/* Top disk */}
+                <path d="M10 30 C10 20 60 20 60 30 L60 42 C60 52 10 52 10 42 Z" fill="#1E40AF" />
+                <ellipse cx="35" cy="30" rx="25" ry="9" fill="#60A5FA" />
+
+                {/* Blinking server lights */}
+                <circle cx="20" cy="86" r="1.5" fill="#34D399" />
+                <circle cx="26" cy="86" r="1.5" fill="#60A5FA" />
+                <circle cx="20" cy="61" r="1.5" fill="#34D399" />
+                <circle cx="26" cy="61" r="1.5" fill="#60A5FA" />
+              </g>
+
+              {/* Floating network packets */}
+              <polygon points="190,50 196,47 202,50 196,53" fill="#38BDF8" />
+              <polygon points="215,85 220,82 225,85 220,88" fill="#F472B6" />
+            </svg>
+          </div>
+
+        </div>
+
+        {/* Search & Category Filter Navigation */}
+        <div className="mt-8 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search modules, protocols, or topics..."
+              className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-full text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 shadow-xs transition-colors"
+            />
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Category Filter Pills (Exact Match to Reference Image) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {(['All', 'Transport Layer', 'Network Layer', 'Security', 'Algorithms', 'Routing'] as CategoryFilter[]).map((cat) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    soundFx.playClick();
+                    setSelectedCategory(cat);
+                  }}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 2. CARD GRID (3 COLUMNS - EXACT VISUAL MATCH TO REFERENCE IMAGE)          */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredModules.map((mod) => {
+          const theme = MODULE_THEMES[mod.id] || {
+            duration: '15 min',
+            categoryTag: 'Transport Layer',
+            badgeBg: 'bg-slate-100 dark:bg-slate-800',
+            badgeText: 'text-slate-700 dark:text-slate-300',
+            layerBadgeBg: 'bg-blue-50 dark:bg-blue-950/60',
+            layerBadgeText: 'text-blue-600 dark:text-blue-300',
+            btnGradient: 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/25',
+            cardBorder: 'border-slate-200/80 dark:border-slate-800',
+            cardBg: 'bg-white dark:bg-[#0c1424]',
+            illustrationType: 'server-layers'
+          };
+
+          return (
+            <div
+              key={mod.id}
+              className={`rounded-[2rem] p-6 border ${theme.cardBorder} ${theme.cardBg} shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(79,70,229,0.09)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative group`}
+            >
+              {/* Card Top: Badges + Title + Description + 3D Illustration */}
+              <div>
+                {/* Category & Module Pills */}
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-[11px] font-bold font-mono ${theme.badgeBg} ${theme.badgeText}`}>
+                    Module {mod.id}
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-[11px] font-bold font-mono ${theme.layerBadgeBg} ${theme.layerBadgeText}`}>
+                    {theme.categoryTag}
+                  </span>
+                </div>
+
+                {/* Content & Illustration Row */}
+                <div className="flex items-start justify-between gap-3 mt-3.5">
+                  <div className="min-w-0 pr-1">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
+                      {mod.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-2 line-clamp-3">
+                      {mod.description}
+                    </p>
+                  </div>
+
+                  {/* 3D Custom Illustration */}
+                  {renderCardIllustration(mod.id)}
+                </div>
+              </div>
+
+              {/* Card Footer: Launch Simulation Button + Estimated Time */}
+              <div className="pt-5 mt-4 border-t border-slate-100/80 dark:border-slate-800/60 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleLaunchSimulation(mod)}
+                  className={`py-2.5 px-5 rounded-full ${theme.btnGradient} text-white font-bold text-xs flex items-center gap-2 shadow-md hover:scale-102 active:scale-98 transition-all cursor-pointer group`}
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Launch Simulation</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{theme.duration}</span>
+                </div>
+              </div>
+
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. SIMULATION MODAL OVERLAY (INTEGRATED LIVE HTML SIMULATOR)              */}
+      {/* ========================================================================= */}
+      {activeSimulationModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-5xl h-[90vh] bg-white dark:bg-[#0c1424] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="p-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-900/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-600 text-white">
+                  Module {activeSimulationModal.id}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                    {activeSimulationModal.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {activeSimulationModal.unit}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions: Open in New Tab & Close */}
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/animated_learn_${activeSimulationModal.id}/index.html`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Open in Full Window"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">New Tab</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setActiveSimulationModal(null);
+                  }}
+                  className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close Simulation"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Iframe Content */}
+            <div className="flex-1 w-full bg-slate-950 relative">
+              <iframe
+                src={`/animated_learn_${activeSimulationModal.id}/index.html`}
+                title={activeSimulationModal.title}
+                className="w-full h-full border-0"
+              />
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

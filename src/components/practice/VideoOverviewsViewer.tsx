@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Play, 
-  Pause, 
-  RotateCcw, 
-  Volume2, 
-  VolumeX, 
   CheckCircle2, 
   Clock, 
   Sparkles, 
@@ -12,7 +8,8 @@ import {
   ListVideo,
   Award,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Youtube
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
 
@@ -30,8 +27,7 @@ interface VideoLesson {
   title: string;
   duration: string;
   totalSeconds: number;
-  thumbnailGradient: string;
-  youtubeId?: string;
+  youtubeId: string;
   overview: string;
   chapters: Chapter[];
   keyTakeaways: string[];
@@ -39,147 +35,261 @@ interface VideoLesson {
 }
 
 const VIDEO_LESSONS: VideoLesson[] = [
+  // ==========================================
+  // UNIT 3: IP ADDRESSING & ROUTING (6 Real Tutorials)
+  // ==========================================
   {
     id: 'vid-u3-01',
     unit: 'Unit 3',
     unitNum: 3,
-    title: 'IPv4 vs IPv6 Packet Headers & Subnetting Deep Dive',
-    duration: '14:20',
-    totalSeconds: 860,
-    thumbnailGradient: 'from-sky-600 via-blue-700 to-indigo-900',
-    overview: 'Comprehensive visual walkthrough of Network Layer packet mechanics, IP header fields (TTL, checksum, fragment offsets), IPv6 128-bit hexadecimal addressing, and fast CIDR subnet calculation methods.',
+    title: 'IP Address Classes, Subnet Masks & Hosts',
+    duration: '12:45',
+    totalSeconds: 765,
+    youtubeId: 'Uenl6HAR5r8',
+    overview: 'Complete visual guide to IPv4 32-bit address architecture, Class A, B, C, D, and E boundary definitions, default subnet masks, and the mathematical deduction of usable host addresses per network.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'Network Layer Store-and-Forward', summary: 'How routers decouple link-layer frames and route datagrams hop-by-hop.' },
-      { time: '03:15', seconds: 195, title: 'IPv4 Header: TTL, Fragmentation, Checksum', summary: 'Breakdown of the 20-byte base header and how fragmentation offsets prevent packet loss.' },
-      { time: '07:40', seconds: 460, title: 'Subnetting & CIDR Slash Notation', summary: 'Calculating network ID, broadcast address, and usable host count in seconds.' },
-      { time: '11:10', seconds: 670, title: 'IPv6 Simplified 40-byte Header & Flow Labels', summary: 'Why IPv6 eliminated header checksums and broadcast for enhanced routing speed.' }
+      { time: '00:00', seconds: 0, title: 'IPv4 32-bit Structure', summary: 'Dotted decimal notation and 4-octet division.' },
+      { time: '02:30', seconds: 150, title: 'Class A, B, C, D, E Breakdown', summary: 'Leading bit patterns: 0 for Class A, 10 for B, 110 for C.' },
+      { time: '06:15', seconds: 375, title: 'Default Subnet Masks', summary: '/8 (255.0.0.0), /16 (255.255.0.0), and /24 (255.255.255.0).' },
+      { time: '09:40', seconds: 580, title: 'Usable Hosts Calculation (2^H - 2)', summary: 'Why 2 addresses are reserved for network ID and broadcast.' }
     ],
     keyTakeaways: [
-      'IPv4 headers require 20-60 bytes; IPv6 uses a fixed 40-byte base header with optional chained extension headers.',
-      'CIDR notation (/n) indicates the prefix length of network bits; remaining 32 - n bits represent host IDs.',
-      'Routers decrement TTL by 1 at each hop; when TTL = 0, an ICMP "Time Exceeded" datagram is sent back to the sender.'
+      'Class A: 1.0.0.0 – 126.255.255.255 (/8 default mask, 16.7M hosts/network).',
+      'Class B: 128.0.0.0 – 191.255.255.255 (/16 default mask, 65,534 hosts/network).',
+      'Class C: 192.0.0.0 – 223.255.255.255 (/24 default mask, 254 hosts/network).',
+      '127.0.0.0/8 is strictly reserved for loopback diagnostics (localhost).'
     ],
-    examTips: 'Exam favorite: Given IP 192.168.10.130/26, determine Subnet Mask (255.255.255.192), Network ID (192.168.10.128), and Broadcast (192.168.10.191).'
+    examTips: 'In exam numericals, always subtract 2 from total host IP combinations: Total Usable Hosts = (2^h) - 2.'
   },
   {
     id: 'vid-u3-02',
     unit: 'Unit 3',
     unitNum: 3,
-    title: 'Routing Protocols: Distance Vector (RIP) vs Link State (OSPF)',
-    duration: '16:45',
-    totalSeconds: 1005,
-    thumbnailGradient: 'from-blue-600 via-indigo-700 to-violet-900',
-    overview: 'Visualizing graph algorithms in computer networks: Bellman-Ford versus Dijkstra. Learn how count-to-infinity occurs and how OSPF link-state advertisements maintain identical topology databases.',
+    title: 'Network, Broadcast & Host Addressing',
+    duration: '11:15',
+    totalSeconds: 675,
+    youtubeId: 'mNXlW3b7Xss',
+    overview: 'Understanding the distinct roles of the Network ID, Direct Broadcast Address, Limited Broadcast (255.255.255.255), and specific host address configurations inside local subnets.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'The Global Routing Problem', summary: 'Autonomous systems, intra-domain vs inter-domain routing architectures.' },
-      { time: '03:30', seconds: 210, title: 'Distance Vector & Bellman-Ford', summary: 'Sharing distance vectors only with immediate physical neighbors.' },
-      { time: '07:15', seconds: 435, title: 'Count-to-Infinity & Split Horizon', summary: 'Why routing loops occur and how poison reverse mitigates convergence failure.' },
-      { time: '11:50', seconds: 710, title: 'OSPF & Dijkstra Shortest Path First', summary: 'Flooding LSAs to build full network topology graph before local shortest path calculations.' }
+      { time: '00:00', seconds: 0, title: 'Network ID as Routing Destination', summary: 'Why routers match network prefixes rather than individual hosts.' },
+      { time: '03:10', seconds: 190, title: 'Direct Broadcast vs Limited Broadcast', summary: 'All host bits as 1s vs 255.255.255.255 local wire broadcast.' },
+      { time: '06:45', seconds: 405, title: 'Host Bit Patterns', summary: 'Assigning valid IP addresses between Network ID + 1 and Broadcast - 1.' },
+      { time: '09:20', seconds: 560, title: 'Router Gateway Assignment', summary: 'Convention of assigning first or last usable IP to the default gateway.' }
     ],
     keyTakeaways: [
-      'RIP is limited to a maximum hop count of 15; hop 16 is treated as infinity/unreachable.',
-      'OSPF uses Dijkstra algorithm with link cost (bandwidth-based metric) and converges significantly faster than RIP.',
-      'BGP uses path-vector routing and governs policy-based routing between Internet Autonomous Systems (AS).'
+      'Network ID has all host bits set to 0 and represents the entire subnetwork.',
+      'Directed Broadcast has all host bits set to 1 and sends a packet to all hosts on that target subnet.',
+      'Routers drop limited broadcast (255.255.255.255) by default to prevent broadcast radiation storms across the WAN.'
     ],
-    examTips: 'Know the 3 solutions to the Count-to-Infinity problem: Split Horizon, Poison Reverse, and Hold-down Timers.'
+    examTips: 'For any IP and subnet mask: bitwise AND between the IP and Subnet Mask always yields the Network ID.'
   },
+  {
+    id: 'vid-u3-03',
+    unit: 'Unit 3',
+    unitNum: 3,
+    title: 'Subnetting with IP Addressing',
+    duration: '15:20',
+    totalSeconds: 920,
+    youtubeId: '-ZsY4kw8zYU',
+    overview: 'Step-by-step mathematical guide to subnetting: borrowing host bits to create custom network divisions, calculating custom subnet masks, block size increments, and subnet ranges.',
+    chapters: [
+      { time: '00:00', seconds: 0, title: 'Why Subnetting is Essential', summary: 'Eliminating address wastage and segmenting traffic broadcast domains.' },
+      { time: '03:40', seconds: 220, title: 'Borrowing Host Bits (2^S Rule)', summary: 'How borrowing n bits produces 2^n subnets.' },
+      { time: '07:30', seconds: 450, title: 'Block Size (Magic Number Method)', summary: '256 minus the interesting octet value gives the exact jump interval.' },
+      { time: '11:50', seconds: 710, title: 'Complete Subnet Table Construction', summary: 'Listing network ID, usable host range, and broadcast for every subnet.' }
+    ],
+    keyTakeaways: [
+      'Each borrowed host bit doubles the number of subnets (2^n) and halves the available hosts per subnet (2^(h-n) - 2).',
+      'Interesting octet values: /25=128 (jump 128), /26=192 (jump 64), /27=224 (jump 32), /28=240 (jump 16), /29=248 (jump 8), /30=252 (jump 4).',
+      '/30 subnets are commonly used for point-to-point router links because they provide exactly 2 usable host IPs.'
+    ],
+    examTips: 'Magic Number shortcut: 256 - [last octet of subnet mask] = step size between consecutive subnet network IDs.'
+  },
+  {
+    id: 'vid-u3-04',
+    unit: 'Unit 3',
+    unitNum: 3,
+    title: 'Classful & Classless Addressing (CIDR)',
+    duration: '13:50',
+    totalSeconds: 830,
+    youtubeId: 'DWzm3xOAgm8',
+    overview: 'Comparing traditional Classful boundaries against modern Classless Inter-Domain Routing (CIDR, RFC 1519), slash prefix notation, VLSM (Variable Length Subnet Masking), and route aggregation.',
+    chapters: [
+      { time: '00:00', seconds: 0, title: 'Limits of Classful Routing', summary: 'Huge address waste in Class A/B allocations causing address exhaustion.' },
+      { time: '04:15', seconds: 255, title: 'CIDR Slash Notation (/n)', summary: 'Arbitrary prefix length representing network bits independent of classes.' },
+      { time: '08:00', seconds: 480, title: 'Route Aggregation & Supernetting', summary: 'Summarizing multiple contiguous /24 prefixes into a single /22 route.' },
+      { time: '11:10', seconds: 670, title: 'Longest Prefix Match Rule', summary: 'How routing tables select the most specific matching prefix.' }
+    ],
+    keyTakeaways: [
+      'CIDR freed the Internet from rigid /8, /16, and /24 class boundaries.',
+      'Supernetting combines multiple continuous classful networks into one advertised route entry.',
+      'Routers resolve packet destinations using Longest Prefix Match (LPM) hardware routing caches.'
+    ],
+    examTips: 'If two route table entries match an incoming IP (e.g. 10.1.0.0/16 vs 10.1.2.0/24), the router MUST forward via the longer prefix (/24).'
+  },
+  {
+    id: 'vid-u3-05',
+    unit: 'Unit 3',
+    unitNum: 3,
+    title: 'Shortest Path Routing Algorithm',
+    duration: '16:30',
+    totalSeconds: 990,
+    youtubeId: 'BQf_twCuibk',
+    overview: 'In-depth graph theoretical walkthrough of Dijkstra’s Shortest Path First (SPF) algorithm: tentative vs permanent node sets, edge weights, relaxation steps, and routing table derivation.',
+    chapters: [
+      { time: '00:00', seconds: 0, title: 'Network as a Weighted Graph', summary: 'Routers as vertices (V) and physical communication links as edges (E).' },
+      { time: '03:45', seconds: 225, title: 'Dijkstra Algorithm Principles', summary: 'Greedy single-source shortest path with non-negative edge costs.' },
+      { time: '08:10', seconds: 490, title: 'Step-by-Step Relaxation Table', summary: 'Updating tentative path costs and picking the minimum unvisited vertex.' },
+      { time: '13:00', seconds: 780, title: 'Building the Shortest Path Tree (SPT)', summary: 'Extracting next-hop forwarding table from the computed SPT.' }
+    ],
+    keyTakeaways: [
+      'Dijkstra requires all edge weights to be non-negative (links costs >= 0).',
+      'Time complexity using a min-heap priority queue is O((V + E) log V).',
+      'Forms the mathematical foundation for Link-State routing protocols like OSPF and IS-IS.'
+    ],
+    examTips: 'Always maintain 3 columns in semester exam tables: Visited Nodes, Tentative Distances, and Predecessor Node.'
+  },
+  {
+    id: 'vid-u3-06',
+    unit: 'Unit 3',
+    unitNum: 3,
+    title: 'Link State Routing Algorithm',
+    duration: '17:15',
+    totalSeconds: 1035,
+    youtubeId: 'QPVkpuFJGm0',
+    overview: 'How Open Shortest Path First (OSPF) executes Link-State routing: discovering neighbors with Hello packets, constructing Link-State Advertisements (LSAs), reliable flooding, and LSDB synchronization.',
+    chapters: [
+      { time: '00:00', seconds: 0, title: 'Link State vs Distance Vector', summary: 'Sharing full topology knowledge with everyone vs sharing distance with neighbors.' },
+      { time: '04:10', seconds: 250, title: 'Hello Protocol & Adjacency', summary: 'Neighbor discovery and Designated Router (DR/BDR) election.' },
+      { time: '08:35', seconds: 515, title: 'LSA Flooding & Aging', summary: 'Reliable hop-by-hop flooding and Sequence number tracking.' },
+      { time: '13:20', seconds: 800, title: 'Link State Database (LSDB) Sync', summary: 'Guaranteeing identical topology maps across all routers in an OSPF area.' }
+    ],
+    keyTakeaways: [
+      'Every router in an OSPF area possesses an identical Link-State Database (LSDB).',
+      'Link State converges significantly faster than Distance Vector and is completely immune to the Count-to-Infinity problem.',
+      'Link costs in OSPF are calculated using reference bandwidth: Cost = Reference Bandwidth / Link Bandwidth.'
+    ],
+    examTips: 'Key difference for exams: Distance Vector tells "what it knows to who it knows"; Link State tells "who it knows to what it knows (everyone)".'
+  },
+
+  // ==========================================
+  // UNIT 4: TRANSPORT LAYER MECHANISMS (5 Real Tutorials)
+  // ==========================================
   {
     id: 'vid-u4-01',
     unit: 'Unit 4',
     unitNum: 4,
-    title: 'TCP Handshake, Sliding Window & Reliable Delivery',
-    duration: '18:10',
-    totalSeconds: 1090,
-    thumbnailGradient: 'from-emerald-600 via-teal-700 to-cyan-900',
-    overview: 'Trace the full lifecycle of a TCP connection: SYN, SYN-ACK, ACK 3-way handshake, sequence/acknowledgment tracking, cumulative ACKs, dynamic sliding window flow control, and FIN teardown.',
+    title: 'TCP Explained – Three-Way Handshake',
+    duration: '14:40',
+    totalSeconds: 880,
+    youtubeId: 'mbKmqy0wIqg',
+    overview: 'Trace the complete connection setup of TCP: client SYN packet, server SYN-ACK response, client final ACK, random Initial Sequence Number (ISN) security, and socket state transitions.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'Transport Layer Purpose', summary: 'Process-to-process communication using 16-bit Port numbers.' },
-      { time: '03:40', seconds: 220, title: 'Three-Way Handshake Step-by-Step', summary: 'Random Initial Sequence Numbers (ISN) and SYN flood defenses.' },
-      { time: '08:15', seconds: 495, title: 'Sliding Window & Flow Control', summary: 'Receiver advertised window (rwnd) preventing buffer overflow.' },
-      { time: '13:00', seconds: 780, title: 'Connection Teardown & TIME_WAIT', summary: 'Four-way FIN/ACK handshake and the 2MSL wait state.' }
+      { time: '00:00', seconds: 0, title: 'Transport Layer Process-to-Process', summary: 'How port numbers direct byte streams to specific OS socket processes.' },
+      { time: '03:15', seconds: 195, title: 'Step 1: Client SYN & ISN Generation', summary: 'Client chooses random ISN_c and sets SYN flag bit = 1.' },
+      { time: '07:00', seconds: 420, title: 'Step 2: Server SYN-ACK Response', summary: 'Server acknowledges client (ACK = ISN_c + 1) and sends own ISN_s.' },
+      { time: '11:00', seconds: 660, title: 'Step 3: Client Final ACK & Established State', summary: 'Client acknowledges server (ACK = ISN_s + 1) and enters ESTABLISHED.' }
     ],
     keyTakeaways: [
-      'TCP is connection-oriented, byte-stream oriented, and guarantees reliable, in-order delivery.',
-      'Acknowledgment number is always the next byte number the receiver expects to get.',
-      'TIME_WAIT lasts 2 * MSL (Maximum Segment Lifetime) to ensure lingering ACKs clear the network.'
+      'TCP handshake establishes bidirectional sequence numbers before any payload data is exchanged.',
+      'SYN packet consumes exactly 1 sequence number even though it contains 0 bytes of application data.',
+      'Random Initial Sequence Numbers (ISNs) defend against TCP connection spoofing and replay attacks.'
     ],
-    examTips: 'Formula for Effective Window: min(Congestion Window, Receiver Window) = min(cwnd, rwnd).'
+    examTips: 'Question tip: In Step 2, if client sent SEQ=100, server responds with ACK=101. If server chooses SEQ=300, client replies in Step 3 with ACK=301.'
   },
   {
     id: 'vid-u4-02',
     unit: 'Unit 4',
     unitNum: 4,
-    title: 'TCP Congestion Control: Slow Start, AIMD & Fast Retransmit',
-    duration: '15:30',
-    totalSeconds: 930,
-    thumbnailGradient: 'from-teal-600 via-cyan-700 to-blue-900',
-    overview: 'How the Internet avoids complete collapse under load: explore Tahoe and Reno congestion control mechanisms, cwnd exponential growth, additive increase multiplicative decrease, and 3 duplicate ACKs.',
+    title: 'Congestion Control Techniques',
+    duration: '16:00',
+    totalSeconds: 960,
+    youtubeId: 'Xg3l7lorzMA',
+    overview: 'Principles of network congestion control vs host flow control: open-loop vs closed-loop strategies, Leaky Bucket traffic shaping, Token Bucket burst tolerance, and TCP AIMD mechanisms.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'Flow Control vs Congestion Control', summary: 'The critical difference: protecting the host vs protecting the network pipes.' },
-      { time: '04:10', seconds: 250, title: 'Slow Start Phase', summary: 'Exponential cwnd doubling each round-trip time (RTT) until ssthresh.' },
-      { time: '08:30', seconds: 510, title: 'AIMD (Additive Increase Multiplicative Decrease)', summary: 'Linear cwnd increase (+1 MSS/RTT) and halving cwnd upon packet loss.' },
-      { time: '12:00', seconds: 720, title: 'Fast Retransmit & Fast Recovery', summary: 'Triggering retransmission after 3 duplicate ACKs without waiting for RTO timeout.' }
+      { time: '00:00', seconds: 0, title: 'The Congestion Collapse Problem', summary: 'Packet drops causing retransmissions and complete throughput breakdown.' },
+      { time: '03:45', seconds: 225, title: 'Leaky Bucket Algorithm', summary: 'Transforming variable, bursty input streams into constant, steady output rate.' },
+      { time: '08:20', seconds: 500, title: 'Token Bucket Algorithm', summary: 'Accumulating tokens at constant rate to permit regulated traffic bursts.' },
+      { time: '12:30', seconds: 750, title: 'TCP AIMD & Congestion Window (cwnd)', summary: 'Additive Increase (+1 MSS per RTT) and Multiplicative Decrease (halving cwnd).' }
     ],
     keyTakeaways: [
-      'Slow Start doubles cwnd every RTT until cwnd >= ssthresh (Slow Start Threshold).',
-      'Timeout indicates severe congestion -> cwnd drops to 1 MSS, ssthresh = cwnd / 2.',
-      '3 Duplicate ACKs indicate mild congestion -> TCP Reno sets cwnd = ssthresh = cwnd / 2 (Fast Recovery).'
+      'Leaky Bucket enforces rigid, uniform traffic output; packets exceeding bucket capacity are discarded.',
+      'Token Bucket permits bursty traffic up to the token capacity while maintaining average rate bounds.',
+      'TCP Congestion Window (cwnd) is dynamically adjusted by the sender based on packet loss feedback.'
     ],
-    examTips: 'Always sketch the sawtooth wave diagram for TCP Reno cwnd over time in semester exams for full marks.'
+    examTips: 'Exam comparative table: Leaky Bucket shapes traffic to constant rate; Token Bucket allows bounded bursts while capping average rate.'
   },
   {
-    id: 'vid-u5-01',
-    unit: 'Unit 5',
-    unitNum: 5,
-    title: 'Application Layer Architecture: DNS, HTTP/2/3 & Web Mechanics',
-    duration: '17:50',
-    totalSeconds: 1070,
-    thumbnailGradient: 'from-amber-600 via-orange-700 to-rose-900',
-    overview: 'Master client-server versus P2P models, the hierarchical Domain Name System with root, TLD, and authoritative nameservers, iterative vs recursive queries, HTTP/1.1 head-of-line blocking, and HTTP/3 QUIC.',
+    id: 'vid-u4-03',
+    unit: 'Unit 4',
+    unitNum: 4,
+    title: 'UDP Protocol Explained',
+    duration: '10:50',
+    totalSeconds: 650,
+    youtubeId: 'wBjKY4k8qxs',
+    overview: 'User Datagram Protocol (UDP, RFC 768): lightweight 8-byte header, connectionless design, no handshake latency, multiplexing/demultiplexing via ports, and optional checksum verification.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'Client-Server vs Peer-to-Peer', summary: 'Centralized server bottlenecks versus distributed decentralized swarming.' },
-      { time: '04:20', seconds: 260, title: 'DNS Hierarchical Resolution', summary: 'Root servers (A-M), Top-Level Domains (.com, .edu), and Authoritative name servers.' },
-      { time: '09:00', seconds: 540, title: 'HTTP/1.1 vs HTTP/2 Multiplexing', summary: 'Binary framing layers, stream interleaving, and eliminating head-of-line blocking.' },
-      { time: '13:40', seconds: 820, title: 'HTTP/3 over QUIC (UDP)', summary: 'Zero-RTT handshakes and connection migration when switching Wi-Fi to cellular.' }
+      { time: '00:00', seconds: 0, title: 'Why UDP Exists Alongside TCP', summary: 'Speed, low latency, and zero connection setup overhead.' },
+      { time: '02:50', seconds: 170, title: 'The 8-Byte UDP Header Breakdown', summary: 'Source Port (16b), Destination Port (16b), Length (16b), Checksum (16b).' },
+      { time: '06:15', seconds: 375, title: 'Checksum & 12-Byte Pseudo-Header', summary: 'Verifying IP address delivery integrity without a network-layer dependency.' },
+      { time: '08:45', seconds: 525, title: 'Ideal Real-World Use Cases', summary: 'DNS, DHCP, VoIP, live video conferencing, and HTTP/3 QUIC foundations.' }
     ],
     keyTakeaways: [
-      'DNS queries typically use UDP port 53 for speed; zone transfers use TCP port 53 for reliability.',
-      'HTTP/2 introduces binary framing and stream multiplexing over a single persistent TCP connection.',
-      'HTTP/3 runs over QUIC (UDP), eliminating TCP head-of-line blocking when a single packet drops.'
+      'UDP header overhead is strictly 8 bytes (compared to TCP minimum 20 bytes).',
+      'UDP does not perform flow control, congestion control, or automatic retransmissions.',
+      'Real-time streaming prefers UDP because retransmitted late video/voice packets are useless to human viewers.'
     ],
-    examTips: 'Be ready to draw the 8-step iterative DNS query sequence from client resolver to root, TLD, and authoritative server.'
+    examTips: 'Remember the 4 UDP header fields: Source Port (16b), Destination Port (16b), Length (16b), Checksum (16b) = Total 64 bits (8 bytes).'
   },
   {
-    id: 'vid-u5-02',
-    unit: 'Unit 5',
-    unitNum: 5,
-    title: 'Internet Mail (SMTP, POP3, IMAP) & Network Security Protocols',
-    duration: '13:45',
-    totalSeconds: 825,
-    thumbnailGradient: 'from-purple-600 via-indigo-700 to-pink-900',
-    overview: 'Understand push vs pull email protocols, why SMTP uses port 25/587 for delivery while POP3/IMAP manage mailboxes, plus an introduction to SSL/TLS encryption, symmetric vs asymmetric keys, and cryptographic integrity.',
+    id: 'vid-u4-04',
+    unit: 'Unit 4',
+    unitNum: 4,
+    title: 'Transmission Control Protocol (TCP)',
+    duration: '18:20',
+    totalSeconds: 1100,
+    youtubeId: '9QZGKhegzUc',
+    overview: 'Full architectural dissection of TCP (RFC 793): 20-byte base header, sequence & acknowledgment numbering, control flags (URG, ACK, PSH, RST, SYN, FIN), sliding window flow control, and checksum.',
     chapters: [
-      { time: '00:00', seconds: 0, title: 'Email System Architecture', summary: 'User Agents (UA), Mail Transfer Agents (MTA), and Mail Delivery Agents (MDA).' },
-      { time: '03:45', seconds: 225, title: 'SMTP Push vs POP3/IMAP Pull', summary: 'Why two different protocol families are necessary for senders and recipients.' },
-      { time: '07:30', seconds: 450, title: 'TLS/SSL Cryptographic Handshake', summary: 'Public key exchange for asymmetric negotiation of a fast symmetric session key.' },
-      { time: '10:50', seconds: 650, title: 'Firewalls & Network Defense', summary: 'Packet filtering, stateful inspection, and application-layer proxy gateways.' }
+      { time: '00:00', seconds: 0, title: 'TCP Service Model', summary: 'Connection-oriented, reliable, byte-stream process delivery.' },
+      { time: '04:10', seconds: 250, title: 'TCP Segment Header Anatomy', summary: 'Detailed field-by-field examination of the 20 to 60-byte header.' },
+      { time: '09:00', seconds: 540, title: '6 Control Flag Bits', summary: 'URG (Urgent), ACK, PSH (Push), RST (Reset), SYN (Sync), FIN (Finish).' },
+      { time: '13:40', seconds: 820, title: 'Sliding Window & Flow Control', summary: 'Receiver Advertised Window (rwnd) preventing client buffer overflows.' }
     ],
     keyTakeaways: [
-      'SMTP is a push protocol using TCP port 25/587; POP3 (port 110) and IMAP (port 143) are pull protocols.',
-      'IMAP maintains server-side sync across multiple client devices; POP3 downloads and optionally deletes locally.',
-      'TLS combines asymmetric cryptography (RSA/ECDH) for handshake and symmetric cryptography (AES-GCM) for data transfer.'
+      'TCP header length is specified by the 4-bit Data Offset field in 32-bit (4-byte) word increments (min 5 = 20 bytes).',
+      'Acknowledgment Number is cumulative: indicates the next sequential byte number the receiver expects to receive.',
+      'Effective sending window is governed by: min(Congestion Window, Receiver Window) = min(cwnd, rwnd).'
     ],
-    examTips: 'Remember standard port numbers: SMTP=25/587, POP3=110, IMAP=143, HTTPS=443, DNS=53, SSH=22.'
+    examTips: 'Exam favorite: Calculate header size if Data Offset field value is 7 -> 7 * 4 bytes = 28 bytes total header.'
+  },
+  {
+    id: 'vid-u4-05',
+    unit: 'Unit 4',
+    unitNum: 4,
+    title: 'Stop-and-Wait, Go-Back-N & Selective Repeat – Revision',
+    duration: '19:45',
+    totalSeconds: 1185,
+    youtubeId: 'B7XXb4VuQ44',
+    overview: 'Comprehensive revision masterclass comparing Sliding Window ARQ protocols: sender and receiver window sizes, ACK mechanisms, retransmission policies on loss, and channel utilization formulas.',
+    chapters: [
+      { time: '00:00', seconds: 0, title: 'ARQ Protocol Fundamentals', summary: 'Handling corrupted frames, lost packets, and delayed acknowledgments.' },
+      { time: '03:30', seconds: 210, title: 'Stop-and-Wait ARQ (Ws=1, Wr=1)', summary: 'Simple but inefficient on high-latency links (low bandwidth-delay product).' },
+      { time: '08:00', seconds: 480, title: 'Go-Back-N ARQ (Ws=N, Wr=1)', summary: 'Pipelined transmissions with cumulative ACKs; discards out-of-order frames.' },
+      { time: '13:30', seconds: 810, title: 'Selective Repeat ARQ (Ws=N, Wr=N)', summary: 'Individual ACKs, receiver buffer storage, and selective retransmission of dropped frames.' }
+    ],
+    keyTakeaways: [
+      'Stop-and-Wait: Window Size = 1. Channel efficiency η = 1 / (1 + 2a), where a = T_prop / T_trans.',
+      'Go-Back-N: Sender Window Ws = 2^m - 1, Receiver Window Wr = 1. Receiver drops all out-of-order frames.',
+      'Selective Repeat: Sender Window Ws = 2^(m-1), Receiver Window Wr = 2^(m-1). Buffers out-of-order packets.'
+    ],
+    examTips: 'Vital formula to memorize: In m-bit sequence numbering, Go-Back-N Max Ws = (2^m) - 1; Selective Repeat Max Ws = 2^(m-1).'
   }
 ];
 
 export const VideoOverviewsViewer: React.FC = () => {
-  const [selectedUnit, setSelectedUnit] = useState<3 | 4 | 5 | 'all'>('all');
+  const [selectedUnit, setSelectedUnit] = useState<3 | 4 | 'all'>('all');
   const [activeLessonId, setActiveLessonId] = useState<string>(VIDEO_LESSONS[0].id);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentProgress, setCurrentProgress] = useState(35); // simulated percent
-  const [isMuted, setIsMuted] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.25 | 1.5>(1);
   const [watchedLessons, setWatchedLessons] = useState<Record<string, boolean>>({
     'vid-u3-01': true
   });
@@ -189,16 +299,6 @@ export const VideoOverviewsViewer: React.FC = () => {
   const filteredLessons = selectedUnit === 'all' 
     ? VIDEO_LESSONS 
     : VIDEO_LESSONS.filter(v => v.unitNum === selectedUnit);
-
-  const togglePlay = () => {
-    soundFx.playClick();
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSeek = (percentage: number) => {
-    soundFx.playPacketPop();
-    setCurrentProgress(percentage);
-  };
 
   const handleMarkCompleted = (lessonId: string) => {
     soundFx.playLevelUp();
@@ -210,217 +310,120 @@ export const VideoOverviewsViewer: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Bar & Unit Switcher */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 p-5 rounded-2xl backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-            <ListVideo className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              Curated Video Lesson Overviews
-              <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                Interactive Player
-              </span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              High-yield visual walkthroughs, chapter breakdown, and key exam takeaways for Units 3, 4 & 5
-            </p>
-          </div>
-        </div>
-
-        {/* Unit Selector Pills */}
-        <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-          {(['all', 3, 4, 5] as const).map(u => (
-            <button
-              key={u}
-              onClick={() => {
-                soundFx.playPacketPop();
-                setSelectedUnit(u);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedUnit === u
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              {u === 'all' ? 'All Units' : `Unit ${u}`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Interactive Player & Playlist Layout */}
+      {/* Main Interactive Player & Playlist Layout (Block above video removed) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
         {/* Left: Video Player & Overview Content (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Simulated Premium Video Player Screen */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative group">
-            {/* Screen Viewport with Gradient Thumbnail */}
-            <div className={`relative h-64 sm:h-80 md:h-96 w-full bg-gradient-to-tr ${activeLesson.thumbnailGradient} flex flex-col justify-between p-6 overflow-hidden`}>
-              {/* Subtle Animated Background Grid */}
-              <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-              
-              {/* Top Controls Overlay */}
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-semibold border border-white/10">
-                    {activeLesson.unit}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-slate-300 text-xs font-mono border border-white/5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-indigo-400" />
-                    {activeLesson.duration}
-                  </span>
-                </div>
+          
+          {/* Real Embedded YouTube Video Player Card */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-lg relative">
+            
+            {/* Top Info Bar Above Player */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                  activeLesson.unitNum === 3 
+                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25' 
+                    : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                }`}>
+                  {activeLesson.unit}
+                </span>
+                <span className="text-xs text-slate-800 dark:text-slate-200 font-bold truncate">
+                  {activeLesson.title}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`https://youtu.be/${activeLesson.youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+                  title="Open video on YouTube in a new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-red-500" />
+                  <span className="hidden sm:inline">Watch on YouTube</span>
+                </a>
 
                 <button
                   onClick={() => handleMarkCompleted(activeLesson.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
                     watchedLessons[activeLesson.id]
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20'
+                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
+                      : 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/20'
                   }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {watchedLessons[activeLesson.id] ? 'Completed (+25 XP)' : 'Mark Watched'}
+                  <span>{watchedLessons[activeLesson.id] ? 'Watched (+25 XP)' : 'Mark Watched'}</span>
                 </button>
-              </div>
-
-              {/* Center Play Button & Title */}
-              <div className="relative z-10 text-center my-auto px-4">
-                <button
-                  onClick={togglePlay}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all group-hover:ring-8 group-hover:ring-white/20"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-7 h-7 sm:w-8 sm:h-8 fill-slate-900" />
-                  ) : (
-                    <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-slate-900 ml-1" />
-                  )}
-                </button>
-                <h3 className="mt-4 text-base sm:text-lg md:text-xl font-black text-white drop-shadow-md max-w-xl mx-auto line-clamp-2">
-                  {activeLesson.title}
-                </h3>
-              </div>
-
-              {/* Bottom Video Progress Scrub Bar */}
-              <div className="relative z-10 space-y-2 bg-gradient-to-t from-black/80 to-transparent p-2 -mx-6 -mb-6">
-                <div 
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const percent = Math.round((clickX / rect.width) * 100);
-                    handleSeek(Math.min(100, Math.max(0, percent)));
-                  }}
-                  className="w-full h-2 bg-white/20 rounded-full cursor-pointer relative overflow-hidden group/bar"
-                >
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-400 to-sky-400 rounded-full transition-all duration-150"
-                    style={{ width: `${currentProgress}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-slate-300 font-mono pt-1">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={togglePlay}
-                      className="hover:text-white transition-colors"
-                    >
-                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </button>
-                    <button 
-                      onClick={() => handleSeek(0)}
-                      className="hover:text-white transition-colors"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setIsMuted(!isMuted)}
-                      className="hover:text-white transition-colors"
-                    >
-                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                    </button>
-                    <span>
-                      {Math.floor((activeLesson.totalSeconds * currentProgress) / 6000)}:
-                      {String(Math.floor(((activeLesson.totalSeconds * currentProgress) / 100) % 60)).padStart(2, '0')} / {activeLesson.duration}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {([1, 1.25, 1.5] as const).map(speed => (
-                      <button
-                        key={speed}
-                        onClick={() => {
-                          soundFx.playPacketPop();
-                          setPlaybackSpeed(speed);
-                        }}
-                        className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                          playbackSpeed === speed
-                            ? 'bg-white text-slate-950'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {speed}x
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
 
+            {/* Responsive 16:9 YouTube Iframe */}
+            <div className="relative w-full aspect-video bg-black">
+              <iframe
+                key={activeLesson.youtubeId}
+                src={`https://www.youtube-nocookie.com/embed/${activeLesson.youtubeId}?rel=0&modestbranding=1`}
+                title={activeLesson.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+
             {/* Overview Summary Under Player */}
-            <div className="p-6 bg-slate-900/90 border-t border-slate-800 space-y-4">
+            <div className="p-6 bg-white dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 space-y-5">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Lesson Overview</span>
-                <p className="mt-1 text-sm text-slate-300 leading-relaxed">
+                <span className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Lesson Overview & Conceptual Focus
+                </span>
+                <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                   {activeLesson.overview}
                 </p>
               </div>
 
               {/* Chapters & Timeline Navigator */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-                  <ListVideo className="w-3.5 h-3.5 text-indigo-400" />
-                  Key Chapters & Interactive Timestamps
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3 flex items-center gap-1.5">
+                  <ListVideo className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                  Key Chapters & Core Timestamps
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {activeLesson.chapters.map((ch, idx) => (
-                    <button
+                    <div
                       key={idx}
-                      onClick={() => {
-                        const pct = Math.round((ch.seconds / activeLesson.totalSeconds) * 100);
-                        handleSeek(pct);
-                      }}
-                      className="text-left p-3 rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-indigo-500/40 transition-all group/ch"
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/40 transition-all"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-indigo-400 group-hover/ch:text-indigo-300 flex items-center gap-1">
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-mono">
                           <Clock className="w-3 h-3" />
                           {ch.time}
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover/ch:text-indigo-400 transition-colors" />
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-mono">Chapter {idx + 1}</span>
                       </div>
-                      <div className="text-xs font-semibold text-white group-hover/ch:text-indigo-200">
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white">
                         {ch.title}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1 line-clamp-1">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
                         {ch.summary}
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Key Takeaways Card */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 to-slate-950 border border-indigo-500/20">
-                <div className="flex items-center gap-2 mb-2 text-indigo-400 font-bold text-xs uppercase tracking-wider">
+              {/* High-Yield Takeaways Card */}
+              <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-500/20">
+                <div className="flex items-center gap-2 mb-2 text-indigo-700 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider">
                   <Sparkles className="w-4 h-4" />
                   High-Yield Takeaways
                 </div>
                 <ul className="space-y-1.5">
                   {activeLesson.keyTakeaways.map((tip, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 mt-1.5 shrink-0" />
                       <span>{tip}</span>
                     </li>
                   ))}
@@ -428,13 +431,13 @@ export const VideoOverviewsViewer: React.FC = () => {
               </div>
 
               {/* Exam Highlight Banner */}
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
-                <Award className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-start gap-3">
+                <Award className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-xs font-bold text-amber-300 uppercase tracking-wide">
+                  <div className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide">
                     Exam Strategy Note
                   </div>
-                  <div className="text-xs text-amber-200/90 mt-0.5">
+                  <div className="text-xs text-amber-900 dark:text-amber-200/90 mt-0.5 leading-relaxed">
                     {activeLesson.examTips}
                   </div>
                 </div>
@@ -445,19 +448,62 @@ export const VideoOverviewsViewer: React.FC = () => {
 
         {/* Right: Video Playlist & Topic List (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 backdrop-blur-md shadow-sm">
             <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <ListVideo className="w-4 h-4 text-indigo-400" />
-                Lesson Modules ({filteredLessons.length})
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ListVideo className="w-4 h-4 text-red-500" />
+                Curated Tutorials ({filteredLessons.length})
               </h3>
-              <span className="text-[11px] text-slate-400">
-                {Object.values(watchedLessons).filter(Boolean).length} / {VIDEO_LESSONS.length} Done
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                {Object.values(watchedLessons).filter(Boolean).length} / {VIDEO_LESSONS.length} Watched
               </span>
             </div>
 
-            <div className="space-y-2 max-h-[640px] overflow-y-auto pr-1 custom-scrollbar">
-              {filteredLessons.map((lesson) => {
+            {/* Filter Tabs Inside Playlist Panel */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl mb-3 border border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => {
+                  soundFx.playPacketPop();
+                  setSelectedUnit('all');
+                }}
+                className={`py-1.5 text-center rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedUnit === 'all'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                All ({VIDEO_LESSONS.length})
+              </button>
+              <button
+                onClick={() => {
+                  soundFx.playPacketPop();
+                  setSelectedUnit(3);
+                }}
+                className={`py-1.5 text-center rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedUnit === 3
+                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Unit 3 (6)
+              </button>
+              <button
+                onClick={() => {
+                  soundFx.playPacketPop();
+                  setSelectedUnit(4);
+                }}
+                className={`py-1.5 text-center rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedUnit === 4
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Unit 4 (5)
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1 custom-scrollbar">
+              {filteredLessons.map((lesson, idx) => {
                 const isActive = lesson.id === activeLesson.id;
                 const isCompleted = !!watchedLessons[lesson.id];
 
@@ -467,58 +513,64 @@ export const VideoOverviewsViewer: React.FC = () => {
                     onClick={() => {
                       soundFx.playClick();
                       setActiveLessonId(lesson.id);
-                      setIsPlaying(true);
-                      setCurrentProgress(0);
                     }}
                     className={`p-3 rounded-xl border transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg shadow-indigo-950/40 ring-1 ring-indigo-500/40'
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
+                        ? 'bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-500/60 shadow-md shadow-red-500/5 ring-1 ring-red-400/50'
+                        : 'bg-slate-50/60 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs ${
-                        isActive
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}>
-                        {isActive && isPlaying ? (
-                          <div className="flex items-center gap-0.5 h-3">
-                            <span className="w-1 bg-white animate-pulse h-3 rounded" />
-                            <span className="w-1 bg-white animate-pulse delay-75 h-2 rounded" />
-                            <span className="w-1 bg-white animate-pulse delay-150 h-3 rounded" />
-                          </div>
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
+                      {/* Video Thumbnail or Play Indicator */}
+                      <div className="w-16 h-11 rounded-lg shrink-0 overflow-hidden relative bg-black border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                        <img
+                          src={`https://img.youtube.com/vi/${lesson.youtubeId}/mqdefault.jpg`}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          {isActive ? (
+                            <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                              <Play className="w-3 h-3 fill-white ml-0.5 text-white" />
+                            </div>
+                          ) : (
+                            <Play className="w-4 h-4 text-white/90" />
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">
-                            {lesson.unit}
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            lesson.unitNum === 3 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}>
+                            {lesson.unit} • #{idx + 1}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
                             {lesson.duration}
                           </span>
                         </div>
+
                         <h4 className={`text-xs font-semibold line-clamp-2 ${
-                          isActive ? 'text-white font-bold' : 'text-slate-300'
+                          isActive ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-slate-300'
                         }`}>
                           {lesson.title}
                         </h4>
                         
-                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-800/60">
-                          <span className="text-[10px] text-slate-400">
-                            {lesson.chapters.length} chapters
+                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/60">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                            {lesson.chapters.length} topics
                           </span>
                           {isCompleted ? (
-                            <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
-                              <CheckCircle2 className="w-3 h-3" /> Done
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+                              <CheckCircle2 className="w-3 h-3" /> Watched
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400/90 font-mono font-medium">
                               +25 XP
                             </span>
                           )}
@@ -531,6 +583,7 @@ export const VideoOverviewsViewer: React.FC = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

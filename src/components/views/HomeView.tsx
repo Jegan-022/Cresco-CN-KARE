@@ -353,67 +353,102 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </section>
 
-          {/* 2. QUICK STATS CARDS ROW (3 Tactile Cards) */}
+          {/* 2. QUICK STATS CARDS ROW (3 Tactile Glassmorphic Cards) */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* Card 1: Course Progress */}
-            <div className="p-5 rounded-xl bg-surface-container-lowest shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex items-center gap-4 transition-transform hover:-translate-y-0.5 cursor-pointer" onClick={() => onNavigate('learn-map')}>
+            <div 
+              onClick={() => onNavigate('learn-map')}
+              className="group p-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md hover:border-emerald-500/40 transition-all duration-300 flex items-center gap-4 cursor-pointer hover:-translate-y-0.5"
+            >
               <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
-                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 48 48">
-                  <circle cx="24" cy="24" fill="none" r="19" stroke="#ffedd5" strokeWidth="4.5" />
+                <svg className="w-14 h-14 -rotate-90 transform" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" fill="none" r="19" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="4.5" />
                   <circle 
                     cx="24" cy="24" fill="none" r="19" 
-                    stroke="#ff6b00" 
+                    stroke="url(#progress-gradient)" 
                     strokeDasharray="119.38" 
                     strokeDashoffset={119.38 - (119.38 * progressPercent) / 100} 
                     strokeLinecap="round" strokeWidth="4.5"
+                    className="transition-all duration-700 ease-out"
                   />
+                  <defs>
+                    <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#06b6d4" />
+                    </linearGradient>
+                  </defs>
                 </svg>
-                <span className="absolute font-headline-sm text-headline-sm text-on-surface">{progressPercent}%</span>
+                <span className="absolute font-mono font-bold text-xs text-slate-800 dark:text-slate-100 group-hover:scale-110 transition-transform">
+                  {progressPercent}%
+                </span>
               </div>
               <div className="min-w-0">
-                <span className="font-label-md text-label-md text-on-surface-variant block uppercase tracking-wider">Progress</span>
-                <h3 className="font-title-lg text-title-lg text-on-surface font-bold truncate">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                  Curriculum Progress
+                </span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
                   {completedIds.length > 0 ? `${Math.min(3, Math.ceil(completedIds.length / 6))} of 3 Units` : '0 of 3 Units'}
                 </h3>
-                <p className="font-body-sm text-body-sm text-outline truncate">
-                  {completedIds.length} of {ALL_MODULES.length || 45} Lessons Cleared
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {completedIds.length} of {ALL_MODULES.length || 30} Modules Cleared
                 </p>
               </div>
             </div>
 
-            {/* Card 2: Daily Goal */}
-            <div className="p-5 rounded-xl bg-surface-container-lowest shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex flex-col justify-between transition-transform hover:-translate-y-0.5">
+            {/* Card 2: Mastery Level & Total XP (Replaced Daily Goal / Challenge) */}
+            <div 
+              onClick={() => onNavigate('leaderboard')}
+              className="group p-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-0.5"
+            >
               <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Daily Goal</span>
-                <span className="font-code-metric text-code-metric text-primary">{currentXp % 100} / 100 XP</span>
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Mastery Level
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-xs font-bold border border-amber-500/20">
+                  <Sparkles size={11} className="fill-amber-500 text-amber-500" />
+                  Lv. {currentLevel}
+                </span>
               </div>
               <div className="my-2">
-                <div className="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="font-mono text-lg font-extrabold text-slate-900 dark:text-white">
+                    {currentXp.toLocaleString()} <span className="text-xs font-semibold text-slate-400">XP</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    {currentXp % 300} / 300 XP
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                   <div 
-                    className="h-full bg-primary-container rounded-full shadow-[0_0_8px_#ff6b00] transition-all duration-500" 
-                    style={{ width: `${Math.min(100, currentXp % 100)}%` }}
+                    className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
+                    style={{ width: `${Math.max(6, Math.min(100, ((currentXp % 300) / 300) * 100))}%` }}
                   />
                 </div>
               </div>
-              <p className="font-body-sm text-body-sm text-outline flex items-center gap-1">
-                <span className="text-tertiary-container font-bold text-[14px]">ℹ</span>
-                <span>{100 - (currentXp % 100)} XP to hit daily target</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                <span>{300 - (currentXp % 300)} XP to reach Level {currentLevel + 1}</span>
               </p>
             </div>
 
-            {/* Card 3: Streak */}
-            <div className="p-5 rounded-xl bg-surface-container-lowest shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex items-center gap-4 transition-transform hover:-translate-y-0.5">
-              <div className="w-14 h-14 rounded-xl bg-tertiary-fixed/40 flex items-center justify-center text-[28px] shadow-[0_4px_0_0_#ffdea8]">
+            {/* Card 3: Active Streak */}
+            <div 
+              onClick={() => onNavigate('achievements')}
+              className="group p-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md hover:border-rose-500/40 transition-all duration-300 flex items-center gap-4 cursor-pointer hover:-translate-y-0.5"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-rose-500/20 via-orange-500/15 to-amber-500/20 border border-rose-500/30 flex items-center justify-center text-2xl shadow-xs group-hover:scale-105 transition-transform">
                 🔥
               </div>
               <div className="min-w-0">
-                <span className="font-label-md text-label-md text-tertiary font-bold tracking-wider uppercase">Active Streak</span>
-                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+                  Active Streak
+                </span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
                   {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
                 </h3>
-                <p className="font-body-sm text-body-sm text-outline truncate">
-                  {currentStreak > 0 ? '2 days to streak freeze' : 'Start learning to ignite streak'}
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {currentStreak > 0 ? 'Streak Shield Active' : 'Complete a lesson to ignite streak'}
                 </p>
               </div>
             </div>
@@ -546,75 +581,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </section>
           )}
 
-          {/* 2. DAILY CHALLENGE CARD */}
-          <section className="rounded-xl bg-gradient-to-br from-surface-container-lowest to-emerald-50/60 dark:to-emerald-950/20 p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] relative overflow-hidden border border-emerald-100/80 dark:border-emerald-950/40">
-            <div className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none text-emerald-500">
-              <AlarmClock size={130} />
-            </div>
-
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-label-md text-label-md font-bold uppercase tracking-wider flex items-center gap-1">
-                <Zap size={13} className="fill-current" />
-                Daily Challenge
-              </span>
-              <div className="flex items-center gap-1 font-code-metric text-code-metric text-error font-bold bg-error-container/40 px-2 py-0.5 rounded">
-                <Clock size={13} />
-                <span>04:42</span>
-              </div>
-            </div>
-
-            <h3 className="font-title-lg text-title-lg text-on-surface font-bold">
-              Identify the Correct Routing Algorithm
-            </h3>
-
-            <p className="font-body-sm text-body-sm text-on-surface-variant pt-1 pb-4">
-              Evaluate link-state convergence vs distance-vector count-to-infinity vulnerabilities.
-            </p>
-
-            <div className="flex items-center gap-3 text-[13px] text-on-surface-variant pb-5">
-              <span className="flex items-center gap-1">
-                <HelpCircle size={15} className="text-primary" />
-                3 Questions
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-tertiary-container font-bold">
-                <Zap size={15} className="fill-current" />
-                +100 XP
-              </span>
-            </div>
-
-            <button 
-              onClick={() => { soundFx.playClick(); onNavigate('boss-challenge'); }}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-label-lg text-label-lg font-bold shadow-[0_4px_0_0_#047857] hover:shadow-[0_2px_0_0_#047857] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Take Challenge</span>
-              <ArrowRight size={16} />
-            </button>
-          </section>
-
-          {/* 3. COMPACT WEEKLY LEADERBOARD */}
-          <section className="rounded-xl bg-surface-container-lowest p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex flex-col gap-4">
+          {/* 2. COMPACT COHORT LEADERBOARD */}
+          <section className="rounded-2xl bg-white dark:bg-[#0c1424] p-6 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Diamond size={20} className="text-amber-500 fill-amber-500" />
-                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Diamond League</h3>
+                <Diamond size={18} className="text-amber-500 fill-amber-500 animate-pulse" />
+                <h3 className="font-headline font-bold text-sm sm:text-base text-slate-900 dark:text-white">Cohort Standings</h3>
               </div>
               <button 
                 onClick={() => { soundFx.playClick(); onNavigate('leaderboard'); }}
-                className="font-label-md text-label-md text-primary font-bold cursor-pointer hover:underline"
+                className="text-xs text-blue-600 dark:text-blue-400 font-bold cursor-pointer hover:underline flex items-center gap-1"
               >
-                View All
+                <span>View Full Standings</span>
+                <ArrowRight size={13} />
               </button>
             </div>
 
-            <p className="font-body-sm text-body-sm text-outline -mt-2">Top 3 promote to Master League in 2d 14h</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">Real-time student rankings by verified course mastery</p>
 
             {/* Leaderboard Rows */}
             <div className="flex flex-col gap-2 pt-1">
               {topStudents.length === 0 ? (
-                <div className="p-4 rounded-xl bg-surface-container-low border border-dashed border-outline-variant/60 text-center">
-                  <p className="font-title-md text-title-md font-semibold text-on-surface">Leaderboard Cleared</p>
-                  <p className="font-body-sm text-body-sm text-outline mt-0.5 text-xs">Start learning modules to earn XP and claim the #1 rank!</p>
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                  <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Race to the Top</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Start learning modules to earn XP and claim the #1 rank!</p>
                 </div>
               ) : (
                 topStudents.map((s, idx) => {
@@ -624,44 +614,40 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   return (
                     <div
                       key={s.id}
-                      className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
+                      className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
                         isMe
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 shadow-xs'
-                          : 'bg-surface-container-low hover:bg-surface-container'
+                          ? 'bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 shadow-xs'
+                          : 'bg-slate-50/80 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className={`w-6 h-6 rounded-full font-bold text-[12px] flex items-center justify-center shrink-0 ${
-                          rank === 1 ? 'bg-tertiary-fixed text-tertiary shadow-sm'
-                            : rank === 2 ? 'bg-outline-variant text-on-surface shadow-sm'
-                            : rank === 3 ? 'bg-tertiary-fixed-dim text-on-tertiary-fixed shadow-sm'
-                            : 'text-outline'
+                        <span className={`w-6 h-6 rounded-full font-bold text-[11px] flex items-center justify-center shrink-0 ${
+                          rank === 1 ? 'bg-amber-400 text-slate-950 shadow-xs'
+                            : rank === 2 ? 'bg-indigo-300 text-slate-950 shadow-xs'
+                            : rank === 3 ? 'bg-amber-600 text-white shadow-xs'
+                            : 'text-slate-500 dark:text-slate-400 font-mono'
                         }`}>
                           {rank}
                         </span>
 
-                        <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center font-bold text-xs text-primary shrink-0">
-                          {s.name[0]}
-                        </div>
-
                         <div className="flex items-center gap-1.5 truncate min-w-0">
-                          <span className={`font-title-md text-title-md font-semibold truncate ${isMe ? 'text-on-surface' : 'text-on-surface'}`}>
+                          <span className={`font-mono text-xs font-bold truncate ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-200'}`}>
                             {s.name}
                           </span>
                           {isMe && (
-                            <span className="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0">
+                            <span className="bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase shrink-0">
                               You
                             </span>
                           )}
                           {s.isCourseCompleted && (
-                            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md uppercase shrink-0" title="Course Completed">
+                            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-[8px] font-mono font-bold px-1.5 py-0.2 rounded-md uppercase shrink-0" title="Course Completed">
                               Finisher
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <span className={`font-code-metric text-code-metric font-bold shrink-0 ${isMe ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface'}`}>
+                      <span className={`font-mono text-xs font-bold shrink-0 ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
                         {s.xp.toLocaleString()} XP
                       </span>
                     </div>
@@ -671,72 +657,137 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </section>
 
-          {/* 4. 3D ACHIEVEMENT BADGES COLLECTION */}
-          <section className="rounded-xl bg-surface-container-lowest p-6 shadow-[0_4px_16px_-2px_rgba(19,27,46,0.06)] flex flex-col gap-4">
+          {/* 3. MASCOT PROTOCOL MEDALS COLLECTION */}
+          <section className="rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200/80 dark:border-slate-800/80 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Protocol Medals</h3>
-              <span className="font-label-md text-label-md text-primary font-bold">
-                {completedIds.length >= 1 ? '1 / 12 Unlocked' : '0 / 12 Unlocked'}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/25 shadow-xs">
+                  <Sparkles size={16} className="fill-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-tight">
+                    Protocol Medals
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Official Cresco mascot badges earned via mastery
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('achievements');
+                }}
+                className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+              >
+                {completedIds.length >= 10 ? '4 / 4' : completedIds.length >= 1 ? '3 / 4' : '2 / 4'} Badges
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Badge 1: Network Navigator */}
+            <div className="grid grid-cols-2 gap-3.5 pt-1">
+              {/* Medal 1: Course Navigator (mascot-achievement.png) */}
               <div 
-                onClick={() => onNavigate('achievements')}
-                className="p-3.5 rounded-xl bg-surface-container-low flex flex-col items-center text-center gap-2 transition-transform hover:-translate-y-1 cursor-pointer"
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('achievements');
+                }}
+                className="p-3.5 rounded-2xl bg-gradient-to-b from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 border border-amber-200/90 dark:border-amber-800/50 flex flex-col items-center text-center gap-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-500/10 cursor-pointer group relative overflow-hidden"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-on-primary shadow-[0_4px_0_0_#047857]">
-                  <Compass size={24} />
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <div className="w-16 h-16 relative shrink-0 flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-amber-100/80 to-amber-200/30 dark:from-amber-950/60 dark:to-amber-900/20 border border-amber-300/50 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-md group-hover:blur-lg transition-all" />
+                  <img
+                    src="/assets/mascot/mascot-achievement.png"
+                    alt="Network Achievement Trophy Medal"
+                    className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(245,158,11,0.35)] relative z-10"
+                  />
                 </div>
-                <div>
-                  <span className="font-title-md text-title-md text-on-surface font-bold block text-[13px]">Navigator</span>
-                  <span className="font-body-sm text-body-sm text-outline text-[11px] block">Unit 1 Complete</span>
+                <div className="w-full min-w-0">
+                  <span className="font-headline font-bold text-xs text-slate-900 dark:text-white block truncate">
+                    Course Navigator
+                  </span>
+                  <span className="inline-block px-2 py-0.5 mt-1 rounded-md text-[10px] font-mono font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300/50 dark:border-amber-700/50">
+                    {completedIds.length >= 1 ? '★ Unlocked' : 'In Progress'}
+                  </span>
                 </div>
               </div>
 
-              {/* Badge 2: Consistency Master */}
+              {/* Medal 2: Streak Master (mascot-streak.png) */}
               <div 
-                onClick={() => onNavigate('achievements')}
-                className="p-3.5 rounded-xl bg-surface-container-low flex flex-col items-center text-center gap-2 transition-transform hover:-translate-y-1 cursor-pointer"
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('achievements');
+                }}
+                className="p-3.5 rounded-2xl bg-gradient-to-b from-rose-50/80 via-white to-orange-50/40 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 border border-rose-200/90 dark:border-rose-800/50 flex flex-col items-center text-center gap-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-rose-500/10 cursor-pointer group relative overflow-hidden"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-tertiary-fixed-dim to-tertiary flex items-center justify-center text-on-tertiary-fixed shadow-[0_4px_0_0_#583d00]">
-                  <Flame size={24} />
+                <div className="w-16 h-16 relative shrink-0 flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-rose-100/80 to-rose-200/30 dark:from-rose-950/60 dark:to-rose-900/20 border border-rose-300/50 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-md group-hover:blur-lg transition-all" />
+                  <img
+                    src="/assets/mascot/mascot-streak.png"
+                    alt="Consistency Streak Medal"
+                    className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(244,63,94,0.35)] relative z-10"
+                  />
                 </div>
-                <div>
-                  <span className="font-title-md text-title-md text-on-surface font-bold block text-[13px]">Consistency</span>
-                  <span className="font-body-sm text-body-sm text-outline text-[11px] block">10-Day Streak</span>
+                <div className="w-full min-w-0">
+                  <span className="font-headline font-bold text-xs text-slate-900 dark:text-white block truncate">
+                    Streak Master
+                  </span>
+                  <span className="inline-block px-2 py-0.5 mt-1 rounded-md text-[10px] font-mono font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300/50 dark:border-rose-700/50">
+                    {currentStreak > 0 ? `🔥 ${currentStreak}d Streak` : 'Ignite Streak'}
+                  </span>
                 </div>
               </div>
 
-              {/* Badge 3: Fast Learner */}
+              {/* Medal 3: Fast Learner (mascot-fast-learner.png) */}
               <div 
-                onClick={() => onNavigate('achievements')}
-                className="p-3.5 rounded-xl bg-surface-container-low flex flex-col items-center text-center gap-2 transition-transform hover:-translate-y-1 cursor-pointer"
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('achievements');
+                }}
+                className="p-3.5 rounded-2xl bg-gradient-to-b from-sky-50/80 via-white to-blue-50/40 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 border border-sky-200/90 dark:border-sky-800/50 flex flex-col items-center text-center gap-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-sky-500/10 cursor-pointer group relative overflow-hidden"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-[0_4px_0_0_#047857]">
-                  <Zap size={24} />
+                <div className="w-16 h-16 relative shrink-0 flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-sky-100/80 to-blue-200/30 dark:from-sky-950/60 dark:to-blue-900/20 border border-sky-300/50 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-sky-400/20 rounded-full blur-md group-hover:blur-lg transition-all" />
+                  <img
+                    src="/assets/mascot/mascot-fast-learner.png"
+                    alt="Fast Learner Lightning Medal"
+                    className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(14,165,233,0.35)] relative z-10"
+                  />
                 </div>
-                <div>
-                  <span className="font-title-md text-title-md text-on-surface font-bold block text-[13px]">Fast Learner</span>
-                  <span className="font-body-sm text-body-sm text-outline text-[11px] block">5 Lessons in 1 Day</span>
+                <div className="w-full min-w-0">
+                  <span className="font-headline font-bold text-xs text-slate-900 dark:text-white block truncate">
+                    Fast Learner
+                  </span>
+                  <span className="inline-block px-2 py-0.5 mt-1 rounded-md text-[10px] font-mono font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border border-sky-300/50 dark:border-sky-700/50">
+                    ⚡ Packet Velocity
+                  </span>
                 </div>
               </div>
 
-              {/* Badge 4: Routing Master (locked) */}
+              {/* Medal 4: Problem Solving / Routing Master (mascot-problem-solving.png) */}
               <div 
-                onClick={() => onNavigate('achievements')}
-                className="p-3.5 rounded-xl bg-surface-container-low flex flex-col items-center text-center gap-2 opacity-65 cursor-pointer"
+                onClick={() => {
+                  soundFx.playClick();
+                  onNavigate('achievements');
+                }}
+                className="p-3.5 rounded-2xl bg-gradient-to-b from-emerald-50/80 via-white to-teal-50/40 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 border border-emerald-200/90 dark:border-emerald-800/50 flex flex-col items-center text-center gap-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-500/10 cursor-pointer group relative overflow-hidden"
               >
-                <div className="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center text-outline shadow-[0_4px_0_0_#c5c5d9]">
-                  <Router size={24} />
+                <div className="w-16 h-16 relative shrink-0 flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-emerald-100/80 to-teal-200/30 dark:from-emerald-950/60 dark:to-teal-900/20 border border-emerald-300/50 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-md group-hover:blur-lg transition-all" />
+                  <img
+                    src="/assets/mascot/mascot-problem-solving.png"
+                    alt="Problem Solving Routing Medal"
+                    className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(16,185,129,0.35)] relative z-10"
+                  />
                 </div>
-                <div className="w-full">
-                  <span className="font-title-md text-title-md text-on-surface font-bold block text-[13px]">Routing Master</span>
-                  <div className="w-full h-1.5 bg-surface-container rounded-full mt-1.5 overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }} />
+                <div className="w-full min-w-0">
+                  <span className="font-headline font-bold text-xs text-slate-900 dark:text-white block truncate">
+                    Routing Architect
+                  </span>
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mt-1.5 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style={{ width: `${Math.max(8, progressPercent)}%` }} />
                   </div>
-                  <span className="font-body-sm text-body-sm text-outline text-[10px] block mt-0.5">{progressPercent}% completed</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1 font-mono">{progressPercent}% unlocked</span>
                 </div>
               </div>
 
