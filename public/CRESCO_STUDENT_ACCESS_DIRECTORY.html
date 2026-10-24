@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRESCO CN — Student Access & Credentials Directory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070d18;
+      --card-bg: rgba(14, 22, 38, 0.92);
+      --border: rgba(56, 189, 248, 0.22);
+      --cyan: #38e8ff;
+      --cyan-dark: #0284c7;
+      --text: #eef8ff;
+      --muted: #8aa6c4;
+      --row-hover: rgba(56, 189, 248, 0.08);
+      --badge-bg: rgba(56, 232, 255, 0.12);
+      --font-display: 'Bricolage Grotesque', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      padding: 24px 16px 60px;
+      min-height: 100vh;
+    }
+    .wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--badge-bg);
+      border: 1px solid rgba(56, 232, 255, 0.35);
+      border-radius: 9999px;
+      color: var(--cyan);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .instructions-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .instructions-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .instructions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      font-size: 13px;
+    }
+    .inst-box {
+      background: rgba(7, 13, 24, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px 14px;
+      border-radius: 10px;
+    }
+    .inst-box strong {
+      color: #fff;
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .inst-box p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .inst-box code {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      background: rgba(56, 232, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .actions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+    }
+    .search-input {
+      width: 100%;
+      background: rgba(14, 22, 38, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px 12px 40px;
+      color: #fff;
+      font-size: 13px;
+      font-family: var(--font-body);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px rgba(56, 232, 255, 0.25);
+    }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      width: 16px;
+      height: 16px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #38e8ff);
+      color: #070d18;
+      font-weight: 700;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(56, 232, 255, 0.35);
+    }
+    .btn-secondary {
+      background: rgba(14, 22, 38, 0.85);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--cyan);
+      background: rgba(56, 232, 255, 0.1);
+    }
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    thead th {
+      background: rgba(7, 13, 24, 0.95);
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s;
+    }
+    tbody tr:hover {
+      background: var(--row-hover);
+    }
+    tbody td {
+      padding: 12px 16px;
+      vertical-align: middle;
+    }
+    .student-name {
+      font-weight: 600;
+      color: #fff;
+    }
+    .mono-cell {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--cyan);
+    }
+    .pwd-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(56, 232, 255, 0.3);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #e0f2fe;
+    }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--cyan);
+      cursor: pointer;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover {
+      background: rgba(56, 232, 255, 0.2);
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0284c7;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.25s ease-out;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media print {
+      body { background: #fff; color: #000; padding: 0; }
+      .instructions-card, .actions-bar, .copy-btn, .toast, .btn-group { display: none !important; }
+      .table-container { border: none; box-shadow: none; }
+      table { border: 1px solid #ccc; }
+      thead th { background: #f0f0f0; color: #000; border-bottom: 2px solid #000; }
+      tbody tr { border-bottom: 1px solid #ddd; }
+      tbody td { color: #000; }
+      .student-name { color: #000; }
+      .mono-cell, .pwd-badge { color: #000; background: none; border: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <div class="header">
+      <span class="badge">KLEF CSE · Computer Networks</span>
+      <h1>CRESCO CN — Student Access Directory</h1>
+      <p class="sub">Official login credentials assigned to all enrolled students. Share this sheet in the class group for immediate portal access.</p>
+    </div>
+
+    <!-- Instruction Card -->
+    <div class="instructions-card">
+      <div class="instructions-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Student Access Instructions</span>
+      </div>
+      <div class="instructions-grid">
+        <div class="inst-box">
+          <strong>1. Portal URL</strong>
+          <p>Navigate to: <code>http://localhost:5173/login</code></p>
+        </div>
+        <div class="inst-box">
+          <strong>2. Direct Sign In</strong>
+          <p>Username: <code>Register Number</code> or <code>Email</code><br>Password: <code>Assigned Password</code> (below)</p>
+        </div>
+        <div class="inst-box">
+          <strong>3. Google Sign In</strong>
+          <p>Click <code>Continue with Google</code> using your official <code>@klu.ac.in</code> account.</p>
+        </div>
+        <div class="inst-box">
+          <strong>4. Gamified Journey</strong>
+          <p>Instantly access Units 3, 4, 5, Packet Simulator &amp; Medals (Level 1 to 21).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions & Search Bar -->
+    <div class="actions-bar">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by Register Number or Name..." autofocus />
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="window.print()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <span>Print / Save PDF</span>
+        </button>
+        <a class="btn btn-primary" href="http://localhost:5173/login" target="_blank">
+          <span>Open Portal &rarr;</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Student Table -->
+    <div class="table-container">
+      <table id="studentsTable">
+        <thead>
+          <tr>
+            <th style="width: 50px;">#</th>
+            <th>Register No (Username)</th>
+            <th>Student Name</th>
+            <th>Official Email</th>
+            <th>Assigned Password</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Credentials copied to clipboard!</div>
+
+  <script>
+    const students = [{"Student ID": "99240040116", "Student Name": "NANDYALA SANTHOSH REDDY", "Email": "99240040116@klu.ac.in", "Login Password": "Klu@40116", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040262", "Student Name": "MALLELA GURU SAI BALAJI REDDY", "Email": "99240040262@klu.ac.in", "Login Password": "Klu@40262", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040263", "Student Name": "KONASANI SWAPNA", "Email": "99240040263@klu.ac.in", "Login Password": "Klu@40263", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040265", "Student Name": "KILARI VISHNU", "Email": "99240040265@klu.ac.in", "Login Password": "Klu@40265", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040266", "Student Name": "KOMMISETTY GANESH", "Email": "99240040266@klu.ac.in", "Login Password": "Klu@40266", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040267", "Student Name": "CHILAKALA VISHNU", "Email": "99240040267@klu.ac.in", "Login Password": "Klu@40267", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040268", "Student Name": "KRISHNA KANT KUMAR", "Email": "99240040268@klu.ac.in", "Login Password": "Klu@40268", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040269", "Student Name": "LANKOJI VENKATESWARLU", "Email": "99240040269@klu.ac.in", "Login Password": "Klu@40269", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040270", "Student Name": "YELIPETI JAYACHITHRA", "Email": "99240040270@klu.ac.in", "Login Password": "Klu@40270", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040272", "Student Name": "KURAPATI DEVAKI NANDHAN SATYA SAI", "Email": "99240040272@klu.ac.in", "Login Password": "Klu@40272", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040274", "Student Name": "KURAPATI MANOHAR", "Email": "99240040274@klu.ac.in", "Login Password": "Klu@40274", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040275", "Student Name": "KURUVA PREMA SAI", "Email": "99240040275@klu.ac.in", "Login Password": "Klu@40275", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040276", "Student Name": "MADAM ESWAR KISHORE", "Email": "99240040276@klu.ac.in", "Login Password": "Klu@40276", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040277", "Student Name": "LAKKIREDDY SUSHANTH REDDY", "Email": "99240040277@klu.ac.in", "Login Password": "Klu@40277", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040278", "Student Name": "MADDALA SURYA CHANDRA VENKATA MOHAN", "Email": "99240040278@klu.ac.in", "Login Password": "Klu@40278", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040279", "Student Name": "JEGATHEESWARAN R", "Email": "99240040279@klu.ac.in", "Login Password": "Klu@40279", "Role": "Student / Developer", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040280", "Student Name": "VEERAVALLI MUKESH", "Email": "99240040280@klu.ac.in", "Login Password": "Klu@40280", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040283", "Student Name": "MAYALURU PURUSHOTHAMA REDDY", "Email": "99240040283@klu.ac.in", "Login Password": "Klu@40283", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040284", "Student Name": "TELAGAMSETTI POSI SAI SIDDHARTHA", "Email": "99240040284@klu.ac.in", "Login Password": "Klu@40284", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040285", "Student Name": "MARIMESI MANIDEEP", "Email": "99240040285@klu.ac.in", "Login Password": "Klu@40285", "Role": "Student / Developer", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040287", "Student Name": "NAGA LIKHITHA G", "Email": "99240040287@klu.ac.in", "Login Password": "Klu@40287", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040290", "Student Name": "MUNDLAPATI SWARNALATHA", "Email": "99240040290@klu.ac.in", "Login Password": "Klu@40290", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040293", "Student Name": "THANGALLAPALLI SAI KRISHNA REDDY", "Email": "99240040293@klu.ac.in", "Login Password": "Klu@40293", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040295", "Student Name": "GUDIBANDI TARUN KUMAR REDDY", "Email": "99240040295@klu.ac.in", "Login Password": "Klu@40295", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040296", "Student Name": "NUSUM NAGA BHAVANI", "Email": "99240040296@klu.ac.in", "Login Password": "Klu@40296", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040301", "Student Name": "PALA PAVAN SAI", "Email": "99240040301@klu.ac.in", "Login Password": "Klu@40301", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040302", "Student Name": "NEKKANTI MADHU GANESH", "Email": "99240040302@klu.ac.in", "Login Password": "Klu@40302", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040304", "Student Name": "PICHHIGARIPALLI AISHWARYA", "Email": "99240040304@klu.ac.in", "Login Password": "Klu@40304", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040305", "Student Name": "TATIKONDA RAMYA SRI", "Email": "99240040305@klu.ac.in", "Login Password": "Klu@40305", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040306", "Student Name": "POTTA SWAROOP KUMAR", "Email": "99240040306@klu.ac.in", "Login Password": "Klu@40306", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040307", "Student Name": "POTLA MOKSHAGNA CHOWDARY", "Email": "99240040307@klu.ac.in", "Login Password": "Klu@40307", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040308", "Student Name": "PILLI KARTHIK", "Email": "99240040308@klu.ac.in", "Login Password": "Klu@40308", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040310", "Student Name": "PILLILLI NAGARJUNA", "Email": "99240040310@klu.ac.in", "Login Password": "Klu@40310", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040311", "Student Name": "POTTHALAM MANASA", "Email": "99240040311@klu.ac.in", "Login Password": "Klu@40311", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040312", "Student Name": "POTU VASU", "Email": "99240040312@klu.ac.in", "Login Password": "Klu@40312", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040313", "Student Name": "KALLURI KARTHIK", "Email": "99240040313@klu.ac.in", "Login Password": "Klu@40313", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040314", "Student Name": "JUTURU ASHOK", "Email": "99240040314@klu.ac.in", "Login Password": "Klu@40314", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040316", "Student Name": "POTHAM REDDY MANIDEEP REDDY", "Email": "99240040316@klu.ac.in", "Login Password": "Klu@40316", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040317", "Student Name": "PINJALA MONIKA KRISHNA", "Email": "99240040317@klu.ac.in", "Login Password": "Klu@40317", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040320", "Student Name": "RAMU NAGA VENKATA SRI LAKSHMI PRANITHA", "Email": "99240040320@klu.ac.in", "Login Password": "Klu@40320", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040321", "Student Name": "NUKALA YASWANTH VENKATA SUBRAMANYAM", "Email": "99240040321@klu.ac.in", "Login Password": "Klu@40321", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040325", "Student Name": "YARRAM VENKATESWARA REDDY", "Email": "99240040325@klu.ac.in", "Login Password": "Klu@40325", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040326", "Student Name": "SEGU LOHITH KUMAR", "Email": "99240040326@klu.ac.in", "Login Password": "Klu@40326", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040327", "Student Name": "SHAHANA R", "Email": "99240040327@klu.ac.in", "Login Password": "Klu@40327", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040328", "Student Name": "SEGIREDDY TEJASWAN REDDY", "Email": "99240040328@klu.ac.in", "Login Password": "Klu@40328", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040329", "Student Name": "BODEMMAGARI ARUN KUMAR REDDY", "Email": "99240040329@klu.ac.in", "Login Password": "Klu@40329", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040330", "Student Name": "SETTIPALLI VIJAY ESHWAR", "Email": "99240040330@klu.ac.in", "Login Password": "Klu@40330", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040331", "Student Name": "SHAIK HUSSAIN", "Email": "99240040331@klu.ac.in", "Login Password": "Klu@40331", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040334", "Student Name": "YOGANJAN REDDY C P", "Email": "99240040334@klu.ac.in", "Login Password": "Klu@40334", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040335", "Student Name": "VEGESNA YAMINI DEVI", "Email": "99240040335@klu.ac.in", "Login Password": "Klu@40335", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040336", "Student Name": "YERLA NIKHILKUMAR", "Email": "99240040336@klu.ac.in", "Login Password": "Klu@40336", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040337", "Student Name": "KURUGODU KARTHIK", "Email": "99240040337@klu.ac.in", "Login Password": "Klu@40337", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040339", "Student Name": "VENKATA KARTHIK P", "Email": "99240040339@klu.ac.in", "Login Password": "Klu@40339", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040341", "Student Name": "VENNAPUSA CHAITANYA LAKSHMI", "Email": "99240040341@klu.ac.in", "Login Password": "Klu@40341", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040342", "Student Name": "YOGENDRA REDDY PB", "Email": "99240040342@klu.ac.in", "Login Password": "Klu@40342", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040343", "Student Name": "ABHISHEK R", "Email": "99240040343@klu.ac.in", "Login Password": "Klu@40343", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040344", "Student Name": "AMMU KUMARI", "Email": "99240040344@klu.ac.in", "Login Password": "Klu@40344", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040346", "Student Name": "ADDANKI CHAITANYA", "Email": "99240040346@klu.ac.in", "Login Password": "Klu@40346", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040347", "Student Name": "ADADHAKULAPALLI PRANEETH", "Email": "99240040347@klu.ac.in", "Login Password": "Klu@40347", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040348", "Student Name": "AHALYA SURESH", "Email": "99240040348@klu.ac.in", "Login Password": "Klu@40348", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040349", "Student Name": "AKUTHOTA JITHESH KUMAR", "Email": "99240040349@klu.ac.in", "Login Password": "Klu@40349", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040350", "Student Name": "AKULA SATISH KUMAR", "Email": "99240040350@klu.ac.in", "Login Password": "Klu@40350", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040351", "Student Name": "AKKINA AKSHAYA", "Email": "99240040351@klu.ac.in", "Login Password": "Klu@40351", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040352", "Student Name": "C AKHIL", "Email": "99240040352@klu.ac.in", "Login Password": "Klu@40352", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040353", "Student Name": "ADITHYAN P", "Email": "99240040353@klu.ac.in", "Login Password": "Klu@40353", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040354", "Student Name": "AKKALA CHARAN PRAKASH YADAV", "Email": "99240040354@klu.ac.in", "Login Password": "Klu@40354", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040355", "Student Name": "ADDEPALLI NAGA VENKATA AMRUTHA VARSHINI", "Email": "99240040355@klu.ac.in", "Login Password": "Klu@40355", "Role": "Student", "Department": "Computer Science & Engineering"}, {"Student ID": "99240040356", "Student Name": "ADDEPALLI VYSHNAVI SRI MADHUMALINI", "Email": "99240040356@klu.ac.in", "Login Password": "Klu@40356", "Role": "Student", "Department": "Computer Science & Engineering"}];
+
+    const tbody = document.getElementById('tableBody');
+    const searchInput = document.getElementById('searchInput');
+    const toast = document.getElementById('toast');
+
+    function render(list) {
+      tbody.innerHTML = '';
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 28px; color: var(--muted);">No matching students found.</td></tr>';
+        return;
+      }
+      list.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color: var(--muted); font-family: var(--font-mono); font-size: 11px;">${idx + 1}</td>
+          <td class="mono-cell"><strong>${s['Student ID']}</strong></td>
+          <td class="student-name">${s['Student Name']}</td>
+          <td style="color: var(--muted); font-size: 12px;">${s['Email']}</td>
+          <td>
+            <span class="pwd-badge">
+              <span>${s['Login Password']}</span>
+            </span>
+          </td>
+          <td>
+            <button class="copy-btn" onclick="copyCreds('${s['Student ID']}', '${s['Login Password']}')">
+              Copy
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function copyCreds(user, pass) {
+      const text = `Username: ${user}\nPassword: ${pass}\nPortal: http://localhost:5173/login`;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied: ' + user + ' / ' + pass);
+      });
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const filtered = students.filter(s => 
+        s['Student ID'].toLowerCase().includes(q) ||
+        s['Student Name'].toLowerCase().includes(q) ||
+        s['Email'].toLowerCase().includes(q)
+      );
+      render(filtered);
+    });
+
+    // Initial render
+    render(students);
+  </script>
+</body>
+</html>
