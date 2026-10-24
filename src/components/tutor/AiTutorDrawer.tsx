@@ -3,7 +3,8 @@
  *
  * Interactive conversational tutor component powered by Groq API via secure server proxy.
  * Features Socratic dialogue, curriculum grounding, lesson recommendations, accessible
- * keyboard shortcuts, error handling with retries, and learning authority disclaimers.
+ * keyboard shortcuts, error handling with retries, learning authority disclaimers,
+ * message copy, thumbs up/down feedback, past conversations history, and voice recognition.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,21 +15,25 @@ import {
   RotateCcw, 
   Sparkles, 
   BookOpen, 
-  HelpCircle, 
   AlertCircle, 
   ExternalLink,
-  ChevronRight,
   ShieldCheck,
-  Lightbulb,
-  MessageSquare
+  Copy,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
+  Mic,
+  MicOff,
+  History,
+  Trash2,
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import { 
   TutorMessage, 
-  TutorInstructionalContext, 
-  TutorRecommendedLesson 
+  TutorInstructionalContext 
 } from '../../types/aiTutor';
 import { queryAiTutor } from '../../services/aiTutorService';
-import { CrescoMascot } from '../brand/CrescoMascot';
 import { NavTab } from '../../types';
 
 interface AiTutorDrawerProps {
@@ -38,6 +43,15 @@ interface AiTutorDrawerProps {
   initialContext?: TutorInstructionalContext;
   onNavigate?: (tab: NavTab, lessonId?: string, sectionId?: number) => void;
 }
+
+interface SavedSession {
+  id: string;
+  timestamp: string;
+  preview: string;
+  messages: TutorMessage[];
+}
+
+const STORAGE_KEY = 'cresco_neta_chat_sessions';
 
 export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
   isOpen,
@@ -50,14 +64,112 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeContext, setActiveContext] = useState<TutorInstructionalContext | undefined>(initialContext);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
+  
+  // Past conversations state
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedSessions, setSavedSessions] = useState<SavedSession[]>([]);
+
+  // Voice recognition state
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const recognitionRef = useRef<any>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Initialize Web Speech API
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setInputText((prev) => (prev ? `${prev.trim()} ${transcript}` : transcript));
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('[Neta Speech Recognition Error]:', event?.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.warn('Speech recognition setup error:', err);
+      setSpeechSupported(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
+
+  const toggleVoiceInput = () => {
+    if (!speechSupported) {
+      alert('Voice recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    if (isListening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current?.start();
+      } catch (err) {
+        console.warn('Speech recognition start failed:', err);
+      }
+    }
+  };
+
+  // Load saved sessions on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setSavedSessions(parsed);
+        }
+      }
+    } catch {}
+  }, []);
 
   // Sync initial context on prop change
   useEffect(() => {
     if (initialContext) {
       setActiveContext(initialContext);
-      // If messages are empty, generate initial welcome message
       if (messages.length === 0) {
         const greeting: TutorMessage = {
           id: `welcome-${Date.now()}`,
@@ -79,36 +191,73 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
     }
   }, [initialContext]);
 
+  // Auto-save current conversation to session history
+  useEffect(() => {
+    const studentMsgs = messages.filter((m) => m.sender === 'student');
+    if (studentMsgs.length > 0) {
+      const firstStudentMsg = studentMsgs[0].text;
+      const preview = firstStudentMsg.length > 48 ? `${firstStudentMsg.slice(0, 48)}...` : firstStudentMsg;
+      
+      const currentSessionId = messages[0]?.id || `session-${Date.now()}`;
+      const newSession: SavedSession = {
+        id: currentSessionId,
+        timestamp: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        preview,
+        messages
+      };
+
+      setSavedSessions((prev) => {
+        const filtered = prev.filter((s) => s.id !== currentSessionId);
+        const updated = [newSession, ...filtered].slice(0, 15);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+    }
+  }, [messages]);
+
   // Auto-scroll to bottom of messages
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !showHistory) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, showHistory]);
 
   // Focus textarea when opened
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !showHistory) {
       setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [isOpen]);
+  }, [isOpen, showHistory]);
 
   // Handle Escape key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        if (showHistory) {
+          setShowHistory(false);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, showHistory, onClose]);
 
   if (!isOpen) return null;
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputText).trim();
     if (!query || isLoading) return;
+
+    if (isListening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      setIsListening(false);
+    }
 
     const userMessage: TutorMessage = {
       id: `user-${Date.now()}`,
@@ -122,7 +271,6 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
     setInputText('');
     setIsLoading(true);
 
-    // Format conversation history for API
     const historyPayload = newHistory.slice(-6).map((m) => ({
       role: m.sender === 'student' ? ('user' as const) : ('model' as const),
       text: m.text
@@ -185,6 +333,34 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
       ]
     };
     setMessages([resetGreeting]);
+    setShowHistory(false);
+  };
+
+  const handleRestoreSession = (session: SavedSession) => {
+    setMessages(session.messages);
+    setShowHistory(false);
+  };
+
+  const handleClearAllHistory = () => {
+    if (confirm('Clear all saved conversations?')) {
+      setSavedSessions([]);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {}
+    }
+  };
+
+  const handleCopyText = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleToggleFeedback = (id: string, type: 'up' | 'down') => {
+    setMessageFeedback((prev) => ({
+      ...prev,
+      [id]: prev[id] === type ? undefined! : type
+    }));
   };
 
   const handleKeyDownTextarea = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -194,24 +370,74 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
     }
   };
 
+  // Safe markdown text formatting renderer (renders **bold**, `code`, and clean bullet lists)
+  const renderFormattedText = (rawText: string) => {
+    const lines = rawText.split('\n');
+    return lines.map((line, lineIdx) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return <div key={lineIdx} className="h-1.5" />;
+      }
+
+      const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ');
+      const cleanLine = isBullet ? trimmed.replace(/^[-•*]\s+/, '') : line;
+
+      // Split on **bold**, `code`
+      const parts = cleanLine.split(/(\*\*.*?\*\*|`.*?`)/g);
+
+      const formattedContent = parts.map((part, partIdx) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return (
+            <strong key={partIdx} className="font-bold text-slate-950">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return (
+            <code key={partIdx} className="px-1.5 py-0.5 rounded-md bg-slate-900/10 font-mono text-[11px] text-slate-900 font-semibold border border-slate-900/5">
+              {part.slice(1, -1)}
+            </code>
+          );
+        }
+        return <React.Fragment key={partIdx}>{part}</React.Fragment>;
+      });
+
+      if (isBullet) {
+        return (
+          <div key={lineIdx} className="flex items-start gap-2 my-1 pl-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-700 shrink-0 mt-1.5" />
+            <span className="flex-1 leading-relaxed">{formattedContent}</span>
+          </div>
+        );
+      }
+
+      return (
+        <p key={lineIdx} className="my-1 leading-relaxed">
+          {formattedContent}
+        </p>
+      );
+    });
+  };
+
   return (
     <div 
       className="fixed inset-0 z-50 flex justify-end items-center p-0 sm:p-4 md:p-6 bg-slate-950/40 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="w-full sm:max-w-[480px] md:max-w-[500px] h-full sm:h-[92vh] sm:rounded-[36px] bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.7),inset_0_1px_1px_rgba(255,255,255,0.95)] flex flex-col overflow-hidden relative text-slate-800 animate-in slide-in-from-right duration-300 font-sans"
+        className="w-full sm:max-w-[480px] md:max-w-[510px] h-full sm:h-[94vh] sm:rounded-[36px] bg-gradient-to-b from-white/92 via-white/84 to-white/92 backdrop-blur-2xl border border-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,1),inset_0_-1px_2px_rgba(255,255,255,0.4)] flex flex-col overflow-hidden relative text-slate-800 animate-in slide-in-from-right duration-300 font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Ambient Glassmorphic & Mercury Orbs (Reference Image Accents) */}
-        <div className="pointer-events-none absolute top-4 right-14 w-14 h-14 rounded-full bg-slate-900/15 blur-lg" />
-        <div className="pointer-events-none absolute -top-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br from-white via-slate-100 to-slate-300/40 border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.06)] opacity-70 blur-2xs" />
-        <div className="pointer-events-none absolute -bottom-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-tl from-white via-slate-100 to-slate-200/50 border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.08)] opacity-60 blur-2xs" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-90 z-20" />
+        {/* Ambient Glassmorphic & Mercury Highlights */}
+        <div className="pointer-events-none absolute -top-12 -left-12 w-44 h-44 rounded-full bg-gradient-to-br from-white via-cyan-100/40 to-violet-100/30 blur-2xl opacity-90" />
+        <div className="pointer-events-none absolute top-4 right-14 w-16 h-16 rounded-full bg-slate-900/10 blur-xl" />
+        <div className="pointer-events-none absolute -bottom-14 -right-14 w-48 h-48 rounded-full bg-gradient-to-tl from-white via-slate-100/60 to-slate-200/40 blur-2xl opacity-80" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95 z-20" />
 
         {/* Minimalist Top Indicator Dots (• ◦ ◦ ◦ ◦ ⊞) */}
-        <div className="pt-2.5 pb-1 flex items-center justify-center gap-1.5 select-none relative z-10">
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+        <div className="pt-3 pb-1 flex items-center justify-center gap-1.5 select-none relative z-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shadow-2xs" />
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
@@ -220,7 +446,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         </div>
 
         {/* Neta Glass Header */}
-        <div className="px-5 py-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-md flex items-center justify-between relative z-10">
+        <div className="px-5 py-3 border-b border-slate-200/60 bg-white/50 backdrop-blur-md flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-11 h-11 rounded-2xl bg-white/95 border border-white shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,1)] flex items-center justify-center overflow-hidden p-1 transition-transform hover:scale-105">
@@ -249,6 +475,18 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               type="button"
+              onClick={() => setShowHistory((prev) => !prev)}
+              title="Past Conversations"
+              className={`w-8 h-8 rounded-full border border-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                showHistory 
+                  ? 'bg-slate-900 text-white shadow-md' 
+                  : 'bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
               onClick={handleClearChat}
               title="Start New Chat"
               className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
@@ -267,7 +505,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         </div>
 
         {/* Minimalist Sub-Header Banner (Aesthetics • Functionality) */}
-        <div className="px-5 py-2 bg-white/50 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between text-[10px] text-slate-600 relative z-10">
+        <div className="px-5 py-2 bg-white/45 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between text-[10px] text-slate-600 relative z-10">
           <div className="flex items-center gap-1.5 font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-slate-700 shrink-0" />
             <span>Assistive Socratic Tutor • Non-authoritative</span>
@@ -294,129 +532,254 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           </div>
         )}
 
-        {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-gradient-to-b from-white/30 via-white/50 to-white/70 relative z-10">
-          {messages.map((msg) => {
-            if (msg.sender === 'system') {
-              return (
-                <div key={msg.id} className="p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 text-xs text-rose-800 space-y-2 shadow-xs">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                    <div className="flex-1 leading-relaxed font-medium">{msg.text}</div>
-                  </div>
+        {/* MAIN BODY: History Panel OR Chat Stream */}
+        {showHistory ? (
+          /* Past Conversations View */
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-white/60 to-white/80 relative z-10">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHistory(false)}
+                  className="p-1.5 rounded-full hover:bg-white text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                  title="Back to Chat"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h4 className="text-sm font-bold text-slate-900">Past Conversations</h4>
+              </div>
+              {savedSessions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllHistory}
+                  className="text-[11px] text-rose-500 hover:text-rose-700 font-medium flex items-center gap-1 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </button>
+              )}
+            </div>
+
+            {savedSessions.length === 0 ? (
+              <div className="py-12 text-center space-y-2">
+                <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500 font-medium">No saved conversations yet.</p>
+                <p className="text-[11px] text-slate-400">Ask Neta any networking question to save sessions here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {savedSessions.map((session) => (
                   <button
+                    key={session.id}
                     type="button"
-                    onClick={handleRetryLastMessage}
-                    className="px-3 py-1 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                    onClick={() => handleRestoreSession(session)}
+                    className="w-full p-3.5 rounded-2xl bg-white/85 hover:bg-white border border-white/90 hover:border-slate-300 shadow-[0_2px_12px_rgba(0,0,0,0.03)] text-left transition-all hover:scale-[1.01] cursor-pointer group space-y-1"
                   >
-                    <RotateCcw className="w-3 h-3" /> Retry Query
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span>{session.timestamp}</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                        {session.messages.length} msgs
+                      </span>
+                    </div>
+                    <div className="text-xs font-semibold text-slate-800 line-clamp-2 group-hover:text-slate-950">
+                      "{session.preview}"
+                    </div>
                   </button>
-                </div>
-              );
-            }
-
-            const isStudent = msg.sender === 'student';
-
-            return (
-              <div 
-                key={msg.id} 
-                className={`flex gap-3 ${isStudent ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                {!isStudent && (
-                  <div className="w-8 h-8 rounded-2xl bg-white/95 border border-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0 mt-1 overflow-hidden p-1">
-                    <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain" />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Live Chat Message Stream */
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-gradient-to-b from-white/30 via-white/50 to-white/70 relative z-10">
+            {messages.map((msg) => {
+              if (msg.sender === 'system') {
+                return (
+                  <div key={msg.id} className="p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 text-xs text-rose-800 space-y-2 shadow-xs">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div className="flex-1 leading-relaxed font-medium">{msg.text}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRetryLastMessage}
+                      className="px-3 py-1 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Retry Query
+                    </button>
                   </div>
-                )}
+                );
+              }
 
-                <div className={`space-y-2 max-w-[85%] ${isStudent ? 'items-end' : 'items-start'}`}>
-                  <div 
-                    className={`p-4 rounded-[24px] text-xs leading-relaxed ${
-                      isStudent 
-                        ? 'bg-gradient-to-br from-slate-900 to-zinc-800 text-white rounded-tr-xs shadow-[0_4px_16px_rgba(15,23,42,0.18)]' 
-                        : 'bg-white/90 backdrop-blur-xl text-slate-800 border border-white/90 rounded-tl-xs shadow-[0_4px_20px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.8)]'
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap font-sans font-normal">{msg.text}</div>
-                  </div>
+              const isStudent = msg.sender === 'student';
 
-                  {/* Recommended Lessons Cards */}
-                  {msg.recommendedLessons && msg.recommendedLessons.length > 0 && (
-                    <div className="p-3.5 rounded-2xl bg-white/80 backdrop-blur-md border border-white/90 shadow-xs space-y-2 text-left">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-700 font-bold flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-slate-800" /> Recommended Curriculum Lessons:
-                      </div>
-                      <div className="space-y-1.5">
-                        {msg.recommendedLessons.map((lesson) => (
+              return (
+                <div 
+                  key={msg.id} 
+                  className={`flex gap-3 ${isStudent ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  {!isStudent && (
+                    <div className="w-8 h-8 rounded-full bg-white/95 border border-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0 mt-0.5 overflow-hidden p-1">
+                      <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+
+                  <div className={`space-y-1.5 max-w-[85%] ${isStudent ? 'items-end' : 'items-start'}`}>
+                    <div 
+                      className={`p-4 rounded-[24px] text-xs leading-relaxed ${
+                        isStudent 
+                          ? 'bg-gradient-to-br from-slate-900 to-zinc-800 text-white rounded-tr-xs shadow-[0_4px_16px_rgba(15,23,42,0.18)]' 
+                          : 'bg-white/92 backdrop-blur-xl text-slate-800 border border-white/95 rounded-tl-xs shadow-[0_4px_20px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)]'
+                      }`}
+                    >
+                      {isStudent ? (
+                        <div className="whitespace-pre-wrap font-sans font-normal">{msg.text}</div>
+                      ) : (
+                        <div className="font-sans font-normal text-slate-800">
+                          {renderFormattedText(msg.text)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tutor Message Action Row: Copy + Thumbs Up/Down Feedback + Timestamp */}
+                    {!isStudent && (
+                      <div className="flex items-center justify-between px-1.5 pt-0.5 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-1 bg-white/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/80 shadow-2xs">
+                          {/* Copy Button */}
                           <button
-                            key={lesson.lessonId}
                             type="button"
-                            onClick={() => {
-                              if (onNavigate) {
-                                onNavigate('lesson-player', lesson.lessonId);
-                                onClose();
-                              }
-                            }}
-                            className="w-full p-2.5 rounded-xl bg-white/90 hover:bg-white border border-slate-200/60 hover:border-slate-300 text-left transition-all flex items-center justify-between group cursor-pointer shadow-2xs hover:shadow-xs"
+                            onClick={() => handleCopyText(msg.id, msg.text)}
+                            className="p-1 rounded-md hover:bg-white text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 cursor-pointer"
+                            title="Copy reply to clipboard"
                           >
-                            <div>
-                              <div className="text-[11px] font-bold text-slate-900 group-hover:text-black">
-                                {lesson.title}
+                            {copiedId === msg.id ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-[10px] text-emerald-600 font-semibold">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span className="text-[10px]">Copy</span>
+                              </>
+                            )}
+                          </button>
+
+                          <div className="w-px h-3 bg-slate-300 mx-0.5" />
+
+                          {/* Thumbs Up Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeedback(msg.id, 'up')}
+                            className={`p-1 rounded-md transition-all cursor-pointer ${
+                              messageFeedback[msg.id] === 'up'
+                                ? 'bg-emerald-100 text-emerald-700 shadow-2xs'
+                                : 'hover:bg-white text-slate-400 hover:text-emerald-600'
+                            }`}
+                            title="Helpful response"
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                          </button>
+
+                          {/* Thumbs Down Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeedback(msg.id, 'down')}
+                            className={`p-1 rounded-md transition-all cursor-pointer ${
+                              messageFeedback[msg.id] === 'down'
+                                ? 'bg-rose-100 text-rose-700 shadow-2xs'
+                                : 'hover:bg-white text-slate-400 hover:text-rose-600'
+                            }`}
+                            title="Not helpful"
+                          >
+                            <ThumbsDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <span className="text-[9px] font-mono text-slate-400">{msg.timestamp}</span>
+                      </div>
+                    )}
+
+                    {/* Recommended Lessons Cards */}
+                    {msg.recommendedLessons && msg.recommendedLessons.length > 0 && (
+                      <div className="p-3.5 rounded-2xl bg-white/80 backdrop-blur-md border border-white/90 shadow-xs space-y-2 text-left">
+                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-700 font-bold flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-slate-800" /> Recommended Curriculum Lessons:
+                        </div>
+                        <div className="space-y-1.5">
+                          {msg.recommendedLessons.map((lesson) => (
+                            <button
+                              key={lesson.lessonId}
+                              type="button"
+                              onClick={() => {
+                                if (onNavigate) {
+                                  onNavigate('lesson-player', lesson.lessonId);
+                                  onClose();
+                                }
+                              }}
+                              className="w-full p-2.5 rounded-xl bg-white/90 hover:bg-white border border-slate-200/60 hover:border-slate-300 text-left transition-all flex items-center justify-between group cursor-pointer shadow-2xs hover:shadow-xs"
+                            >
+                              <div>
+                                <div className="text-[11px] font-bold text-slate-900 group-hover:text-black">
+                                  {lesson.title}
+                                </div>
+                                <div className="text-[9px] font-mono text-slate-500">
+                                  Unit {lesson.unitNumber} • Module {lesson.lessonId}
+                                </div>
                               </div>
-                              <div className="text-[9px] font-mono text-slate-500">
-                                Unit {lesson.unitNumber} • Module {lesson.lessonId}
-                              </div>
-                            </div>
-                            <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-800 shrink-0" />
+                              <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-800 shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggested Follow-up Action Chips */}
+                    {msg.suggestedActions && msg.suggestedActions.length > 0 && !isStudent && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {msg.suggestedActions.map((action, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSendMessage(action)}
+                            className="px-3 py-1.5 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 hover:border-slate-400 text-[11px] font-medium text-slate-700 hover:text-slate-950 shadow-2xs hover:shadow-xs transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+                          >
+                            {action}
                           </button>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Suggested Follow-up Action Chips */}
-                  {msg.suggestedActions && msg.suggestedActions.length > 0 && !isStudent && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {msg.suggestedActions.map((action, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSendMessage(action)}
-                          className="px-3 py-1.5 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 hover:border-slate-400 text-[11px] font-medium text-slate-700 hover:text-slate-950 shadow-2xs hover:shadow-xs transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
-                        >
-                          {action}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className={`text-[9px] font-mono text-slate-400 ${isStudent ? 'text-right' : 'text-left'}`}>
-                    {msg.timestamp}
+                    {isStudent && (
+                      <div className="text-[9px] font-mono text-slate-400 text-right pr-1">
+                        {msg.timestamp}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-2xl bg-white/95 border border-white shadow-xs flex items-center justify-center shrink-0 overflow-hidden p-1">
-                <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain animate-pulse" />
+            {/* Loading Indicator */}
+            {isLoading && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/95 border border-white shadow-xs flex items-center justify-center shrink-0 overflow-hidden p-1">
+                  <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain animate-pulse" />
+                </div>
+                <div className="p-3.5 rounded-[22px] rounded-tl-xs bg-white/88 backdrop-blur-xl border border-white/90 shadow-xs text-xs text-slate-600 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce [animation-delay:0.4s]" />
+                  <span className="text-[11px] text-slate-700 font-medium ml-1">Neta is thinking...</span>
+                </div>
               </div>
-              <div className="p-3.5 rounded-[22px] rounded-tl-xs bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs text-xs text-slate-600 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-slate-800 animate-bounce [animation-delay:0.4s]" />
-                <span className="text-[11px] text-slate-700 font-medium ml-1">Neta is thinking...</span>
-              </div>
-            </div>
-          )}
+            )}
 
-          <div ref={messagesEndRef} />
-        </div>
+            <div ref={messagesEndRef} />
+          </div>
+        )}
 
-        {/* Neumorphic Separator with Center '+' Pill (Inspired by Reference Image) */}
-        <div className="relative py-1 flex items-center justify-center select-none bg-white/30">
+        {/* Seamless Neumorphic Divider with Center '+' Pill */}
+        <div className="relative py-1 flex items-center justify-center select-none">
           <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
           <div className="relative z-10 w-6 h-6 rounded-full bg-white/95 border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,1)] flex items-center justify-center text-slate-500 text-xs font-light">
             +
@@ -424,17 +787,35 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 sm:p-4 bg-white/70 backdrop-blur-xl border-t border-white/80 relative z-10">
-          <div className="flex items-end gap-2 bg-white/95 backdrop-blur-md border border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.04)] focus-within:border-slate-300 focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] rounded-[24px] p-2 transition-all">
+        <div className="p-3 sm:p-4 pt-1 bg-white/75 backdrop-blur-xl border-t border-white/80 relative z-10">
+          <div className="flex items-end gap-2 bg-white/95 backdrop-blur-md border border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_4px_16px_rgba(0,0,0,0.04)] focus-within:border-slate-300 focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] rounded-[26px] p-2 transition-all">
+            
+            {/* Microphone Button (Voice Recognition) */}
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              title={isListening ? "Listening... click to stop" : "Voice input (Speak to Neta)"}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                isListening 
+                  ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30 ring-2 ring-rose-400/50' 
+                  : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+
+            {/* Input Textarea */}
             <textarea
               ref={inputRef}
               rows={2}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDownTextarea}
-              placeholder="Ask Neta about protocols, RFCs, or packet flows... (Enter to send)"
-              className="flex-1 bg-transparent border-0 text-xs sm:text-[13px] text-slate-800 placeholder-slate-400 focus:outline-hidden resize-none font-sans px-2 py-1 leading-normal"
+              placeholder={isListening ? "Listening to your voice..." : "Ask Neta about protocols, RFCs, or packet flows... (Enter to send)"}
+              className="flex-1 bg-transparent border-0 text-xs sm:text-[13px] text-slate-800 placeholder-slate-400 focus:outline-hidden resize-none font-sans px-1 py-1 leading-normal"
             />
+
+            {/* Send Button */}
             <button
               type="button"
               disabled={!inputText.trim() || isLoading}
@@ -445,8 +826,14 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
               <Send className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="text-[10px] text-slate-400 text-center mt-2 font-mono">
-            Press <kbd className="px-1.5 py-0.5 bg-white/80 border border-slate-200/60 rounded text-slate-600 font-bold shadow-2xs">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-white/80 border border-slate-200/60 rounded text-slate-500 shadow-2xs">Shift+Enter</kbd> for newline
+
+          {/* Keyboard shortcut guide */}
+          <div className="text-[10px] text-slate-400 text-center mt-2 font-mono flex items-center justify-center gap-1.5">
+            <span>Press</span>
+            <kbd className="px-1.5 py-0.5 bg-white/80 border border-slate-200/60 rounded text-slate-600 font-bold shadow-2xs">Enter</kbd>
+            <span>to send,</span>
+            <kbd className="px-1.5 py-0.5 bg-white/80 border border-slate-200/60 rounded text-slate-500 shadow-2xs">Shift+Enter</kbd>
+            <span>for newline</span>
           </div>
         </div>
       </div>
