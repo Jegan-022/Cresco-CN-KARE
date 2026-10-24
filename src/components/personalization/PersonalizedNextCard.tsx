@@ -170,7 +170,7 @@ export const PersonalizedNextCard: React.FC<PersonalizedNextCardProps> = ({
               className="w-full py-2.5 px-4 rounded-xl bg-surface-container text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2 cursor-pointer border border-outline-variant/30 text-xs"
             >
               <Bot size={15} className="text-primary" />
-              <span>Ask ByteBot About This</span>
+              <span>Ask Neta About This</span>
             </button>
           )}
         </div>

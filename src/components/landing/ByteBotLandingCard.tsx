@@ -78,7 +78,7 @@ export const ByteBotLandingCard: React.FC = () => {
       {/* Interactive Prompt Chips */}
       <div className="mt-6 space-y-2">
         <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold block">
-          Ask ByteBot Any Networking Question:
+          Ask Neta Any Networking Question:
         </span>
         <div className="flex flex-wrap gap-2">
           {FAQ_SAMPLES.map((item, idx) => {

@@ -1,7 +1,7 @@
 /**
  * CRESCO AI Personal Tutor Drawer
  *
- * Interactive conversational tutor component powered by Google Gemini via secure server proxy.
+ * Interactive conversational tutor component powered by Groq API via secure server proxy.
  * Features Socratic dialogue, curriculum grounding, lesson recommendations, accessible
  * keyboard shortcuts, error handling with retries, and learning authority disclaimers.
  */
@@ -63,8 +63,8 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           id: `welcome-${Date.now()}`,
           sender: 'tutor',
           text: initialContext.conceptTopic
-            ? `Hi! I'm Network AI, your personal networking tutor. I see you're working on **${initialContext.conceptTopic}**. How can I help you understand this concept?`
-            : "Hi! I'm Network AI, your AI Personal Tutor for CS-4200 Computer Networks. Ask me anything about network layers, protocols, packet flows, or exam concepts!",
+            ? `Hi! I'm Neta, your personal networking tutor. I see you're working on **${initialContext.conceptTopic}**. How can I help you understand this concept?`
+            : "Hi! I'm Neta, your AI Personal Tutor for CS-4200 Computer Networks. Ask me anything about network layers, protocols, packet flows, or exam concepts!",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           context: initialContext,
           suggestedActions: [
@@ -203,14 +203,14 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         className="w-full max-w-lg h-full bg-[#0D0F1A] border-l border-violet-900/40 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Network AI Header */}
+        {/* Neta Header */}
         <div className="p-4 border-b border-violet-900/40 bg-gradient-to-r from-[#0D0F1A] to-[#110D1F] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-600/30 to-blue-600/30 border border-violet-500/30 flex items-center justify-center shadow-md shadow-violet-500/10 overflow-hidden p-1">
                 <img
                   src="/assets/mascot/network AI.png"
-                  alt="Network AI"
+                  alt="Neta"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -218,7 +218,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-black text-white tracking-tight">Network AI</h3>
+                <h3 className="text-sm font-black text-white tracking-tight">Neta</h3>
                 <span className="px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 text-[9px] font-mono font-bold uppercase tracking-wider">
                   AI Tutor
                 </span>
@@ -250,7 +250,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         {/* Authority Boundary Banner */}
         <div className="px-4 py-2 bg-[#0A0B14] border-b border-violet-900/30 flex items-center gap-2 text-[10px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-          <span>Assistive only. Network AI guides learning but cannot alter official grades or certified mastery.</span>
+          <span>Assistive only. Neta guides learning but cannot alter official grades or certified mastery.</span>
         </div>
 
         {/* Active Context Chip */}
@@ -298,7 +298,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
               >
                 {!isStudent && (
                   <div className="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0 mt-1 overflow-hidden p-0.5">
-                    <img src="/assets/mascot/network AI.png" alt="Network AI" className="w-full h-full object-contain" />
+                    <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain" />
                   </div>
                 )}
 
@@ -375,13 +375,13 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           {isLoading && (
             <div className="flex items-center gap-3">
               <div className="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0 overflow-hidden p-0.5">
-                <img src="/assets/mascot/network AI.png" alt="Network AI" className="w-full h-full object-contain animate-pulse" />
+                <img src="/assets/mascot/network AI.png" alt="Neta" className="w-full h-full object-contain animate-pulse" />
               </div>
               <div className="p-3.5 rounded-2xl rounded-tl-xs bg-[#141628] border border-violet-900/40 text-xs text-slate-400 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" />
                 <span className="w-2 h-2 rounded-full bg-violet-400 animate-bounce [animation-delay:0.2s]" />
                 <span className="w-2 h-2 rounded-full bg-violet-400 animate-bounce [animation-delay:0.4s]" />
-                <span className="text-[11px] text-violet-300 ml-1">Network AI is thinking...</span>
+                <span className="text-[11px] text-violet-300 ml-1">Neta is thinking...</span>
               </div>
             </div>
           )}
@@ -398,7 +398,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDownTextarea}
-              placeholder="Ask Network AI about protocols, RFCs, or packet flows... (Enter to send)"
+              placeholder="Ask Neta about protocols, RFCs, or packet flows... (Enter to send)"
               className="flex-1 bg-transparent border-0 text-xs text-white placeholder-slate-500 focus:outline-hidden resize-none font-sans"
             />
             <button

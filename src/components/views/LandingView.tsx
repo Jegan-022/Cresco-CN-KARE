@@ -205,7 +205,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 max-w-xl leading-relaxed font-normal">
-              Master the physical wire to the application layer. Trace live TCP 3-way handshakes, calculate CIDR subnet masks interactively, and conquer boss exams with ByteBot AI.
+              Master the physical wire to the application layer. Trace live TCP 3-way handshakes, calculate CIDR subnet masks interactively, and conquer boss exams with Neta AI.
             </p>
 
             {/* CTAs */}
