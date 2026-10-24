@@ -65,6 +65,7 @@ const AdminPortalView = React.lazy(() => import('./components/views/AdminPortalV
 const UdlLearningView = React.lazy(() => import('./components/views/UdlLearningView').then(m => ({ default: m.UdlLearningView })));
 
 import { BootTerminal } from './components/BootTerminal';
+import { StudentIntroOverlay } from './components/StudentIntroOverlay';
 import { ErrorBoundary } from './components/errors/ErrorBoundary';
 import { Offline403Page } from './components/errors/Offline403Page';
 import { ServerCrash404Page } from './components/errors/ServerCrash404Page';
@@ -91,6 +92,7 @@ function MainApp() {
       if (path === '/admin') return { tab: 'admin' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/udl') return { tab: 'udl-learning' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/login') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/signup') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
 
       const routeInfo = parseLevelFromPath(path);
       if (routeInfo) {
@@ -140,7 +142,10 @@ function MainApp() {
   const [activePracticeCategory, setActivePracticeCategory] = useState<PracticeCategory | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
-  const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login');
+  const [loginMode, setLoginMode] = useState<'login' | 'signup'>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/signup') return 'signup';
+    return 'login';
+  });
   const [pendingWritesCount, setPendingWritesCount] = useState(0);
   const [sectionCompletionCelebration, setSectionCompletionCelebration] = useState<{
     sectionTitle: string;
@@ -186,7 +191,8 @@ function MainApp() {
       if (path === '/terms') { setCurrentTab('terms'); return; }
       if (path === '/privacy') { setCurrentTab('privacy'); return; }
       if (path === '/admin') { setCurrentTab('admin'); return; }
-      if (path === '/login') { setCurrentTab('login'); return; }
+      if (path === '/login') { setLoginMode('login'); setCurrentTab('login'); return; }
+      if (path === '/signup') { setLoginMode('signup'); setCurrentTab('login'); return; }
       if (path === '/' || path === '') {
         setCurrentTab(currentUser ? 'home' : 'landing');
       }
@@ -856,17 +862,32 @@ function MainApp() {
 }
 
 export default function App() {
+  // Show intro loading screen each time the website is opened or refreshed
+  const [introActive, setIntroActive] = useState(true);
+
+  const handleIntroComplete = () => {
+    try {
+      sessionStorage.setItem('cresco_student_intro_seen', 'true');
+    } catch {}
+    setIntroActive(false);
+  };
+
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <CurriculumProvider>
-            <CharacterProvider>
-              <MainApp />
-            </CharacterProvider>
-          </CurriculumProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <>
+      {introActive && (
+        <StudentIntroOverlay onComplete={handleIntroComplete} />
+      )}
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <CurriculumProvider>
+              <CharacterProvider>
+                <MainApp />
+              </CharacterProvider>
+            </CurriculumProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </>
   );
 }

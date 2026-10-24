@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   AlertCircle, 
   ArrowLeft,
-  Info,
   ExternalLink,
   Globe,
   Key,
@@ -10,8 +9,11 @@ import {
   Eye,
   EyeOff,
   User,
+  Mail,
   ShieldCheck,
-  Sparkles
+  Check,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { LiquidLines } from '../ui/LiquidLines';
@@ -26,34 +28,63 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ 
+  initialMode = 'login',
   onSuccess, 
   onCancel 
 }) => {
   const { 
     loginWithStudentId, 
+    loginWithEmail,
+    registerWithEmail,
     loginWithGoogle,
     resetPassword,
     authError, 
     clearAuthError 
   } = useAuth();
   
-  // Student ID / Register Number & Password state
-  const [studentIdInput, setStudentIdInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  // Unified active tab: 'login' or 'signup'
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(
+    initialMode === 'signup' ? 'signup' : 'login'
+  );
+
+  // Login form state
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
+  // Sign up form state
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false);
+  const [signUpTermsAgreed, setSignUpTermsAgreed] = useState(true);
+
+  // Common UI state
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [showForgotHint, setShowForgotHint] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(initialMode === 'forgot');
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
-  const [termsAgreed, setTermsAgreed] = useState(true);
 
   const displayError = localError || authError;
 
-  // Listen for Escape key to return to launch page
+  // Load remembered identifier on mount
+  useEffect(() => {
+    try {
+      const savedId = localStorage.getItem('cresco_remember_student_id');
+      if (savedId) {
+        setLoginIdentifier(savedId);
+        setRememberMe(true);
+      }
+    } catch {}
+  }, []);
+
+  // Listen for Escape key to return to launch/landing page
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -64,14 +95,31 @@ export const LoginView: React.FC<LoginViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onCancel]);
 
-  // First-time signup with Google to fix Register Number and Password
-  const handleFirstTimeGoogleSignup = async () => {
-    if (!termsAgreed) {
-      setLocalError("Please agree to CRESCO CN's Terms & Conditions and Privacy Policy before continuing.");
-      return;
-    }
+  const clearErrors = () => {
     clearAuthError();
     setLocalError(null);
+  };
+
+  // Compute password strength for Sign Up
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: '', color: 'bg-slate-700', text: 'text-slate-500' };
+    let score = 0;
+    if (pass.length >= 6) score++;
+    if (pass.length >= 8) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[A-Z]/.test(pass) || /[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (score <= 1) return { score: 25, label: 'Weak', color: 'bg-red-500', text: 'text-red-400' };
+    if (score === 2) return { score: 50, label: 'Fair', color: 'bg-amber-500', text: 'text-amber-400' };
+    if (score === 3) return { score: 75, label: 'Good', color: 'bg-cyan-500', text: 'text-cyan-400' };
+    return { score: 100, label: 'Strong', color: 'bg-emerald-500', text: 'text-emerald-400' };
+  };
+
+  const passwordStrength = getPasswordStrength(signUpPassword);
+
+  // Google sign in / sign up
+  const handleGoogleAuth = async () => {
+    clearErrors();
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
@@ -85,7 +133,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
   };
 
-  // Real Firebase Password Reset
+  // Password reset
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailToReset = resetEmail.trim();
@@ -95,14 +143,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
     setResetLoading(true);
     setResetSuccess(null);
-    setLocalError(null);
+    clearErrors();
     try {
       let resolvedEmail = emailToReset;
       if (!resolvedEmail.includes('@')) {
         resolvedEmail = `${resolvedEmail}@klu.ac.in`;
       }
       await resetPassword(resolvedEmail);
-      setResetSuccess('Password reset link sent! Please check your official student inbox.');
+      setResetSuccess('Password reset link sent! Please check your student inbox.');
     } catch (err: any) {
       setLocalError(err.message || 'Unable to send password reset. Please check the email address or contact support.');
     } finally {
@@ -110,14 +158,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
   };
 
-  // Strictly Username & Password Login (for subsequent visits)
+  // 1. Student Login Handler
   const handleStudentLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const id = studentIdInput.trim();
-    const pwd = passwordInput.trim();
+    const identifier = loginIdentifier.trim();
+    const pwd = loginPassword.trim();
 
-    if (!id) {
-      setLocalError('Please enter your Register Number (Username).');
+    if (!identifier) {
+      setLocalError('Please enter your Email address or Register Number.');
       return;
     }
     if (!pwd) {
@@ -125,14 +173,62 @@ export const LoginView: React.FC<LoginViewProps> = ({
       return;
     }
 
-    clearAuthError();
-    setLocalError(null);
+    clearErrors();
     setLoading(true);
     try {
-      await loginWithStudentId(id, pwd);
+      // Remember me persistence
+      if (rememberMe) {
+        try { localStorage.setItem('cresco_remember_student_id', identifier); } catch {}
+      } else {
+        try { localStorage.removeItem('cresco_remember_student_id'); } catch {}
+      }
+
+      // Supports both Email address and Register Number (CSV roster students or direct Firebase Auth)
+      await loginWithStudentId(identifier, pwd);
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setLocalError(err.message || 'Login failed. Please verify your Register Number and Password.');
+      setLocalError(err.message || 'Login failed. Please verify your Email/Register Number and Password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Student Sign Up Handler
+  const handleStudentSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = signUpName.trim();
+    const email = signUpEmail.trim().toLowerCase();
+    const pwd = signUpPassword.trim();
+    const confirmPwd = signUpConfirmPassword.trim();
+
+    if (!name) {
+      setLocalError('Please enter your full name.');
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      setLocalError('Please enter a valid student email address.');
+      return;
+    }
+    if (pwd.length < 6) {
+      setLocalError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (pwd !== confirmPwd) {
+      setLocalError('Passwords do not match. Please verify your confirm password.');
+      return;
+    }
+    if (!signUpTermsAgreed) {
+      setLocalError('You must agree to CRESCO CN\'s Terms & Conditions and Privacy Policy to create an account.');
+      return;
+    }
+
+    clearErrors();
+    setLoading(true);
+    try {
+      await registerWithEmail(email, pwd, name, 'student');
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      setLocalError(err.message || 'Registration failed. Please check your credentials or try again.');
     } finally {
       setLoading(false);
     }
@@ -178,19 +274,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
       {/* Atmospheric vignette */}
       <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#070D18]/30 to-[#070D18]/80 pointer-events-none z-0" />
 
-      {/* Login Card Container */}
-      <div className="uiverse-login-card relative z-10 my-6 sm:my-8 max-w-full">
+      {/* Auth Card Container */}
+      <div className="uiverse-login-card relative z-10 my-4 sm:my-6 max-w-full">
         <style>{`
           .uiverse-login-card .container {
             display: flex;
-            width: 560px;
-            min-height: 520px;
+            width: 620px;
+            min-height: 540px;
+            max-height: 94vh;
             max-width: 95vw;
             align-items: stretch;
             justify-content: center;
             position: relative;
             overflow: hidden;
-            background-color: rgba(14, 22, 38, 0.82);
+            background-color: rgba(14, 22, 38, 0.88);
             border-radius: 22px;
             box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.6), 0 0 35px rgba(6, 200, 217, 0.18);
             border: 1px solid rgba(56, 189, 248, 0.28);
@@ -199,13 +296,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
           }
 
           .uiverse-login-card .left {
-            width: 66%;
+            width: 64%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 24px 0;
+            padding: 20px 0;
             position: relative;
             z-index: 2;
+            overflow-y: auto;
+            max-height: 94vh;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(56, 189, 248, 0.3) transparent;
+          }
+
+          .uiverse-login-card .left::-webkit-scrollbar {
+            width: 4px;
+          }
+          .uiverse-login-card .left::-webkit-scrollbar-thumb {
+            background-color: rgba(56, 189, 248, 0.3);
+            border-radius: 4px;
           }
 
           @media (max-width: 640px) {
@@ -222,7 +331,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           }
 
           .uiverse-login-card .right {
-            width: 34%;
+            width: 36%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -243,7 +352,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div className="left">
             <div>
               
-              {/* Header Title */}
+              {/* Header Title & Badges */}
               <div className="px-6 pb-2 text-left">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
@@ -253,12 +362,63 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     KLU
                   </span>
                 </div>
+
+                {/* Sign In / Sign Up Segmented Tab Toggle */}
+                {!showForgotPassword && (
+                  <div className="mt-3 p-1 bg-slate-950/80 rounded-xl border border-slate-800/80 flex items-center">
+                    <button
+                      type="button"
+                      id="tab-toggle-login"
+                      onClick={() => { setActiveTab('login'); clearErrors(); }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeTab === 'login'
+                          ? 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <LogIn size={13} />
+                      <span>Sign In</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="tab-toggle-signup"
+                      onClick={() => { setActiveTab('signup'); clearErrors(); }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeTab === 'signup'
+                          ? 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <UserPlus size={13} />
+                      <span>Sign Up</span>
+                    </button>
+                  </div>
+                )}
+
                 <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2 mt-2">
-                  <Key size={18} className="text-cyan-400" />
-                  <span>Student Sign In</span>
+                  {showForgotPassword ? (
+                    <>
+                      <Key size={18} className="text-cyan-400" />
+                      <span>Reset Password</span>
+                    </>
+                  ) : activeTab === 'login' ? (
+                    <>
+                      <Key size={18} className="text-cyan-400" />
+                      <span>Student Sign In</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={18} className="text-cyan-400" />
+                      <span>Create Account</span>
+                    </>
+                  )}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Access your course via official Google account or Register Number &amp; Password.
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {showForgotPassword
+                    ? 'Enter your student email address to receive password reset instructions.'
+                    : activeTab === 'login'
+                    ? 'Log in with your Email address or Register Number & Password.'
+                    : 'Register with your student email to begin your networking course.'}
                 </p>
               </div>
 
@@ -298,45 +458,47 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               )}
 
-              {/* Google Sign In Callout */}
-              <div className="px-6 space-y-2">
-                <button
-                  type="button"
-                  onClick={handleFirstTimeGoogleSignup}
-                  disabled={loading || googleLoading}
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-white text-xs font-semibold transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                  title="Sign in with your official KLU institutional Google account"
-                >
-                  {googleLoading ? (
-                    <Loader size="1.2em" />
-                  ) : (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                      </svg>
-                      <span>Continue with Google</span>
-                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                        KLU Sign Up
-                      </span>
-                    </>
-                  )}
-                </button>
+              {/* Google Auth Button + OR Divider (Shown in both Login & Signup) */}
+              {!showForgotPassword && (
+                <div className="px-6 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleGoogleAuth}
+                    disabled={loading || googleLoading}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-white text-xs font-semibold transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+                    title="Sign in with your official KLU institutional Google account"
+                  >
+                    {googleLoading ? (
+                      <Loader size="1.2em" />
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                        <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                          {activeTab === 'login' ? 'KLU Sign In' : 'KLU Sign Up'}
+                        </span>
+                      </>
+                    )}
+                  </button>
 
-                {/* OR Divider */}
-                <div className="flex items-center gap-2 py-0.5">
-                  <div className="flex-1 h-px bg-slate-800" />
-                  <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">OR</span>
-                  <div className="flex-1 h-px bg-slate-800" />
+                  {/* OR Divider */}
+                  <div className="flex items-center gap-2 py-0.5">
+                    <div className="flex-1 h-px bg-slate-800" />
+                    <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">OR</span>
+                    <div className="flex-1 h-px bg-slate-800" />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Password Reset Form OR Username & Password Login Form */}
+              {/* FORGOT PASSWORD VIEW */}
               {showForgotPassword ? (
                 <form onSubmit={handlePasswordReset} className="px-6 space-y-3">
-                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2.5">
+                  <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white flex items-center gap-1.5">
                         <Key size={13} className="text-cyan-400" />
@@ -344,7 +506,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </span>
                       <button
                         type="button"
-                        onClick={() => { setShowForgotPassword(false); setResetSuccess(null); }}
+                        onClick={() => { setShowForgotPassword(false); setResetSuccess(null); clearErrors(); }}
                         className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
                       >
                         Back to Login
@@ -359,7 +521,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        Registered Student Email
+                        Registered Email Address
                       </label>
                       <input
                         type="email"
@@ -374,33 +536,34 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     <button
                       type="submit"
                       disabled={resetLoading}
-                      className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {resetLoading ? 'Sending Instructions...' : 'Send Password Reset Link'}
+                      {resetLoading ? <Loader size="1.1em" /> : 'Send Password Reset Link'}
                     </button>
                   </div>
                 </form>
-              ) : (
-                <form onSubmit={handleStudentLogin} className="px-6 space-y-3">
-                  {/* Username Input (Strictly Register Number) */}
+              ) : activeTab === 'login' ? (
+                /* ======================== 1. LOGIN PAGE ======================== */
+                <form onSubmit={handleStudentLogin} className="px-6 space-y-2.5">
+                  {/* Email address / Register Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                      <User size={13} className="text-cyan-400" />
-                      <span>Register Number (Username)</span>
+                      <Mail size={13} className="text-cyan-400" />
+                      <span>Email or Register Number</span>
                     </label>
                     <input 
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
                       type="text" 
-                      id="username-input" 
-                      value={studentIdInput}
-                      onChange={(e) => setStudentIdInput(e.target.value)}
-                      placeholder="e.g. 992400xxxxx"
+                      id="login-identifier-input" 
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
+                      placeholder="e.g. 992400xxxxx@klu.ac.in or 992400xxxxx"
                       required 
                       autoFocus
                     />
                   </div>
 
-                  {/* Password Input */}
+                  {/* Password with Show/Hide Toggle & Forgot Password link */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -409,7 +572,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </label>
                       <button 
                         type="button" 
-                        onClick={() => setShowForgotPassword(true)}
+                        onClick={() => { setShowForgotPassword(true); clearErrors(); }}
                         className="text-[10px] text-cyan-400 hover:text-cyan-300 underline bg-transparent border-0 cursor-pointer"
                       >
                         Forgot Password?
@@ -418,62 +581,255 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     <div className="relative">
                       <input 
                         className="w-full px-3.5 pr-9 py-2 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
-                        type={showPassword ? 'text' : 'password'} 
-                        id="password-input" 
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="Enter your portal password"
+                        type={showLoginPassword ? 'text' : 'password'} 
+                        id="login-password-input" 
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="Enter your password"
                         required 
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                        title={showLoginPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showLoginPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Primary Submit Button: Strictly Username & Password */}
+                  {/* Remember Me Checkbox */}
+                  <div className="flex items-center justify-between text-xs text-slate-300 pt-0.5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        id="login-remember-me-checkbox"
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-cyan-400 cursor-pointer accent-cyan-500"
+                      />
+                      <span className="text-[11px] text-slate-300 font-medium">Remember me</span>
+                    </label>
+                  </div>
+
+                  {/* Sign In Button with Loading Indicator */}
                   <button 
                     type="submit" 
+                    id="login-submit-button"
                     className="w-full py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
                     disabled={loading || googleLoading}
                   >
                     {loading ? (
-                      <Loader size="1.25em" />
+                      <div className="flex items-center gap-2">
+                        <Loader size="1.25em" />
+                        <span>Signing In...</span>
+                      </div>
                     ) : (
                       <>
-                        <Key size={14} />
-                        <span>Log In with Password</span>
+                        <LogIn size={14} />
+                        <span>Sign In</span>
                       </>
                     )}
                   </button>
+
+                  {/* Don't have an account? Sign Up Switch */}
+                  <div className="text-center pt-1">
+                    <p className="text-[11.5px] text-slate-400">
+                      <span>Don't have an account? </span>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTab('signup'); clearErrors(); }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold underline bg-transparent border-0 cursor-pointer"
+                      >
+                        Sign Up
+                      </button>
+                    </p>
+                  </div>
+                </form>
+              ) : (
+                /* ======================== 2. SIGN UP PAGE ======================== */
+                <form onSubmit={handleStudentSignUp} className="px-6 space-y-2">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-0.5 flex items-center gap-1.5">
+                      <User size={13} className="text-cyan-400" />
+                      <span>Full Name</span>
+                    </label>
+                    <input 
+                      className="w-full px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all" 
+                      type="text" 
+                      id="signup-name-input" 
+                      value={signUpName}
+                      onChange={(e) => setSignUpName(e.target.value)}
+                      placeholder="e.g. Alex Johnson"
+                      required 
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Email address */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-0.5 flex items-center gap-1.5">
+                      <Mail size={13} className="text-cyan-400" />
+                      <span>Email Address</span>
+                    </label>
+                    <input 
+                      className="w-full px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                      type="email" 
+                      id="signup-email-input" 
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
+                      placeholder="e.g. 992400xxxxx@klu.ac.in"
+                      required 
+                    />
+                  </div>
+
+                  {/* Password with Show/Hide toggle */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-0.5 flex items-center gap-1.5">
+                      <Lock size={13} className="text-cyan-400" />
+                      <span>Password</span>
+                    </label>
+                    <div className="relative">
+                      <input 
+                        className="w-full px-3.5 pr-9 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all font-mono" 
+                        type={showSignUpPassword ? 'text' : 'password'} 
+                        id="signup-password-input" 
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
+                        placeholder="Create a strong password"
+                        required 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                        title={showSignUpPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignUpPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+
+                    {/* Password Strength Indicator */}
+                    {signUpPassword && (
+                      <div className="mt-1 space-y-0.5">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400">Password strength:</span>
+                          <span className={`font-bold ${passwordStrength.text}`}>
+                            {passwordStrength.label}
+                          </span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${passwordStrength.color} transition-all duration-300`} 
+                            style={{ width: `${passwordStrength.score}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirm Password with Show/Hide toggle */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-0.5 flex items-center gap-1.5">
+                      <ShieldCheck size={13} className="text-cyan-400" />
+                      <span>Confirm Password</span>
+                    </label>
+                    <div className="relative">
+                      <input 
+                        className={`w-full px-3.5 pr-9 py-1.5 rounded-xl bg-slate-900/90 border ${
+                          signUpConfirmPassword && signUpPassword !== signUpConfirmPassword
+                            ? 'border-red-500/70 focus:border-red-400'
+                            : signUpConfirmPassword && signUpPassword === signUpConfirmPassword
+                            ? 'border-emerald-500/70 focus:border-emerald-400'
+                            : 'border-slate-700 focus:border-cyan-400'
+                        } text-white text-xs outline-none transition-all font-mono`} 
+                        type={showSignUpConfirmPassword ? 'text' : 'password'} 
+                        id="signup-confirm-password-input" 
+                        value={signUpConfirmPassword}
+                        onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+                        placeholder="Re-enter password"
+                        required 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                        title={showSignUpConfirmPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignUpConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    {signUpConfirmPassword && signUpPassword !== signUpConfirmPassword && (
+                      <p className="text-[10px] text-red-400 mt-0.5">Passwords do not match.</p>
+                    )}
+                  </div>
+
+                  {/* Terms & Conditions Agreement Checkbox */}
+                  <div className="pt-1">
+                    <label className="flex items-start gap-2 cursor-pointer select-none leading-snug">
+                      <input
+                        id="signup-terms-checkbox"
+                        type="checkbox"
+                        checked={signUpTermsAgreed}
+                        onChange={(e) => setSignUpTermsAgreed(e.target.checked)}
+                        className="w-3.5 h-3.5 mt-0.5 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-cyan-400 cursor-pointer accent-cyan-500 shrink-0"
+                      />
+                      <span className="text-[10.5px] text-slate-300">
+                        <span>I agree to CRESCO CN's </span>
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                          Terms &amp; Conditions
+                        </a>
+                        <span> and </span>
+                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                          Privacy Policy
+                        </a>.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Create Account Button with Loading Indicator */}
+                  <button 
+                    type="submit" 
+                    id="signup-submit-button"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-500 hover:to-cyan-400 text-white text-xs font-bold transition-all shadow-md shadow-cyan-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
+                    disabled={loading || googleLoading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader size="1.25em" />
+                        <span>Creating Account...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <UserPlus size={14} />
+                        <span>Create Account</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Already have an account? Login Switch */}
+                  <div className="text-center pt-0.5">
+                    <p className="text-[11.5px] text-slate-400">
+                      <span>Already have an account? </span>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTab('login'); clearErrors(); }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold underline bg-transparent border-0 cursor-pointer"
+                      >
+                        Login
+                      </button>
+                    </p>
+                  </div>
                 </form>
               )}
 
-              {/* Terms and Privacy Policy Agreement Notice */}
-              <div className="px-6 pt-3 pb-1 text-center text-[10.5px] text-slate-400">
-                <div className="flex items-center justify-center gap-2">
-                  <input
-                    id="login-terms-checkbox"
-                    type="checkbox"
-                    checked={termsAgreed}
-                    onChange={(e) => setTermsAgreed(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-cyan-400 cursor-pointer accent-cyan-500"
-                  />
-                  <label htmlFor="login-terms-checkbox" className="cursor-pointer select-none leading-snug">
-                    <span>I agree to CRESCO CN's </span>
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
-                      Terms &amp; Conditions
-                    </a>
-                    <span> and </span>
-                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline font-semibold">
-                      Privacy Policy
-                    </a>.
-                  </label>
-                </div>
+              {/* Bottom Notice for Provisioned Students */}
+              <div className="px-6 pt-2 pb-1 text-center text-[10px] text-slate-400 border-t border-slate-800/60 mt-2">
+                <p>
+                  Institutional student? Log in with your registered credentials or official Google account.
+                </p>
               </div>
             </div>
 

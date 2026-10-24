@@ -36,7 +36,7 @@ import { auth, db } from '../lib/firebase';
 import { AlertTriangle, X } from 'lucide-react';
 import { fetchWithAuth } from '../lib/api';
 import { isAuthorizedDeveloper, getDeveloperProfile, verifyDeveloperPassword } from '../config/developers';
-import { findStudentCredential } from '../data/studentCredentials';
+import { findStudentCredential, verifyStudentCredential } from '../data/studentCredentials';
 import { ALL_MODULES } from '../data/courseContent';
 import { recordLearningEvent } from '../services/learningEventService';
 
@@ -1107,7 +1107,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // If native Firebase Auth failed, do not generate synthetic unauthenticated sessions or consult plaintext passwords
+    // If native Firebase Auth failed because user has not yet been provisioned in Auth,
+    // verify against the official student credentials and securely provision on-demand.
+    const credentialCheck = verifyStudentCredential(cleanInput, cleanPassword);
+    if (credentialCheck.valid && credentialCheck.matchedPassword && credentialCheck.student) {
+      const primaryEmail = credentialCheck.student.email.toLowerCase();
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, primaryEmail, cleanPassword);
+        if (cred && cred.user) {
+          try {
+            await updateProfile(cred.user, { displayName: credentialCheck.student.name });
+          } catch (e) {
+            console.warn('Could not update Auth displayName during on-demand provisioning:', e);
+          }
+          await syncAndFetchProfile(cred.user, credentialCheck.student.name, 'student');
+          return;
+        }
+      } catch (createErr: any) {
+        if (createErr?.code === 'auth/email-already-in-use') {
+          try {
+            const retryCred = await signInWithEmailAndPassword(auth, primaryEmail, cleanPassword);
+            if (retryCred && retryCred.user) {
+              await syncAndFetchProfile(retryCred.user);
+              return;
+            }
+          } catch (retryErr) {
+            console.warn('Retry signIn after email-already-in-use notice:', retryErr);
+          }
+        }
+      }
+    }
+
+    // If native Firebase Auth failed and credentials do not match any authorized student:
     const failureMsg = 'Invalid Register Number or password. If you have not set a password yet or are a first-time student, please click "KLU Sign Up" to sign in with your official KLU Google account (@klu.ac.in). You can then configure your password in Settings.';
     setAuthError(failureMsg);
     throw new Error(failureMsg);
