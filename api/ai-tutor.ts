@@ -70,7 +70,7 @@ export async function handleAiTutorRequest(reqBody: any): Promise<{
 
   const tutorContext: TutorContextPayload = context || {};
   const startTime = Date.now();
-  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
   // 1. Build Socratic System Prompt grounded in CRESCO Curriculum
   const systemInstruction = `
