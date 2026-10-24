@@ -5,8 +5,7 @@ import {
   SECONDARY_COURSES, 
   COURSE_SECTIONS, 
   PRACTICE_CATEGORIES, 
-  STUDENT_PROFILE, 
-  TEACHER_STATS 
+  STUDENT_PROFILE 
 } from './data/networkCourse';
 
 import { ThemeProvider } from './context/ThemeContext';
@@ -52,16 +51,12 @@ const AnimatedLearningView = React.lazy(() => import('./components/views/Animate
 const LandingView = React.lazy(() => import('./components/views/LandingView').then(m => ({ default: m.LandingView })));
 const ExamModeView = React.lazy(() => import('./components/views/ExamModeView').then(m => ({ default: m.ExamModeView })));
 
-// Code-Split Supporting Dashboard Views
-const TeacherDashboardView = React.lazy(() => import('./components/views/TeacherDashboardView').then(m => ({ default: m.TeacherDashboardView })));
 const LiveClassroomView = React.lazy(() => import('./components/views/LiveClassroomView').then(m => ({ default: m.LiveClassroomView })));
-const DeveloperDashboardView = React.lazy(() => import('./components/views/DeveloperDashboardView').then(m => ({ default: m.DeveloperDashboardView })));
 const AnalyticsView = React.lazy(() => import('./components/views/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
 const MyLearningView = React.lazy(() => import('./components/views/MyLearningView').then(m => ({ default: m.MyLearningView })));
 const LoginView = React.lazy(() => import('./components/views/LoginView').then(m => ({ default: m.LoginView })));
 const TermsView = React.lazy(() => import('./components/views/TermsView').then(m => ({ default: m.TermsView })));
 const PrivacyView = React.lazy(() => import('./components/views/PrivacyView').then(m => ({ default: m.PrivacyView })));
-const AdminPortalView = React.lazy(() => import('./components/views/AdminPortalView').then(m => ({ default: m.AdminPortalView })));
 const UdlLearningView = React.lazy(() => import('./components/views/UdlLearningView').then(m => ({ default: m.UdlLearningView })));
 
 import { BootTerminal } from './components/BootTerminal';
@@ -89,7 +84,7 @@ function MainApp() {
       const path = window.location.pathname;
       if (path === '/terms') return { tab: 'terms' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/privacy') return { tab: 'privacy' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
-      if (path === '/admin') return { tab: 'admin' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
+      if (path === '/admin') return { tab: 'home' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/udl') return { tab: 'udl-learning' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/login') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
       if (path === '/signup') return { tab: 'login' as NavTab, lessonId: 'u3_m01', sectionId: 3 };
@@ -247,7 +242,7 @@ function MainApp() {
       initialRedirectDoneRef.current = true;
       setCurrentTab((prev) => {
         if (prev === 'landing') {
-          const dest = userProfile?.role === 'developer' ? 'developer-dashboard' : 'home';
+          const dest = 'home';
           setTabHistory([dest]);
           return dest;
         }
@@ -276,9 +271,6 @@ function MainApp() {
     }));
     if (userProfile?.role) {
       setUserRole(userProfile.role);
-      if (userProfile.role === 'developer' && currentTab === 'home') {
-        setCurrentTab('developer-dashboard');
-      }
     }
 
     // Strictly sync real streak & XP from userProfile (default to 0 for new students)
@@ -345,7 +337,7 @@ function MainApp() {
     if (tab === 'challenges' || tab === 'boss-challenge' || tab === 'daily-challenge' || tab === 'exam') {
       tab = 'practice';
     }
-    if (tab === 'developer-dashboard' && userProfile?.role !== 'developer') {
+    if (tab === 'admin' || (tab as string) === 'teacher-dashboard' || (tab as string) === 'developer-dashboard') {
       tab = 'home';
     }
     if (lessonId !== undefined) {
@@ -526,19 +518,6 @@ function MainApp() {
     );
   }
 
-  // Admin Portal View
-  if (currentTab === 'admin') {
-    return (
-      <React.Suspense fallback={<FullScreenLoader message="Loading Administrator Console..." />}>
-        <AdminPortalView onNavigate={(tab) => {
-          setCurrentTab(tab);
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ tab }, '', tab === 'home' ? '/' : `/${tab}`);
-          }
-        }} />
-      </React.Suspense>
-    );
-  }
 
   // SCREEN 01 — WELCOME / ONBOARDING (if tab is 'welcome')
   if (currentTab === 'welcome') {
@@ -699,23 +678,11 @@ function MainApp() {
                 />
               )}
 
-              {currentTab === 'teacher-dashboard' && (
-                <TeacherDashboardView
-                  metrics={TEACHER_STATS}
-                  sections={sections}
-                  onNavigate={handleNavigate}
-                />
-              )}
-
               {currentTab === 'live-classroom' && (
                 <LiveClassroomView
                   userRole={userRole}
                   onNavigate={handleNavigate}
                 />
-              )}
-
-              {currentTab === 'developer-dashboard' && (
-                <DeveloperDashboardView onNavigate={handleNavigate} />
               )}
 
               {currentTab === 'udl-learning' && (
