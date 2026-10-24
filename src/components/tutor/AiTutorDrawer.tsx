@@ -779,8 +779,8 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
         )}
 
         {/* Input Bar */}
-        <div className="p-3.5 sm:p-4 bg-white/80 backdrop-blur-xl border-t border-slate-200/50 relative z-10 mt-auto">
-          <div className="flex items-end gap-2 bg-white/95 backdrop-blur-md border border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_4px_16px_rgba(0,0,0,0.04)] focus-within:border-slate-300 focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] rounded-[26px] p-2 transition-all">
+        <div className="px-4 sm:px-5 pt-4 pb-4 bg-white/35 backdrop-blur-2xl border-t border-white/60 relative z-10 mt-auto shadow-[0_-10px_35px_rgba(255,255,255,0.18)]">
+          <div className="flex items-end gap-2 bg-white/70 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgba(31,41,55,0.10),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:border-white focus-within:ring-4 focus-within:ring-sky-200/35 focus-within:shadow-[0_12px_36px_rgba(31,41,55,0.14),inset_0_1px_0_rgba(255,255,255,1)] rounded-[26px] p-2.5 transition-all w-full min-w-0">
             
             {/* Microphone Button (Voice Recognition) */}
             <button
@@ -804,7 +804,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDownTextarea}
               placeholder={isListening ? "Listening to your voice..." : "Ask Neta about protocols, RFCs, or packet flows... (Enter to send)"}
-              className="flex-1 bg-transparent border-0 text-xs sm:text-[13px] text-slate-800 placeholder-slate-400 focus:outline-hidden resize-none font-sans px-1 py-1 leading-normal"
+              className="flex-1 min-w-0 min-h-[44px] max-h-36 bg-transparent border-0 text-[14px] text-slate-800 placeholder-slate-500/90 focus:outline-none focus:ring-0 resize-none font-sans px-2.5 py-2.5 leading-relaxed"
             />
 
             {/* Send Button */}
@@ -812,7 +812,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
               type="button"
               disabled={!inputText.trim() || isLoading}
               onClick={() => handleSendMessage()}
-              className="w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-all shrink-0 cursor-pointer shadow-[0_4px_12px_rgba(15,23,42,0.2)] flex items-center justify-center hover:scale-105 active:scale-95"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 disabled:opacity-35 disabled:cursor-not-allowed text-white transition-all shrink-0 cursor-pointer shadow-[0_5px_14px_rgba(15,23,42,0.25)] flex items-center justify-center active:scale-95"
               title="Send Message (Enter)"
             >
               <Send className="w-3.5 h-3.5" />
@@ -820,7 +820,7 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           </div>
 
           {/* Keyboard shortcut guide */}
-          <div className="text-[10px] text-slate-400 text-center mt-2 font-mono flex items-center justify-center gap-1.5">
+          <div className="text-[10px] text-slate-400 text-center mt-2 font-sans flex flex-wrap items-center justify-center gap-1.5">
             <span>Press</span>
             <kbd className="px-1.5 py-0.5 bg-white/80 border border-slate-200/60 rounded text-slate-600 font-bold shadow-2xs">Enter</kbd>
             <span>to send,</span>
