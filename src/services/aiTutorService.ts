@@ -32,7 +32,7 @@ export const TRUSTED_AI_AUTHORITY_BOUNDARY = {
   canAwardXP: false,
   canOverridePrerequisites: false,
   backendProxyEndpoint: '/api/ai-tutor',
-  keyStorage: 'Server-side process.env.GEMINI_API_KEY only (never client-exposed)'
+  keyStorage: 'Server-side process.env.GROQ_API_KEY only (never client-exposed)'
 };
 
 // In-flight request tracker to prevent duplicate message submission
@@ -117,7 +117,7 @@ export async function queryAiTutor(
       return {
         success: false,
         reply: '',
-        model: errorData.model || 'gemini-1.5-flash',
+        model: errorData.model || 'llama-3.3-70b-versatile',
         latencyMs,
         error: errorData.error || `Tutor service responded with status ${res.status}`,
         errorCode: errorData.errorCode || 'AI_PROVIDER_UNAVAILABLE'

@@ -129,7 +129,7 @@ async function startServer() {
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`[CRESCO Server] Running on http://0.0.0.0:${PORT}`);
     console.log(`[CRESCO Server] Mode: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`[CRESCO Server] AI Tutor: ${process.env.GEMINI_API_KEY ? 'Configured (Active)' : 'Unconfigured (Fallback Ready)'}`);
+    console.log(`[CRESCO Server] AI Tutor: ${process.env.GROQ_API_KEY ? 'Configured (Active)' : 'Unconfigured (Fallback Ready)'}`);
   });
 }
 

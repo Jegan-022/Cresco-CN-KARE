@@ -1,8 +1,8 @@
 /**
  * CRESCO Backend AI Personal Tutor Endpoint
  *
- * Secure server-side proxy connecting to Google Gemini API for the AI Personal Tutor.
- * Protects GEMINI_API_KEY from exposure to browser client code.
+ * Secure server-side proxy connecting to Groq API for the AI Personal Tutor.
+ * Protects GROQ_API_KEY from exposure to browser client code.
  *
  * Reference: docs/CRESCO_LEARNING_DATA_MODEL.md Section 10
  */
@@ -55,14 +55,14 @@ export async function handleAiTutorRequest(reqBody: any): Promise<{
     };
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
     return {
       status: 503,
       data: {
         success: false,
-        error: 'AI provider is unconfigured. Set GEMINI_API_KEY in the server environment.',
+        error: 'AI provider is unconfigured. Set GROQ_API_KEY in the server environment.',
         errorCode: 'AI_PROVIDER_UNAVAILABLE'
       }
     };
@@ -70,7 +70,7 @@ export async function handleAiTutorRequest(reqBody: any): Promise<{
 
   const tutorContext: TutorContextPayload = context || {};
   const startTime = Date.now();
-  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   // 1. Build Socratic System Prompt grounded in CRESCO Curriculum
   const systemInstruction = `
@@ -93,47 +93,46 @@ ${tutorContext.explanationSnippet ? `   - Curriculum Reference Material: "${tuto
 6. Friendly Tone: Speak encouragingly as ByteBot, using clear bullet points and short code/packet diagrams when helpful.
 `.trim();
 
-  // 2. Build multi-turn contents payload
-  const contents: any[] = [];
+  // 2. Build multi-turn messages array (OpenAI-compatible format for Groq)
+  const messages: Array<{ role: string; content: string }> = [
+    { role: 'system', content: systemInstruction }
+  ];
 
   if (Array.isArray(conversationHistory)) {
     for (const turn of conversationHistory.slice(-8)) {
       if (turn && turn.text) {
-        contents.push({
-          role: turn.role === 'model' ? 'model' : 'user',
-          parts: [{ text: turn.text }]
+        messages.push({
+          role: turn.role === 'model' ? 'assistant' : 'user',
+          content: turn.text
         });
       }
     }
   }
 
   // Add the current user query
-  contents.push({
+  messages.push({
     role: 'user',
-    parts: [{ text: message.trim() }]
+    content: message.trim()
   });
 
   try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(geminiUrl, {
+    const response = await fetch(groqUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       signal: controller.signal,
       body: JSON.stringify({
-        contents,
-        systemInstruction: {
-          parts: [{ text: systemInstruction }]
-        },
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1024
-        }
+        model,
+        messages,
+        temperature: 0.4,
+        max_tokens: 1024
       })
     });
 
@@ -142,7 +141,7 @@ ${tutorContext.explanationSnippet ? `   - Curriculum Reference Material: "${tuto
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[AI Tutor Backend] Gemini API error (${response.status}):`, errorText);
+      console.error(`[AI Tutor Backend] Groq API error (${response.status}):`, errorText);
 
       if (response.status === 429) {
         return {
@@ -166,8 +165,7 @@ ${tutorContext.explanationSnippet ? `   - Curriculum Reference Material: "${tuto
     }
 
     const json = await response.json();
-    const candidate = json.candidates?.[0];
-    const replyText = candidate?.content?.parts?.[0]?.text;
+    const replyText = json.choices?.[0]?.message?.content;
 
     if (!replyText || replyText.trim().length === 0) {
       return {
