@@ -422,11 +422,11 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex justify-end items-center p-0 sm:p-4 md:p-6 bg-slate-950/40 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex justify-end items-end sm:items-stretch p-0 sm:p-3 md:p-4 bg-slate-950/40 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="w-full sm:max-w-[480px] md:max-w-[510px] h-full sm:h-[94vh] sm:rounded-[36px] bg-gradient-to-b from-white/92 via-white/84 to-white/92 backdrop-blur-2xl border border-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,1),inset_0_-1px_2px_rgba(255,255,255,0.4)] flex flex-col overflow-hidden relative text-slate-800 animate-in slide-in-from-right duration-300 font-sans"
+        className="w-full sm:max-w-[480px] md:max-w-[500px] h-full sm:rounded-[32px] bg-gradient-to-b from-white/94 via-white/88 to-white/94 backdrop-blur-2xl border border-white/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,1),inset_0_-1px_2px_rgba(255,255,255,0.4)] flex flex-col overflow-hidden relative text-slate-800 animate-in slide-in-from-right duration-300 font-sans"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ambient Glassmorphic & Mercury Highlights */}
@@ -778,16 +778,8 @@ export const AiTutorDrawer: React.FC<AiTutorDrawerProps> = ({
           </div>
         )}
 
-        {/* Seamless Neumorphic Divider with Center '+' Pill */}
-        <div className="relative py-1 flex items-center justify-center select-none">
-          <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
-          <div className="relative z-10 w-6 h-6 rounded-full bg-white/95 border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,1)] flex items-center justify-center text-slate-500 text-xs font-light">
-            +
-          </div>
-        </div>
-
         {/* Input Bar */}
-        <div className="p-3 sm:p-4 pt-1 bg-white/75 backdrop-blur-xl border-t border-white/80 relative z-10">
+        <div className="p-3.5 sm:p-4 bg-white/80 backdrop-blur-xl border-t border-slate-200/50 relative z-10 mt-auto">
           <div className="flex items-end gap-2 bg-white/95 backdrop-blur-md border border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_4px_16px_rgba(0,0,0,0.04)] focus-within:border-slate-300 focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] rounded-[26px] p-2 transition-all">
             
             {/* Microphone Button (Voice Recognition) */}
